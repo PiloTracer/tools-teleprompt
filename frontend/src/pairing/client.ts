@@ -79,11 +79,13 @@ export async function claimRelaySession(
 }
 
 /** SPA URL for phone to open (frontend route, not raw API GET). */
-export function lanHandoffPageUrl(token: string): string {
-  const origin = resolveHandoffOrigin(
-    typeof window !== "undefined" ? window.location.origin : "http://localhost",
-  );
-  return `${origin}/handoff/lan/${encodeURIComponent(token)}`;
+export function lanHandoffPageUrl(token: string, origin?: string): string {
+  const resolved =
+    origin ??
+    resolveHandoffOrigin(
+      typeof window !== "undefined" ? window.location.origin : "http://localhost",
+    );
+  return `${resolved}/handoff/lan/${encodeURIComponent(token)}`;
 }
 
 export async function createLanHandoff(

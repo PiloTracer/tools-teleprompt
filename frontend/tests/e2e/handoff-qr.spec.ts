@@ -6,8 +6,9 @@ test.describe("QR handoff (J2b)", () => {
   test("generates QR link and loads player without API calls", async ({ page }) => {
     const apiRequests: string[] = [];
     page.on("request", (request) => {
-      if (request.url().includes("/api/")) {
-        apiRequests.push(request.url());
+      const url = request.url();
+      if (url.includes("/api/") && !url.includes("/handoff/public-config")) {
+        apiRequests.push(url);
       }
     });
 

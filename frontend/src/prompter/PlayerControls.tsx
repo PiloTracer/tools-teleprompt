@@ -9,6 +9,8 @@ export type PlayerControlsProps = {
   disabled?: boolean;
   onSettingsChange: (settings: PrompterSettings) => void;
   onPlayPause: () => void;
+  /** When false, play/pause lives in the player header primary row. */
+  showPlayButton?: boolean;
 };
 
 export function PlayerControls({
@@ -17,6 +19,7 @@ export function PlayerControls({
   disabled = false,
   onSettingsChange,
   onPlayPause,
+  showPlayButton = true,
 }: PlayerControlsProps) {
   const update = <K extends keyof PrompterSettings>(
     key: K,
@@ -31,18 +34,20 @@ export function PlayerControls({
     };
 
   return (
-    <div className="tp-player-controls" role="toolbar" aria-label="Player controls">
-      <button
-        type="button"
-        className="tp-player-play"
-        disabled={disabled}
-        aria-pressed={isPlaying}
-        onClick={onPlayPause}
-      >
-        {isPlaying ? en.play.pause : en.play.play}
-      </button>
-      <label>
-        {en.settings.fontSize}
+    <div className="tp-player-controls" role="toolbar" aria-label="Player settings">
+      {showPlayButton ? (
+        <button
+          type="button"
+          className="tp-player-play"
+          disabled={disabled}
+          aria-pressed={isPlaying}
+          onClick={onPlayPause}
+        >
+          {isPlaying ? en.play.pause : en.play.play}
+        </button>
+      ) : null}
+      <label className="tp-player-control tp-player-control--font">
+        <span className="tp-player-control__label">{en.settings.fontSize}</span>
         <input
           type="range"
           min={14}
@@ -51,31 +56,33 @@ export function PlayerControls({
           value={settings.fontSize}
           disabled={disabled}
           onChange={onNumberChange("fontSize")}
+          aria-label={en.settings.fontSize}
           aria-valuemin={14}
           aria-valuemax={48}
           aria-valuenow={settings.fontSize}
         />
-        <span>{settings.fontSize}px</span>
+        <span className="tp-player-control__value">{settings.fontSize}px</span>
       </label>
-      <label>
-        {en.settings.theme}
+      <label className="tp-player-control tp-player-control--theme">
+        <span className="tp-player-control__label">{en.settings.theme}</span>
         <select
           value={settings.theme}
           disabled={disabled}
+          aria-label={en.settings.theme}
           onChange={(e) => update("theme", e.target.value as Theme)}
         >
           <option value="light">{en.settings.themeLight}</option>
           <option value="dark">{en.settings.themeDark}</option>
         </select>
       </label>
-      <label className="tp-checkbox">
+      <label className="tp-player-control tp-player-control--mirror tp-checkbox">
         <input
           type="checkbox"
-          checked={settings.mirror}
           disabled={disabled}
+          checked={settings.mirror}
           onChange={(e) => update("mirror", e.target.checked)}
         />
-        {en.settings.mirror}
+        <span className="tp-player-control__label">{en.settings.mirror}</span>
       </label>
     </div>
   );

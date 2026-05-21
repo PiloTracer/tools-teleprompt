@@ -69,8 +69,8 @@ export async function generateHandoffQrDataUrl(handoffUrl: string): Promise<stri
   try {
     return await QRCode.toDataURL(handoffUrl, {
       margin: 2,
-      width: 256,
-      errorCorrectionLevel: "M",
+      width: 512,
+      errorCorrectionLevel: "L",
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "QR encode failed";

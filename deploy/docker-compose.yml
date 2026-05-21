@@ -23,6 +23,8 @@ services:
       API_RATE_LIMIT_CREATE: ${API_RATE_LIMIT_CREATE:-10}
       API_RATE_LIMIT_CLAIM: ${API_RATE_LIMIT_CLAIM:-20}
       API_PUBLIC_BASE_URL: ${API_PUBLIC_BASE_URL:-http://localhost:9080}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-}
+      FRONTEND_HOST_PORT: ${FRONTEND_HOST_PORT:-9173}
     volumes:
       - ../api:/app
       - api_pip_cache:/root/.cache/pip

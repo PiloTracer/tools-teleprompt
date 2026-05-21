@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_PUBLIC_HOST?: string;
   readonly VITE_PUBLIC_PORT?: string;
   readonly VITE_PUBLIC_PROTOCOL?: string;
+  readonly VITE_DEV_HMR_HOST?: string;
+  readonly VITE_DEV_HMR_PORT?: string;
 }
 
 interface ImportMeta {

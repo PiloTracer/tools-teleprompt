@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-21 — M7 serverless handoff (LAN + multi-QR) committed and pushed
+**Closed:** 2026-05-21 — hotspot handoff reliability (PUBLIC_ORIGIN, CSP), multi-QR mobile chunk assembly, player mobile UI, `start.sh` `.env.dev`/`.env.prd` context loading
 
 **Updated:** 2026-05-21
 
-**Repository state:** M1–M7 **complete** (plan v1.1). **Next:** production deploy (`deploy/README.md`); hotspot env (`PUBLIC_ORIGIN`, `API_PUBLIC_BASE_URL`).
+**Repository state:** M1–M7 **complete** (plan v1.1). Handoff fixes committed. **Next:** production deploy (`deploy/README.md`); manual phone verify on hotspot.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -59,10 +59,10 @@
 | # | Action |
 |---|--------|
 | 1 | Commit uncommitted M7 work (`@session-control close commit`) | **Done** 2026-05-21 |
-| 2 | Hotspot: set `PUBLIC_ORIGIN` + `API_PUBLIC_BASE_URL` in `.env`; restart stack |
+| 2 | Hotspot: set `PUBLIC_ORIGIN` + `API_PUBLIC_BASE_URL` in `.env.dev`; restart stack (`bin/start.sh dev restart`) | **Done** 2026-05-21 (`.env.dev` local; docs in README) |
 | 3 | Production: set `API_OTP_HMAC_SECRET`; confirm Caddy forwards client IP |
 | 4 | Optional: Lighthouse PWA audit (W6) |
-| 5 | Optional: manual phone test on hotspot IP (LAN + multi-QR) |
+| 5 | Manual phone test on hotspot IP (LAN + multi-QR) — re-scan all multi-QR codes after deploy |
 
 ---
 
@@ -95,6 +95,8 @@
 | 2026-05-21 | plan-master revise | M7 approved — LAN + multi-QR (ADR 006); full plan v1.1 |
 | 2026-05-21 | M7 serverless handoff | ADR 006; LAN API (`lan_store.py`); multi-QR; mode router; SPEC amendments; E2E LAN/multi-QR |
 | 2026-05-21 | M7 complete + MOD-06 | `.work/context/20260521-MOD-06-M7-security-review.md`; API 18/18 + FE 64/64 + E2E 5/5 |
+| 2026-05-21 | Hotspot handoff hardening | `public_config.py`, `publicOrigin.ts`, CSP, `start.sh` env context, multi-QR `localStorage`, player mobile UI |
+| 2026-05-21 | session close commit push | handoff origin + multi-QR mobile + dev stack on `main` |
 
 ---
 

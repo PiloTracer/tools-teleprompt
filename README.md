@@ -27,11 +27,11 @@ Dockerized web teleprompter: paste or upload a script, configure scroll speed an
 **Do not run `npm install` or `pip install` on the host.** Dependencies install inside compose services via bind mounts.
 
 ```bash
-cp .env.example .env   # optional; bin/start.sh falls back to .env.example
-./bin/start.sh dev     # interactive menu
+cp .env.example .env.dev   # hotspot/LAN: set PUBLIC_HOST and PUBLIC_ORIGIN in .env.dev
+./bin/start.sh dev         # interactive menu (loads .env.dev)
 # or: ./bin/start.sh dev start
-# Open http://localhost:9080  (or CADDY_HOST_PORT from .env)
-# Direct Vite/HMR: http://localhost:9173  (FRONTEND_HOST_PORT)
+# Open http://<PUBLIC_HOST>:9080  (Caddy — or FRONTEND_HOST_PORT for direct Vite/HMR)
+# Hotspot QR: open handoff via your LAN IP, not localhost — see deploy/README.md
 ```
 
 Run tests/lint inside containers:

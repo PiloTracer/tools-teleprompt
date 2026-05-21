@@ -147,3 +147,17 @@ async def test_logs_exclude_script_and_otp(
     assert secret_text not in app_logs
     assert otp not in app_logs
     assert body["token"] not in app_logs
+
+
+@pytest.mark.asyncio
+async def test_public_handoff_config(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    from tp_platform.config import settings
+
+    monkeypatch.setattr(settings, "spa_public_origin", "http://10.42.0.1:9173")
+    monkeypatch.setattr(settings, "public_base_url", "http://10.42.0.1:9080")
+
+    response = await client.get("/api/v1/handoff/public-config")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["spa_public_origin"] == "http://10.42.0.1:9173"
+    assert body["api_public_base_url"] == "http://10.42.0.1:9080"

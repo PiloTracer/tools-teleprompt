@@ -76,7 +76,9 @@ function storageKey(sessionId: string): string {
 }
 
 function loadSession(sessionId: string): StoredMultiSession | null {
-  const raw = sessionStorage.getItem(storageKey(sessionId));
+  // localStorage (not sessionStorage): phone camera apps open each QR in a new tab;
+  // sessionStorage is isolated per tab so chunk progress would reset every scan.
+  const raw = localStorage.getItem(storageKey(sessionId));
   if (!raw) {
     return null;
   }
@@ -98,11 +100,11 @@ function loadSession(sessionId: string): StoredMultiSession | null {
 }
 
 function saveSession(sessionId: string, session: StoredMultiSession): void {
-  sessionStorage.setItem(storageKey(sessionId), JSON.stringify(session));
+  localStorage.setItem(storageKey(sessionId), JSON.stringify(session));
 }
 
 function clearSession(sessionId: string): void {
-  sessionStorage.removeItem(storageKey(sessionId));
+  localStorage.removeItem(storageKey(sessionId));
 }
 
 export function extractMultiFragmentPayload(hash: string): string | null {

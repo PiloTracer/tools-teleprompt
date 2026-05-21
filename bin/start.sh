@@ -2,16 +2,19 @@
 # tools-teleprompt — isolated Docker Compose dev stack manager
 #
 # Contexts:
-#   dev   — local development stack (default)
+#   dev   — local development stack (default) → reads `.env.dev`
+#   prd   — production-like stack               → reads `.env.prd`
 #
 # Usage:
 #   ./bin/start.sh              interactive menu (dev)
-#   ./bin/start.sh dev          interactive menu (dev)
+#   ./bin/start.sh dev          interactive menu (dev, uses .env.dev)
+#   ./bin/start.sh prd          interactive menu (prd, uses .env.prd)
 #   ./bin/start.sh dev start    headless: build + up detached
 #   ./bin/start.sh start        same as dev start
 #   ./bin/start.sh --help
 #
-# Env files (first found wins): .env then .env.example (never sourced — parsed safely)
+# Env files (per context, never sourced — parsed safely):
+#   .env.{dev|prd}  then  .env  then  .env.example
 # Keys read: STACK_NAME, STACK_ENV, COMPOSE_PROJECT_NAME, PUBLIC_HOST,
 #           CADDY_HOST_PORT, FRONTEND_HOST_PORT, FRONTEND_DEV_PORT
 #
@@ -72,7 +75,10 @@ read_dotenv_value() {
 }
 
 resolve_env_file() {
-  if [[ -f "$REPO_ROOT/.env" ]]; then
+  local context_file="$REPO_ROOT/.env.${STACK_CONTEXT}"
+  if [[ -f "$context_file" ]]; then
+    ENV_FILE="$context_file"
+  elif [[ -f "$REPO_ROOT/.env" ]]; then
     ENV_FILE="$REPO_ROOT/.env"
   elif [[ -f "$REPO_ROOT/.env.example" ]]; then
     ENV_FILE="$REPO_ROOT/.env.example"
@@ -83,7 +89,13 @@ resolve_env_file() {
 
 load_env() {
   resolve_env_file
+  local context_env="$STACK_ENV"
+  local context_file="$REPO_ROOT/.env.${STACK_CONTEXT}"
   local v
+  if [[ ! -f "$context_file" ]]; then
+    printf '%sWARN: Missing %s — using %s. Copy .env.example to .env.%s for reliable hotspot/QR settings.%s\n' \
+      "$C_YELLOW" "$context_file" "${ENV_FILE:-no env file}" "$STACK_CONTEXT" "$C_RESET" >&2
+  fi
   if [[ -n "$ENV_FILE" ]]; then
     v="$(read_dotenv_value STACK_NAME "$ENV_FILE" 2>/dev/null || true)"
     [[ -n "$v" ]] && STACK_NAME="$v"
@@ -100,6 +112,7 @@ load_env() {
     v="$(read_dotenv_value PUBLIC_HOST "$ENV_FILE" 2>/dev/null || true)"
     [[ -n "$v" ]] && PUBLIC_HOST="$v"
   fi
+  STACK_ENV="$context_env"
   [[ -n "$COMPOSE_PROJECT_NAME" ]] || COMPOSE_PROJECT_NAME="${STACK_NAME}-${STACK_ENV}"
 }
 
@@ -182,6 +195,8 @@ wait_for_stack_ready() {
 
 # Compose file uses paths like ../api relative to deploy/ — project-directory MUST be deploy/.
 _compose_invoke() {
+  resolve_env_file
+  reconcile_stack_identity
   local env_args=()
   [[ -n "$ENV_FILE" ]] && env_args=(--env-file "$ENV_FILE")
   docker compose \
@@ -443,31 +458,33 @@ cmd_help() {
 tools-teleprompt stack manager
 
 Context:
-  dev          Local development (default)
+  dev          Local development (default) — env file: .env.dev
+  prd          Production-like stack       — env file: .env.prd
 
 Interactive:
   ./bin/start.sh
   ./bin/start.sh dev
+  ./bin/start.sh prd
 
 Headless:
-  ./bin/start.sh [dev] start       Build + up detached
-  ./bin/start.sh [dev] start-fg    Up detached, then follow logs
-  ./bin/start.sh [dev] stop        docker compose down
-  ./bin/start.sh [dev] restart     down + up
-  ./bin/start.sh [dev] status      ps + health summary
-  ./bin/start.sh [dev] validate    compose config -q
-  ./bin/start.sh [dev] health       curl /health + redis ping
-  ./bin/start.sh [dev] urls         print local URLs
-  ./bin/start.sh [dev] logs         all services (follow)
-  ./bin/start.sh [dev] logs:<svc>   one service (api|frontend|caddy|redis)
-  ./bin/start.sh [dev] shell-api
-  ./bin/start.sh [dev] shell-frontend
-  ./bin/start.sh [dev] shell:<svc>
-  ./bin/start.sh [dev] test-fe | test-api | lint-fe | lint-api
-  ./bin/start.sh [dev] e2e-offline | e2e-handoff
-  ./bin/start.sh [dev] pull | build
-  ./bin/start.sh [dev] redis-flush  (dangerous)
-  ./bin/start.sh [dev] nuke         (dangerous — down -v)
+  ./bin/start.sh [dev|prd] start       Build + up detached
+  ./bin/start.sh [dev|prd] start-fg    Up detached, then follow logs
+  ./bin/start.sh [dev|prd] stop        docker compose down
+  ./bin/start.sh [dev|prd] restart     down + up
+  ./bin/start.sh [dev|prd] status      ps + health summary
+  ./bin/start.sh [dev|prd] validate    compose config -q
+  ./bin/start.sh [dev|prd] health       curl /health + redis ping
+  ./bin/start.sh [dev|prd] urls         print local URLs
+  ./bin/start.sh [dev|prd] logs         all services (follow)
+  ./bin/start.sh [dev|prd] logs:<svc>   one service (api|frontend|caddy|redis)
+  ./bin/start.sh [dev|prd] shell-api
+  ./bin/start.sh [dev|prd] shell-frontend
+  ./bin/start.sh [dev|prd] shell:<svc>
+  ./bin/start.sh [dev|prd] test-fe | test-api | lint-fe | lint-api
+  ./bin/start.sh [dev|prd] e2e-offline | e2e-handoff
+  ./bin/start.sh [dev|prd] pull | build
+  ./bin/start.sh [dev|prd] redis-flush  (dangerous)
+  ./bin/start.sh [dev|prd] nuke         (dangerous — down -v)
 
 CI:
   MENU_QUIET=1 ./bin/start.sh dev start
@@ -479,6 +496,7 @@ EOF
 
 # ── Menu ──────────────────────────────────────────────────────────────────────
 render_menu_header() {
+  load_env
   local running total
   running="$(running_count)"
   total="${#SERVICES[@]}"
@@ -597,7 +615,7 @@ run_menu() {
 # ── Context + CLI dispatch ────────────────────────────────────────────────────
 is_context() {
   case "$1" in
-    dev) return 0 ;;
+    dev|prd) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -606,6 +624,9 @@ apply_context() {
   case "$STACK_CONTEXT" in
     dev)
       STACK_ENV="dev"
+      ;;
+    prd)
+      STACK_ENV="prd"
       ;;
     *)
       printf 'ERROR: Unknown context: %s\n' "$STACK_CONTEXT" >&2
@@ -662,7 +683,7 @@ dispatch_cli() {
     build)       cmd_build_only ;;
     redis-flush) cmd_redis_flush ;;
     nuke)        cmd_nuke ;;
-    menu|dev)    run_menu ;;
+    menu|dev|prd) run_menu ;;
     ""|help|-h|--help) cmd_help ;;
     *)
       printf 'ERROR: Unknown command: %s\n' "$cmd" >&2
@@ -686,17 +707,17 @@ main() {
   require_docker
   require_compose_file
   require_repo_layout
-  load_env
   init_menu_tty
 
   local args=("$@")
 
-  # ./bin/start.sh dev start  → context + command
+  # ./bin/start.sh dev start  → context + command (context selects .env.dev / .env.prd)
   if [[ ${#args[@]} -gt 0 ]] && is_context "${args[0]}"; then
     STACK_CONTEXT="${args[0]}"
-    apply_context
     args=("${args[@]:1}")
   fi
+  apply_context
+  load_env
   reconcile_stack_identity
 
   if [[ ${#args[@]} -eq 0 ]]; then

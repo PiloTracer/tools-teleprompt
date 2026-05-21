@@ -7,14 +7,18 @@
  *    — Fast heuristic from foundation U8 / A21. Scripts above this skip single-QR
  *    mode detection early. Does NOT guarantee the final URL fits in a QR symbol.
  *
- * 2. **QR encode capacity** (`QR_MAX_URL_CHARS`, 3360 chars measured at EC level M)
+ * 2. **QR encode capacity** (`QR_MAX_URL_CHARS`, 2900 chars — byte mode at EC level L)
  *    — Hard limit on the full handoff URL (`origin + path + #fragment`). The qrcode
- *    library throws if exceeded. Mode detection MUST use {@link maxCompressedBytesForHandoffQr}
+ *    library auto-detects byte mode because handoff URLs contain lowercase letters
+ *    (scheme, hostname, path, base64url fragment); alphanumeric mode (~3391 chars) is
+ *    not reachable without case-insensitive URLs. EC level L is used because QR codes
+ *    are displayed on clean screens with minimal physical damage risk.
+ *    Mode detection MUST use {@link maxCompressedBytesForHandoffQr}
  *    and {@link maxMultiQrChunkBytes} derived from this value and `PUBLIC_ORIGIN` length.
  *
- * **Why both?** A script can compress to < 8192 B yet produce a URL longer than 3360 chars
+ * **Why both?** A script can compress to < 8192 B yet produce a URL longer than 2900 chars
  * (long hotspot hostname, low compressibility). Symptom: “Could not generate QR handoff”.
- * Fix: set `PUBLIC_ORIGIN` to the shortest reachable URL (see `.env.example`).
+ * Fix: set `PUBLIC_ORIGIN` in `.env.dev` (see `.env.example`).
  *
  * Fallback when single-QR fails: multi-QR → LAN → relay (see `resolveHandoffMode`).
  */
@@ -39,10 +43,12 @@ export const MULTI_HANDOFF_FRAGMENT_PREFIX = "tp=m1.";
 export const QR_FRAGMENT_THRESHOLD_BYTES = 8192;
 
 /**
- * Max handoff URL length encodable in a QR symbol at error correction M (measured).
+ * Max handoff URL length encodable in a QR symbol at error correction L, byte mode.
+ * Lowercase letters in URLs (scheme, host, path, base64url fragment) force qrcode
+ * into byte mode; alphanumeric-mode capacity (~3391) is not usable in practice.
  * Applies to single-QR and each multi-QR chunk URL.
  */
-export const QR_MAX_URL_CHARS = 3360;
+export const QR_MAX_URL_CHARS = 2900;
 
 export function handoffReceiveUrlLength(origin: string, fragment: string): number {
   const base = origin.replace(/\/$/, "");

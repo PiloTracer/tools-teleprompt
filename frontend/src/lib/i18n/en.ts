@@ -69,6 +69,10 @@ export const en = {
     qrScanHint: "Scan this QR code on your other device, or open the link below.",
     qrImageAlt: "QR code for cross-device handoff",
     qrLinkLabel: "Handoff link",
+    originLabel: "Handoff link host",
+    originLoading: "Resolving handoff address…",
+    originLoopback:
+      "Handoff would use localhost — your phone cannot reach that. Open this page at http://YOUR-LAN-IP:9080 (not localhost), set PUBLIC_ORIGIN in .env.dev, then restart the stack (menu option 4).",
     qrReceiveTitle: "Receive script",
     qrConsuming: "Loading script from QR link…",
     qrMissingFragment: "No handoff data found in this link.",

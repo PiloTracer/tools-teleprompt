@@ -53,6 +53,11 @@ class LanHandoffPayloadResponse(BaseModel):
     format: FormatKind
 
 
+class PublicHandoffConfigResponse(BaseModel):
+    spa_public_origin: str
+    api_public_base_url: str
+
+
 class SessionRecord(BaseModel):
     otp_hash: str
     attempt_count: int = 0

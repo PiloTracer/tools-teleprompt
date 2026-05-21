@@ -106,43 +106,56 @@ export function Player() {
       className={`tp-player ${themeClass} ${mirrorClass}`.trim()}
       aria-label="Teleprompter player"
     >
-      <PlayerControls
-        settings={settings}
-        isPlaying={isPlaying}
-        disabled={!hasScript}
-        onSettingsChange={onSettingsChange}
-        onPlayPause={() => setIsPlaying((prev) => !prev)}
-      />
-      <div className="tp-player-toolbar">
-        <label className="tp-player-speed">
-          {en.settings.speed}
-          <input
-            type="range"
-            min={SPEED_MIN}
-            max={SPEED_MAX}
-            step={SPEED_STEP}
-            value={settings.speed}
-            disabled={!hasScript}
-            onChange={(e) => onSpeedChange(Number(e.target.value))}
-            aria-valuemin={SPEED_MIN}
-            aria-valuemax={SPEED_MAX}
-            aria-valuenow={settings.speed}
-          />
-          <span>{settings.speed.toFixed(1)}×</span>
-        </label>
-        {isSupported ? (
+      <header className="tp-player-header">
+        <div className="tp-player-header__primary">
           <button
             type="button"
-            className="tp-player-fullscreen"
+            className="tp-player-play"
             disabled={!hasScript}
-            aria-pressed={isFullscreen}
-            onClick={() => void toggleFullscreen()}
+            aria-pressed={isPlaying}
+            onClick={() => setIsPlaying((prev) => !prev)}
           >
-            {isFullscreen ? en.play.exitFullscreen : en.play.fullscreen}
+            {isPlaying ? en.play.pause : en.play.play}
           </button>
-        ) : null}
-        <Help open={helpOpen} onToggle={() => setHelpOpen((prev) => !prev)} />
-      </div>
+          <label className="tp-player-speed">
+            <span className="tp-player-speed__label">{en.settings.speed}</span>
+            <input
+              type="range"
+              min={SPEED_MIN}
+              max={SPEED_MAX}
+              step={SPEED_STEP}
+              value={settings.speed}
+              disabled={!hasScript}
+              onChange={(e) => onSpeedChange(Number(e.target.value))}
+              aria-label={en.settings.speed}
+              aria-valuemin={SPEED_MIN}
+              aria-valuemax={SPEED_MAX}
+              aria-valuenow={settings.speed}
+            />
+            <span className="tp-player-speed__value">{settings.speed.toFixed(1)}×</span>
+          </label>
+          {isSupported ? (
+            <button
+              type="button"
+              className="tp-player-fullscreen"
+              disabled={!hasScript}
+              aria-pressed={isFullscreen}
+              onClick={() => void toggleFullscreen()}
+            >
+              {isFullscreen ? en.play.exitFullscreen : en.play.fullscreen}
+            </button>
+          ) : null}
+          <Help open={helpOpen} onToggle={() => setHelpOpen((prev) => !prev)} />
+        </div>
+        <PlayerControls
+          settings={settings}
+          isPlaying={isPlaying}
+          disabled={!hasScript}
+          onSettingsChange={onSettingsChange}
+          onPlayPause={() => setIsPlaying((prev) => !prev)}
+          showPlayButton={false}
+        />
+      </header>
       {!hasScript ? (
         <p className="tp-player-empty">{en.play.empty}</p>
       ) : (

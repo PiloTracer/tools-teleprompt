@@ -17,7 +17,7 @@ import {
   PairingApiError,
 } from "./client";
 import { MultiQrCreate } from "./MultiQrCreate";
-import { resolveHandoffOrigin } from "./publicOrigin";
+import { blocksCrossDeviceHandoff, resolveHandoffOrigin, resolveHandoffOriginAsync } from "./publicOrigin";
 import { buildHandoffQrUrl, generateHandoffQrDataUrl, QrGenerationError } from "./qrEncode";
 import { type HandoffMode, resolveHandoffMode } from "./qrThreshold";
 
@@ -34,6 +34,24 @@ export function HandoffCreate() {
   const [qrGenerating, setQrGenerating] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrHandoffUrl, setQrHandoffUrl] = useState<string | null>(null);
+  const [handoffOrigin, setHandoffOrigin] = useState(() =>
+    resolveHandoffOrigin(window.location.origin),
+  );
+  const [originLoading, setOriginLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setOriginLoading(true);
+    void resolveHandoffOriginAsync(window.location.origin).then((origin) => {
+      if (!cancelled) {
+        setHandoffOrigin(origin);
+        setOriginLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     void Promise.all([loadScriptSource(), loadScriptFormat()]).then(([text, fmt]) => {
@@ -50,7 +68,7 @@ export function HandoffCreate() {
       return;
     }
 
-    const origin = resolveHandoffOrigin(window.location.origin);
+    const origin = handoffOrigin;
     let cancelled = false;
     setModeLoading(true);
     void resolveHandoffMode(source, format, origin, DEFAULT_MAX_SCRIPT_BYTES)
@@ -71,7 +89,7 @@ export function HandoffCreate() {
     return () => {
       cancelled = true;
     };
-  }, [loading, source, format]);
+  }, [loading, source, format, handoffOrigin]);
 
   const onCreateRelay = useCallback(async () => {
     setError(null);
@@ -145,18 +163,22 @@ export function HandoffCreate() {
 
     setQrGenerating(true);
     try {
-      const origin = resolveHandoffOrigin(window.location.origin);
+      const origin = await resolveHandoffOriginAsync(window.location.origin);
+      if (blocksCrossDeviceHandoff(origin)) {
+        setError(en.handoff.originLoopback);
+        return;
+      }
+      setHandoffOrigin(origin);
       const handoffUrl = await buildHandoffQrUrl(source, format, origin);
       const dataUrl = await generateHandoffQrDataUrl(handoffUrl);
       setQrHandoffUrl(handoffUrl);
       setQrDataUrl(dataUrl);
     } catch (err) {
       if (err instanceof QrGenerationError) {
-        const origin = resolveHandoffOrigin(window.location.origin);
         const nextMode = await resolveHandoffMode(
           source,
           format,
-          origin,
+          handoffOrigin,
           DEFAULT_MAX_SCRIPT_BYTES,
         );
         setHandoffMode(nextMode === "single-qr" ? "multi-qr" : nextMode);
@@ -167,7 +189,9 @@ export function HandoffCreate() {
     } finally {
       setQrGenerating(false);
     }
-  }, [source, format]);
+  }, [source, format, handoffOrigin]);
+
+  const handoffOriginBlocked = blocksCrossDeviceHandoff(handoffOrigin);
 
   if (loading) {
     return <p>{en.handoff.loading}</p>;
@@ -183,12 +207,22 @@ export function HandoffCreate() {
           ? en.handoff.modeLan
           : en.handoff.modeRelay;
 
-  const lanPageUrl = lanSession ? lanHandoffPageUrl(lanSession.token) : null;
+  const lanPageUrl = lanSession ? lanHandoffPageUrl(lanSession.token, handoffOrigin) : null;
 
   return (
     <section aria-labelledby="handoff-create-title">
       <h1 id="handoff-create-title">{en.handoff.createTitle}</h1>
       <p>{en.handoff.createHint}</p>
+      <p className="tp-handoff-meta" data-testid="handoff-origin-hint">
+        {originLoading
+          ? en.handoff.originLoading
+          : `${en.handoff.originLabel}: ${handoffOrigin}`}
+      </p>
+      {handoffOriginBlocked && !originLoading ? (
+        <p className="tp-error" role="alert">
+          {en.handoff.originLoopback}
+        </p>
+      ) : null}
 
       {!source.trim() ? (
         <p>
@@ -217,7 +251,7 @@ export function HandoffCreate() {
           <button
             type="button"
             onClick={() => void onPrepareQr()}
-            disabled={!source.trim() || qrGenerating}
+            disabled={!source.trim() || qrGenerating || originLoading || handoffOriginBlocked}
             data-testid="handoff-qr-button"
           >
             {qrGenerating ? en.handoff.generatingQr : en.handoff.createQr}
@@ -228,8 +262,8 @@ export function HandoffCreate() {
               <img
                 src={qrDataUrl}
                 alt={en.handoff.qrImageAlt}
-                width={256}
-                height={256}
+                width={512}
+                height={512}
                 data-testid="handoff-qr-image"
               />
               <p className="tp-handoff-meta">

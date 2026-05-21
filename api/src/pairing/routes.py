@@ -9,7 +9,9 @@ from pairing.models import (
     CreateSessionRequest,
     CreateSessionResponse,
     LanHandoffPayloadResponse,
+    PublicHandoffConfigResponse,
 )
+from pairing.public_config import resolve_spa_public_origin
 from pairing.service import PairingService
 from tp_platform.config import settings
 from tp_platform.rate_limit import enforce_claim_rate_limit, enforce_create_rate_limit
@@ -46,6 +48,18 @@ async def claim_session(
     service: PairingService = Depends(get_pairing_service),
 ) -> ClaimSessionResponse:
     return await service.claim_session(token, payload.otp)
+
+
+@router.get(
+    "/handoff/public-config",
+    response_model=PublicHandoffConfigResponse,
+)
+async def public_handoff_config(request: Request) -> PublicHandoffConfigResponse:
+    spa_origin = resolve_spa_public_origin(request)
+    return PublicHandoffConfigResponse(
+        spa_public_origin=spa_origin,
+        api_public_base_url=settings.public_base_url.rstrip("/"),
+    )
 
 
 @router.post(

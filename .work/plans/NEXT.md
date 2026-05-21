@@ -1,13 +1,13 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-21 (M7 complete; committed)
+**Updated:** 2026-05-21 (hotspot handoff fixes committed)
 
 ---
 
 ## Recommended next
 
-1. **Production deploy** — `deploy/README.md` (set `PUBLIC_ORIGIN`, `API_PUBLIC_BASE_URL` for hotspot)
-2. Manual phone test on hotspot IP (LAN + multi-QR handoff)
+1. **Production deploy** — `deploy/README.md` (set `PUBLIC_ORIGIN`, `API_OTP_HMAC_SECRET`, confirm Caddy client IP)
+2. Manual phone test on hotspot IP (LAN + multi-QR — scan all codes after refresh)
 3. Optional: Lighthouse PWA audit (W6) · `@plan-master revise` for v2.1 (WebRTC)
 
 ---
@@ -49,6 +49,7 @@ M6 complete — see **Done — M6 iteration (archived)** below.
 | M6 formal complete | 2026-05-21 |
 | MOD-06 (M6) | 2026-05-21 |
 | Dev stack manager + env ports/naming | 2026-05-21 |
+| Hotspot handoff origin + multi-QR mobile fix | 2026-05-21 |
 | M7 serverless handoff approved (LAN + multi-QR) | 2026-05-21 |
 | M7 formal complete | 2026-05-21 |
 | MOD-06 (M7) | 2026-05-21 |

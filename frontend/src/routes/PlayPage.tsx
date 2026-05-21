@@ -6,7 +6,7 @@ export function PlayPage() {
   return (
     <Layout>
       <main className="tp-play-page">
-        <h1>{en.play.title}</h1>
+        <h1 className="tp-play-page__title">{en.play.title}</h1>
         <Player />
       </main>
     </Layout>

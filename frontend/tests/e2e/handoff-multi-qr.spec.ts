@@ -13,8 +13,9 @@ test.describe("multi-QR handoff (J2d)", () => {
   test("selects multi-QR mode and reassembles chunks without API calls", async ({ page }) => {
     const apiRequests: string[] = [];
     page.on("request", (request) => {
-      if (request.url().includes("/api/")) {
-        apiRequests.push(request.url());
+      const url = request.url();
+      if (url.includes("/api/") && !url.includes("/handoff/public-config")) {
+        apiRequests.push(url);
       }
     });
 
@@ -35,16 +36,24 @@ test.describe("multi-QR handoff (J2d)", () => {
     await expect(page.getByTestId("handoff-multi-qr-mode")).toBeVisible();
     await expect(page.getByTestId("multi-qr-generate")).toBeEnabled({ timeout: 15_000 });
 
+    const context = page.context();
+    let activePage = page;
+
     for (let index = 0; index < chunks.length; index += 1) {
+      if (index > 0) {
+        activePage = await context.newPage();
+      }
       const path = chunks[index]!.handoffUrl.replace(PREVIEW_ORIGIN, "");
-      await page.goto(path);
+      await activePage.goto(path);
       if (index < chunks.length - 1) {
-        await expect(page.getByTestId("multi-qr-pending")).toBeVisible();
+        await expect(activePage.getByTestId("multi-qr-pending")).toContainText(
+          `Read ${index + 1} of ${chunks.length}`,
+        );
       }
     }
 
-    await expect(page.getByTestId("player-viewport")).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByTestId("sanitized-html")).toContainText(MULTI_SCRIPT.trim());
+    await expect(activePage.getByTestId("player-viewport")).toBeVisible({ timeout: 15_000 });
+    await expect(activePage.getByTestId("sanitized-html")).toContainText(MULTI_SCRIPT.trim());
     expect(apiRequests).toHaveLength(0);
   });
 });

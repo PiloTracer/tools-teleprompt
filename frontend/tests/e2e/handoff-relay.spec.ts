@@ -16,7 +16,7 @@ test.describe("relay handoff (J2)", () => {
     });
     await expect(page.getByTestId("handoff-mode-hint")).toContainText(/relay handoff/i);
     await page.getByTestId("handoff-relay-button").click();
-    await expect(page.getByRole("alert")).toContainText(/too large/i);
+    await expect(page.getByRole("alert").filter({ hasText: /too large/i })).toBeVisible();
   });
 
   test("claims relay session with OTP", async ({ page }) => {

@@ -17,10 +17,11 @@
 1. Clone the repository and copy environment template:
 
    ```bash
-   cp .env.example .env
+   cp .env.example .env.dev    # local dev / hotspot
+   cp .env.example .env.prd    # production-like (optional)
    ```
 
-2. Set production values in `.env` (see **Environment variables** below).
+2. Set values in `.env.dev` (or `.env.prd` for production). See **Environment variables** below.
 
 3. Start the stack:
 
@@ -28,6 +29,8 @@
    bin/start.sh dev start
    # or interactive menu: bin/start.sh dev
    ```
+
+   `bin/start.sh` loads `.env.{dev|prd}` for the given context (`dev` default). Missing context file falls back to `.env` then `.env.example` with a warning.
 
 4. Verify health:
 
@@ -103,12 +106,16 @@ Two limits apply; do not conflate them:
 
 A script can pass the 8192 B check yet fail QR generation when the full URL exceeds 3360 chars (common with long hotspot hostnames). The UI then falls back to multi-QR, LAN, or relay.
 
-**Hotspot / LAN:** Set in `.env`:
+**Hotspot / LAN:** Set in `.env.dev` (or `.env.prd`):
 
 - `PUBLIC_ORIGIN=http://<laptop-ip>:9173` — QR and SPA handoff links (Vite port)
 - `API_PUBLIC_BASE_URL=http://<laptop-ip>:9080` — LAN API claim URLs (Caddy port)
 
-Restart the stack after changing `.env`. Constants live in `frontend/src/pairing/qrConstants.ts`.
+Restart after changes: `bin/start.sh dev restart`. The handoff page shows **Handoff link host** — confirm it shows your LAN IP before scanning.
+
+The API exposes `GET /api/v1/handoff/public-config` (`spa_public_origin`) so QR links stay correct even when the browser is opened via LAN IP while env vars were stale. If you open the app at `http://localhost:…`, QR generation is blocked with an error — use `http://<laptop-ip>:9080` instead.
+
+Constants live in `frontend/src/pairing/qrConstants.ts`.
 
 ---
 

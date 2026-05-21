@@ -5,7 +5,7 @@ import { en } from "../lib/i18n/en";
 import type { ScriptFormat } from "../markdown/types";
 import { validateScriptSize } from "../prompter/limits";
 import { loadScriptFormat, loadScriptSource } from "../prompter/storage";
-import { resolveHandoffOrigin } from "./publicOrigin";
+import { blocksCrossDeviceHandoff, resolveHandoffOriginAsync } from "./publicOrigin";
 import {
   encodeMultiQrHandoff,
   generateMultiQrDataUrl,
@@ -62,7 +62,11 @@ export function MultiQrCreate() {
 
     setGenerating(true);
     try {
-      const origin = resolveHandoffOrigin(window.location.origin);
+      const origin = await resolveHandoffOriginAsync(window.location.origin);
+      if (blocksCrossDeviceHandoff(origin)) {
+        setError(en.handoff.originLoopback);
+        return;
+      }
       const encoded = await encodeMultiQrHandoff(source, format, origin);
       setChunks(encoded);
     } catch (err) {
@@ -152,8 +156,8 @@ export function MultiQrCreate() {
           <img
             src={qrDataUrl}
             alt={copy.imageAlt(activeChunk.index, activeChunk.total)}
-            width={256}
-            height={256}
+            width={512}
+            height={512}
             data-testid="multi-qr-image"
           />
           <p className="tp-handoff-meta">

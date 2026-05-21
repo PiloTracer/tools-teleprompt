@@ -17,8 +17,8 @@ const copy = {
   invalidFragment: "This multi-QR link is invalid or corrupted.",
   consumeFailed: "Could not load script from multi-QR handoff.",
   pendingProgress: (received: number, total: number) =>
-    `Received ${received} of ${total} codes.`,
-  pendingHint: "Scan the remaining codes on this device to finish loading the script.",
+    `Read ${received} of ${total} codes.`,
+  pendingHint: "Scan the remaining codes on this device (order does not matter).",
 } as const;
 
 export function MultiQrConsume() {
