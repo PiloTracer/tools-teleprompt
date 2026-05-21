@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-21 — M5 pairing API + relay handoff complete; committed and pushed
+**Closed:** 2026-05-21 — M6 QR handoff, E2E, and production hardening complete; committed and pushed
 
 **Updated:** 2026-05-21
 
-**Repository state:** M1–M5 **complete**. M5: pairing-api (Redis relay, OTP, rate limits), frontend handoff UI, 9 API tests + 50 FE tests. MOD-06 M5 evidence in `.work/context/`. **Next:** `@code-implementation plan - M6`.
+**Repository state:** M1–M6 **complete** (master plan fully implemented). Uncommitted M6 work committed this close. **Next:** production deploy per `deploy/README.md` or optional W6 Lighthouse audit.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -25,8 +25,8 @@
 | ID | Waiver | Owner action |
 |----|--------|--------------|
 | W1 | `.cursorrules` REPLACE tokens | **Cleared** M1-T8 (bootstrap line remains) |
-| W2 | UNKNOWNS U1, U6, U8 open | Defaults in master plan / ASSUMPTIONS A20–A22 |
-| W3 | Cross-model review not executed | M5-T9 done for pairing; formal M6-T6 remains |
+| W2 | UNKNOWNS U1, U6, U8 open | **Cleared** 2026-05-21 (M6-T8 — defaults in registry) |
+| W3 | Cross-model review not executed | **Cleared** M5-T9 + M6-T6 (MOD-06 review docs) |
 | W4 | Docker compose files not committed | **Cleared** 2026-05-21 (`approve compose`) |
 | W5 | M3 manual mobile viewport check | **Cleared** M4 offline e2e + responsive CSS |
 | W6 | M4 Lighthouse PWA audit | Manual before production deploy |
@@ -37,7 +37,7 @@
 
 1. `@session-control start`
 2. `.work/plans/NEXT.md`
-3. **`@code-implementation plan - M6`** → **`@code-implementation start`**
+3. Production deploy (`deploy/README.md`) · optional Lighthouse (W6) · `@plan-master revise` for v2 scope
 
 ---
 
@@ -54,6 +54,7 @@
 | M3 prompter UI core | **complete** 2026-05-21 |
 | M4 player + PWA | **complete** 2026-05-21 |
 | M5 pairing API + relay | **complete** 2026-05-21 |
+| M6 QR + E2E + hardening | **complete** 2026-05-21 |
 
 ---
 
@@ -61,9 +62,9 @@
 
 | # | Action |
 |---|--------|
-| 1 | Confirm U1 / U8 defaults if overriding plan |
-| 2 | Optional: Lighthouse PWA audit (W6) before production |
-| 3 | Production: set `API_OTP_HMAC_SECRET`; confirm Caddy forwards client IP for rate limits |
+| 1 | Optional: Lighthouse PWA audit (W6) before production |
+| 2 | Production: set `API_OTP_HMAC_SECRET`; confirm Caddy forwards client IP for rate limits |
+| 3 | Optional: measure coverage ≥80% on `markdown/` + `pairing/` (plan target, not gated) |
 
 ---
 
@@ -88,16 +89,20 @@
 | 2026-05-21 | M5 pairing API + relay | `api/src/pairing/*`, `tp_platform/{redis,errors,rate_limit}.py`, `api/tests/pairing/`, `frontend/src/pairing/*` |
 | 2026-05-21 | M5 complete + MOD-06 | `.work/context/20260521-MOD-06-M5-security-review.md`; API 9/9 + FE 50/50 pass |
 | 2026-05-21 | session close commit push | M5 pairing API + relay handoff on `main` |
+| 2026-05-21 | M6 QR + E2E + hardening | `qrThreshold/Encode/Decode`, `QrConsume`, handoff E2E, CSP, `deploy/README.md` |
+| 2026-05-21 | M6 complete + MOD-06 | `.work/context/20260521-MOD-06-M6-security-review.md`; FE 53/53 + E2E 3/3 pass |
+| 2026-05-21 | session close commit push | M6 QR handoff, E2E, CSP, deploy runbook on `main` |
 
 ---
 
 ## Explicit unknowns
 
-See `.work/plans/UNKNOWNS.md` — U1, U6, U8 open with plan defaults (non-blocking).
+See `.work/plans/UNKNOWNS.md` — all registry items **resolved** (U1/U6/U8 closed 2026-05-21).
 
 ---
 
 ## Cross-LLM verification
 
-- **Triggered:** M5-T9 complete (pairing security paths); M6-T6 formal review still pending (W3)
-- **Focus:** OTP/token security, delete-on-read, rate limits, log hygiene; next: QR + E2E (M6)
+- **M5-T9:** pairing security paths — done
+- **M6-T6:** markdown-render + ADR 005 — done (MOD-06 M6 review doc)
+- **Focus:** XSS pipeline, QR fragment hygiene, CSP deployment

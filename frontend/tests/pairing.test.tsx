@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HandoffClaim } from "../src/pairing/HandoffClaim";
 import { HandoffCreate } from "../src/pairing/HandoffCreate";
+import { QrConsume } from "../src/pairing/QrConsume";
 import { claimRelaySession, createRelaySession } from "../src/pairing/client";
+import { decodeHandoffFromHash } from "../src/pairing/qrDecode";
+import { encodeHandoffFragment } from "../src/pairing/qrEncode";
 import {
   clearPrompterStorage,
   loadScriptSource,
@@ -23,8 +26,19 @@ vi.mock("../src/pairing/client", () => ({
   },
 }));
 
+vi.mock("qrcode", () => ({
+  default: {
+    toDataURL: vi.fn(async (url: string) => `data:image/png;base64,mock-${url.length}`),
+  },
+}));
+
 const mockedCreate = vi.mocked(createRelaySession);
 const mockedClaim = vi.mocked(claimRelaySession);
+
+/** Poorly compressible script that exceeds QR fragment threshold after deflate. */
+function buildIncompressibleScript(): string {
+  return Array.from({ length: 700 }, () => crypto.randomUUID()).join("\n");
+}
 
 describe("HandoffCreate (M5-T8)", () => {
   beforeEach(async () => {
@@ -33,8 +47,35 @@ describe("HandoffCreate (M5-T8)", () => {
     vi.clearAllMocks();
   });
 
-  it("creates relay session and shows OTP", async () => {
+  it("offers QR handoff for small scripts without calling relay API", async () => {
     await saveScriptSource("My script");
+
+    render(
+      <MemoryRouter initialEntries={["/handoff/create"]}>
+        <Routes>
+          <Route path="/handoff/create" element={<HandoffCreate />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("handoff-qr-button")).toBeEnabled();
+    });
+    expect(screen.getByTestId("handoff-mode-hint")).toHaveTextContent(/QR handoff/i);
+    expect(mockedCreate).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("handoff-qr-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("handoff-qr-mode")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("handoff-qr-image")).toHaveAttribute("src", expect.stringContaining("data:image/png"));
+    expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("auto-falls back to relay when compressed payload exceeds threshold", async () => {
+    const oversized = buildIncompressibleScript();
+    await saveScriptSource(oversized);
     mockedCreate.mockResolvedValueOnce({
       token: "tok",
       otp: "654321",
@@ -51,16 +92,57 @@ describe("HandoffCreate (M5-T8)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /create relay session/i })).toBeEnabled();
+      expect(screen.getByTestId("handoff-relay-button")).toBeEnabled();
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("handoff-mode-hint")).toHaveTextContent(/relay handoff/i);
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /create relay session/i }));
+    fireEvent.click(screen.getByTestId("handoff-relay-button"));
 
     await waitFor(() => {
       expect(screen.getByTestId("handoff-session")).toBeInTheDocument();
     });
-    expect(screen.getByText("654321")).toBeInTheDocument();
-    expect(mockedCreate).toHaveBeenCalledWith("My script", "plain");
+    expect(mockedCreate).toHaveBeenCalledWith(oversized, "plain");
+  });
+});
+
+describe("QR fragment encode/decode (M6-T2)", () => {
+  it("round-trips script payload through fragment encoding", async () => {
+    const fragment = await encodeHandoffFragment("Hello QR", "markdown");
+    expect(fragment.startsWith("tp=v1.")).toBe(true);
+
+    const decoded = await decodeHandoffFromHash(`#${fragment}`);
+    expect(decoded).toEqual({
+      v: 1,
+      f: "markdown",
+      s: "Hello QR",
+    });
+  });
+});
+
+describe("QrConsume (M6-T3)", () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    await clearPrompterStorage();
+  });
+
+  it("parses fragment, saves script, and navigates to player", async () => {
+    const fragment = await encodeHandoffFragment("QR consume test", "plain");
+
+    render(
+      <MemoryRouter initialEntries={[`/handoff/receive#${fragment}`]}>
+        <Routes>
+          <Route path="/handoff/receive" element={<QrConsume />} />
+          <Route path="/play" element={<div data-testid="player-page">Player page</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("player-page")).toBeInTheDocument();
+    });
+    await expect(loadScriptSource()).resolves.toBe("QR consume test");
   });
 });
 

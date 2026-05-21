@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "../prompter/Layout";
 import { HandoffClaim } from "../pairing/HandoffClaim";
 import { HandoffCreate } from "../pairing/HandoffCreate";
+import { QrConsume } from "../pairing/QrConsume";
 
 export function HandoffPage() {
   return (
@@ -11,6 +12,7 @@ export function HandoffPage() {
         <Routes>
           <Route index element={<Navigate to="create" replace />} />
           <Route path="create" element={<HandoffCreate />} />
+          <Route path="receive" element={<QrConsume />} />
           <Route path="claim/:token" element={<HandoffClaim />} />
         </Routes>
       </main>

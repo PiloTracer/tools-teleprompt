@@ -28,6 +28,6 @@ describe("App routes", () => {
 
   it("renders handoff create route", async () => {
     renderAt("/handoff/create");
-    expect(await screen.findByRole("heading", { name: "Relay handoff" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Cross-device handoff" })).toBeInTheDocument();
   });
 });

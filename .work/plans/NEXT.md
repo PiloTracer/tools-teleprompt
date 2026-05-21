@@ -6,13 +6,13 @@
 
 ## Recommended next
 
-**`@code-implementation plan - M6`** — QR handoff, E2E, and production hardening (master plan §19 M6).
+Production deploy per **`deploy/README.md`** — set `API_OTP_HMAC_SECRET`, enable TLS. Optional: Lighthouse PWA audit (W6).
 
 ---
 
 ## Current iteration
 
-M5 complete — see **Done — M5 iteration (archived)** below.
+M6 complete — see **Done — M6 iteration (archived)** below.
 
 ---
 
@@ -37,6 +37,63 @@ M5 complete — see **Done — M5 iteration (archived)** below.
 | M5 pairing API + relay handoff | 2026-05-21 |
 | M5 formal complete | 2026-05-21 |
 | MOD-06 (M5) | 2026-05-21 |
+| M6 QR handoff, E2E, hardening | 2026-05-21 |
+| M6 formal complete | 2026-05-21 |
+| MOD-06 (M6) | 2026-05-21 |
+
+---
+
+## Done — M6 iteration (archived)
+
+**Milestone ref:** M6 · `.work/plans/full/20260521-full-plan.md` §19  
+**Status:** complete  
+**Started:** 2026-05-21  
+**Completed:** 2026-05-21  
+**Target SPEC:** `.work/features/prompter-ui/20260520-SPEC.md` (R9–R11)
+
+### Tasks
+
+| ID | Description | Completed | Notes |
+|------|-------------|-----------|-------|
+| M6-T1 | QR threshold + relay fallback | 2026-05-21 | `qrThreshold.ts`, `HandoffCreate.tsx` |
+| M6-T2 | QR encode/decode + qrcode lib | 2026-05-21 | `qrEncode.ts`, `qrDecode.ts` |
+| M6-T3 | QR consume route | 2026-05-21 | `QrConsume.tsx`, `/handoff/receive` |
+| M6-T4 | Playwright E2E relay + QR | 2026-05-21 | `handoff-relay.spec.ts`, `handoff-qr.spec.ts` |
+| M6-T5 | CSP + security headers | 2026-05-21 | `deploy/Caddyfile` |
+| M6-T6 | Cross-model review (W3) | 2026-05-21 | MOD-06 M6 review doc |
+| M6-T7 | Production runbook + env | 2026-05-21 | `deploy/README.md`, `.env.example` |
+| M6-T8 | UNKNOWNS U1/U6/U8 | 2026-05-21 | Defaults confirmed in registry |
+| M6-T9 | Milestone verify prep | 2026-05-21 | `@code-verify milestone` pass at complete |
+
+### Acceptance criteria (verified)
+
+- [x] QR threshold 8192 B compressed; auto-fallback to relay (R9/R10)
+- [x] QR consume → localStorage → player; no API body (AC-3)
+- [x] Relay handoff E2E (AC-2)
+- [x] QR handoff E2E (AC-3)
+- [x] CSP headers on Caddy (NFR-03)
+- [x] No script/OTP/token/fragment in logs (R11, I2)
+- [x] UNKNOWNS U1/U6/U8 resolved
+- [x] `@code-verify milestone` pass at complete
+
+### Validation (2026-05-21)
+
+- [x] FE `npm test` — 53/53 pass
+- [x] FE `npm run lint` / `npm run typecheck` — exit 0
+- [x] API `pytest tests/ -q` — 9/9 pass
+- [x] Playwright handoff — 2/2 pass
+- [x] Playwright offline — 1/1 pass (`bin/e2e-offline.sh`)
+- [x] CSP headers — curl verified on Caddy :8080
+- [ ] Coverage ≥80% on `markdown/` + `pairing/` — not measured (deferred)
+- [ ] Lighthouse PWA audit — deferred (W6)
+
+### Concept / NFR registry
+
+| Concept id | Status | Evidence |
+|------------|--------|----------|
+| MOD-01 | done 2026-05-21 | QR client-only vs relay API |
+| MOD-04 | done 2026-05-21 | deploy/README + Caddy CSP |
+| MOD-06 | done 2026-05-21 | `.work/context/20260521-MOD-06-M6-security-review.md` |
 
 ---
 
