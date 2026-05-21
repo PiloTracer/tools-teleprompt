@@ -1,8 +1,7 @@
-name: tools-teleprompt
-
 services:
   redis:
     image: redis:7.4-alpine
+    container_name: ${STACK_NAME:-tools-teleprompt}-redis-${STACK_ENV:-dev}
     networks:
       - teleprompt-net
     healthcheck:
@@ -15,24 +14,33 @@ services:
     build:
       context: ../api
       target: dev
+    container_name: ${STACK_NAME:-tools-teleprompt}-api-${STACK_ENV:-dev}
     environment:
       REDIS_URL: redis://redis:6379/0
+      API_DEV_PORT: ${API_DEV_PORT:-8000}
       API_MAX_SCRIPT_BYTES: ${API_MAX_SCRIPT_BYTES:-262144}
       API_SESSION_TTL_SECONDS: ${API_SESSION_TTL_SECONDS:-300}
       API_RATE_LIMIT_CREATE: ${API_RATE_LIMIT_CREATE:-10}
       API_RATE_LIMIT_CLAIM: ${API_RATE_LIMIT_CLAIM:-20}
+      API_PUBLIC_BASE_URL: ${API_PUBLIC_BASE_URL:-http://localhost:9080}
     volumes:
       - ../api:/app
       - api_pip_cache:/root/.cache/pip
     command: >
-      sh -c "pip install -q -e '.[dev]' && uvicorn main:app --host 0.0.0.0 --port 8000 --reload --app-dir src"
+      sh -c "pip install -q -e '.[dev]' && uvicorn main:app --host 0.0.0.0 --port ${API_DEV_PORT:-8000} --reload --app-dir src"
     networks:
       - teleprompt-net
     depends_on:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os, urllib.request; urllib.request.urlopen(f\"http://127.0.0.1:{os.environ['API_DEV_PORT']}/health\")",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -42,17 +50,28 @@ services:
     build:
       context: ../frontend
       target: dev
+    container_name: ${STACK_NAME:-tools-teleprompt}-frontend-${STACK_ENV:-dev}
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:9080}
+      VITE_DEV_HMR_HOST: ${VITE_DEV_HMR_HOST:-}
+      VITE_DEV_HMR_PORT: ${VITE_DEV_HMR_PORT:-}
     volumes:
       - ../frontend:/app
       - frontend_node_modules:/app/node_modules
     command: >
-      sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+      sh -c "npm install && npm run dev -- --host 0.0.0.0 --port ${FRONTEND_DEV_PORT:-5173}"
+    ports:
+      - "${FRONTEND_HOST_PORT:-9173}:${FRONTEND_DEV_PORT:-5173}"
     networks:
       - teleprompt-net
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5173/"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "-qO-",
+          "http://127.0.0.1:${FRONTEND_DEV_PORT:-5173}/",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -60,8 +79,9 @@ services:
 
   caddy:
     image: caddy:2.9-alpine
+    container_name: ${STACK_NAME:-tools-teleprompt}-caddy-${STACK_ENV:-dev}
     ports:
-      - "${CADDY_HOST_PORT:-8080}:80"
+      - "${CADDY_HOST_PORT:-9080}:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
     networks:
@@ -74,8 +94,11 @@ services:
 
 networks:
   teleprompt-net:
+    name: ${STACK_NAME:-tools-teleprompt}-net-${STACK_ENV:-dev}
     driver: bridge
 
 volumes:
   frontend_node_modules:
+    name: ${STACK_NAME:-tools-teleprompt}-frontend-modules-${STACK_ENV:-dev}
   api_pip_cache:
+    name: ${STACK_NAME:-tools-teleprompt}-api-pip-${STACK_ENV:-dev}

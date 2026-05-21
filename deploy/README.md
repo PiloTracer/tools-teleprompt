@@ -7,7 +7,7 @@
 ## Prerequisites
 
 - Docker Engine 24+ with Compose v2
-- Host port available (default **8080** via `CADDY_HOST_PORT`)
+- Host port available (default **9080** via `CADDY_HOST_PORT`; frontend dev/HMR **9173** via `FRONTEND_HOST_PORT`)
 - TLS certificate (production) — terminate at Caddy or upstream load balancer
 
 ---
@@ -25,18 +25,21 @@
 3. Start the stack:
 
    ```bash
-   bin/start.sh up -d
+   bin/start.sh dev start
+   # or interactive menu: bin/start.sh dev
    ```
 
 4. Verify health:
 
    ```bash
-   curl -sS "http://localhost:${CADDY_HOST_PORT:-8080}/health"
+   curl -sS "http://localhost:${CADDY_HOST_PORT:-9080}/health"
    ```
 
    Expect HTTP 200 with JSON body indicating API + Redis reachable.
 
-5. Open the app at `http://localhost:${CADDY_HOST_PORT:-8080}/`.
+5. Open the app at `http://localhost:${CADDY_HOST_PORT:-9080}/`.
+
+Direct Vite dev + HMR WebSocket (optional): `http://localhost:${FRONTEND_HOST_PORT:-9173}/`.
 
 ---
 
@@ -44,8 +47,14 @@
 
 | Variable | Required | Default | Notes |
 |----------|----------|---------|-------|
-| `COMPOSE_PROJECT_NAME` | no | `tools-teleprompt` | Compose project prefix |
-| `CADDY_HOST_PORT` | no | `8080` | Host port mapped to Caddy :80 |
+| `STACK_NAME` | no | `tools-teleprompt` | Base name for containers/volumes |
+| `STACK_ENV` | no | `dev` | Environment suffix (`-dev`, `-staging`, …) |
+| `COMPOSE_PROJECT_NAME` | no | `${STACK_NAME}-${STACK_ENV}` | Compose project prefix |
+| `PUBLIC_HOST` | no | `localhost` | Hostname in URL hints |
+| `CADDY_HOST_PORT` | no | `9080` | Host port → Caddy :80 (primary app URL) |
+| `FRONTEND_HOST_PORT` | no | `9173` | Host port → Vite dev + HMR WebSocket |
+| `FRONTEND_DEV_PORT` | no | `5173` | Vite listen port inside container |
+| `API_DEV_PORT` | no | `8000` | API listen port inside container |
 | `API_MAX_SCRIPT_BYTES` | no | `262144` | Max relay script size (256 KB) |
 | `API_SESSION_TTL_SECONDS` | no | `300` | Relay TTL (5 min) |
 | `API_RATE_LIMIT_CREATE` | no | `10` | Creates per IP per window |
@@ -63,7 +72,7 @@
 Verify after deploy:
 
 ```bash
-curl -sI "http://localhost:${CADDY_HOST_PORT:-8080}/" | grep -iE 'content-security-policy|x-frame-options|x-content-type'
+curl -sI "http://localhost:${CADDY_HOST_PORT:-9080}/" | grep -iE 'content-security-policy|x-frame-options|x-content-type'
 ```
 
 Caddy forwards `X-Forwarded-For` / `X-Real-IP` to the API for rate limiting.
@@ -84,14 +93,14 @@ Caddy forwards `X-Forwarded-For` / `X-Real-IP` to the API for rate limiting.
 ### Restart
 
 ```bash
-bin/start.sh restart
+bin/start.sh dev restart
 ```
 
 ### View logs
 
 ```bash
-bin/start.sh logs -f api
-bin/start.sh logs -f caddy
+bin/start.sh dev logs:api
+bin/start.sh dev logs:caddy
 ```
 
 ### Redis flush (abuse recovery)

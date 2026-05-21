@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-21 — M6 QR handoff, E2E, and production hardening complete; committed and pushed
+**Closed:** 2026-05-21 — dev stack manager, safe configurable ports, and environment-suffixed Docker naming; committed and pushed
 
 **Updated:** 2026-05-21
 
-**Repository state:** M1–M6 **complete** (master plan fully implemented). Uncommitted M6 work committed this close. **Next:** production deploy per `deploy/README.md` or optional W6 Lighthouse audit.
+**Repository state:** M1–M6 **complete** (master plan fully implemented). Dev stack hardened (`bin/start.sh`, `.env.example`, compose naming/ports). **Next:** production deploy per `deploy/README.md` or optional W6 Lighthouse audit.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -92,6 +92,8 @@
 | 2026-05-21 | M6 QR + E2E + hardening | `qrThreshold/Encode/Decode`, `QrConsume`, handoff E2E, CSP, `deploy/README.md` |
 | 2026-05-21 | M6 complete + MOD-06 | `.work/context/20260521-MOD-06-M6-security-review.md`; FE 53/53 + E2E 3/3 pass |
 | 2026-05-21 | session close commit push | M6 QR handoff, E2E, CSP, deploy runbook on `main` |
+| 2026-05-21 | dev stack hardening | `bin/start.sh` menu + reliability; `bin/e2e-handoff.sh`; `.env.example` 9xxx ports; compose `-dev` container names |
+| 2026-05-21 | session close commit push | dev stack manager, ports, and Docker naming on `main` |
 
 ---
 

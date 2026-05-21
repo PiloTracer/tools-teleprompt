@@ -1,14 +1,14 @@
 # Frontend — tools-teleprompt
 
-FROM node:22-alpine AS dev
+FROM node:22-slim AS dev
 WORKDIR /app
-RUN apk add --no-cache wget
+RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/*
 COPY package.json ./
 RUN npm install
 EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
 
-FROM node:22-alpine AS build
+FROM node:22-slim AS build
 WORKDIR /app
 COPY package.json ./
 RUN npm install

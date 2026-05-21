@@ -1,12 +1,12 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-21 (session closed — commit push)
+**Updated:** 2026-05-21 (session closed — dev stack commit push)
 
 ---
 
 ## Recommended next
 
-Production deploy per **`deploy/README.md`** — set `API_OTP_HMAC_SECRET`, enable TLS. Optional: Lighthouse PWA audit (W6).
+Production deploy per **`deploy/README.md`** — copy `.env.example` → `.env`, set `API_OTP_HMAC_SECRET`, enable TLS. App URL defaults to `http://localhost:9080` (`CADDY_HOST_PORT`). Optional: Lighthouse PWA audit (W6).
 
 ---
 
@@ -40,6 +40,7 @@ M6 complete — see **Done — M6 iteration (archived)** below.
 | M6 QR handoff, E2E, hardening | 2026-05-21 |
 | M6 formal complete | 2026-05-21 |
 | MOD-06 (M6) | 2026-05-21 |
+| Dev stack manager + env ports/naming | 2026-05-21 |
 
 ---
 

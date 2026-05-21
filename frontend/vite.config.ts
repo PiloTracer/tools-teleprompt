@@ -3,6 +3,16 @@ import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  server: {
+    host: true,
+    port: Number(process.env.FRONTEND_DEV_PORT) || 5173,
+    hmr: process.env.VITE_DEV_HMR_PORT
+      ? {
+          host: process.env.VITE_DEV_HMR_HOST || "localhost",
+          port: Number(process.env.VITE_DEV_HMR_PORT),
+        }
+      : undefined,
+  },
   plugins: [
     react(),
     VitePWA({

@@ -28,8 +28,10 @@ Dockerized web teleprompter: paste or upload a script, configure scroll speed an
 
 ```bash
 cp .env.example .env   # optional; bin/start.sh falls back to .env.example
-bin/start.sh
-# Open http://localhost:8080
+./bin/start.sh dev     # interactive menu
+# or: ./bin/start.sh dev start
+# Open http://localhost:9080  (or CADDY_HOST_PORT from .env)
+# Direct Vite/HMR: http://localhost:9173  (FRONTEND_HOST_PORT)
 ```
 
 Run tests/lint inside containers:
