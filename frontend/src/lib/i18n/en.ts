@@ -33,6 +33,23 @@ export const en = {
   play: {
     title: "Player",
     stub: "Teleprompter player — implemented in M4.",
+    play: "Play",
+    pause: "Pause",
+    loading: "Loading script…",
+    empty: "No script loaded — add text on the editor page.",
+    fullscreen: "Fullscreen",
+    exitFullscreen: "Exit fullscreen",
+    helpToggle: "Keyboard shortcuts",
+    helpTitle: "Keyboard shortcuts",
+    helpSpace: "Space — play / pause",
+    helpSpeedUp: "+ — increase scroll speed",
+    helpSpeedDown: "− — decrease scroll speed",
+    helpFullscreen: "F — toggle fullscreen",
+  },
+  pwa: {
+    updateAvailable: "A new version is available.",
+    reload: "Reload",
+    dismiss: "Later",
   },
   handoff: {
     title: "Handoff",

@@ -6,83 +6,13 @@
 
 ## Recommended next
 
-**`@concept-run - MOD-06`** then **`@code-implementation complete`** (M3).
+**`@code-implementation plan - M5`** — Pairing API and relay handoff (master plan §19 M5).
 
 ---
 
-## Current iteration — M3: Prompter UI core
+## Current iteration
 
-**Milestone ref:** M3 · `.work/plans/full/20260521-full-plan.md` §19  
-**Status:** in-progress  
-**Started:** 2026-05-21  
-**Target SPEC:** `.work/features/prompter-ui/20260520-SPEC.md`
-
-### In scope
-
-- React Router shell: `/`, `/play`, `/settings`, `/handoff/*`
-- Script editor (paste, type, drag-drop `.txt`/`.md`)
-- Format selector + preview via `markdown-render` (`SanitizedHtml` only — MOD-06 M2 condition)
-- localStorage + IndexedDB fallback persistence (SPEC §5 keys)
-- Settings panel (speed, font, theme, mirror defaults — stored, player UI in M4)
-- Client max size validation (256 KB default, U1)
-- Responsive layout shell + mobile-first CSS
-- English i18n string stub (NFR-09)
-
-### Out of scope (explicit)
-
-- Player scroll engine, wake lock, fullscreen controls (M4)
-- PWA manifest / service worker (M4)
-- Pairing API integration, OTP, relay handoff UI (M5)
-- QR encode/decode (M5/M6)
-- Markdown pipeline changes (M2 complete)
-
-### Tasks
-
-| ID | Description | Files | Status | Notes |
-|----|-------------|-------|--------|-------|
-| M3-T1 | React Router routes: `/`, `/play`, `/settings`, `/handoff/*` | `frontend/src/App.tsx`, `frontend/src/routes/`, `frontend/src/main.tsx`, `frontend/package.json`, `frontend/package-lock.json` | done 2026-05-21 | react-router-dom ^7 approved; BrowserRouter in main.tsx |
-| M3-T2 | Script editor: paste, type, drag-drop upload `.txt`/`.md` | `frontend/src/prompter/Editor.tsx`, `frontend/src/routes/HomePage.tsx` | done 2026-05-21 | SPEC R1; wired on home |
-| M3-T3 | Format selector `plain` \| `markdown`; preview via markdown-render | `frontend/src/prompter/Preview.tsx`, `frontend/src/routes/HomePage.tsx` | done 2026-05-21 | SanitizedHtml only (R6) |
-| M3-T4 | localStorage persistence + IndexedDB fallback; keys per SPEC §5 | `frontend/src/prompter/storage.ts` | done 2026-05-21 | idb fallback when localStorage unavailable |
-| M3-T5 | Settings panel: speed, font, theme, mirror defaults | `frontend/src/prompter/Settings.tsx`, `frontend/src/routes/SettingsPage.tsx` | done 2026-05-21 | |
-| M3-T6 | Client-side max size validation (256 KB default) | `frontend/src/prompter/limits.ts` | done 2026-05-21 | 262144 bytes default |
-| M3-T7 | Responsive layout shell; mobile-first CSS | `frontend/src/prompter/Layout.tsx`, `frontend/src/styles/prompter.css`, route pages | done 2026-05-21 | |
-| M3-T8 | i18n string externalization stub (English) | `frontend/src/lib/i18n/en.ts` | done 2026-05-21 | Used across prompter UI |
-
-### Acceptance criteria
-
-- [ ] prompter-ui SPEC **R1, R2, R7, R11** covered by tests (per master plan M3)
-- [ ] Preview uses `SanitizedHtml` only — no raw `dangerouslySetInnerHTML` (MOD-06 M2 condition)
-- [ ] Storage keys match SPEC §5; reload restores script + format
-- [ ] Oversize script blocked with UX message (limits.ts)
-- [ ] Task gate: FE `npm test`, `npm run lint`, `npm run typecheck` exit 0 in container
-
-### Validation steps
-
-- [ ] `docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm test"`
-- [ ] `docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm run lint"`
-- [ ] `docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm run typecheck"`
-- [ ] Manual: mobile viewport check (editor + routes navigable)
-
-### Owner blockers
-
-- none (react-router-dom approved 2026-05-21)
-
-### Cross-LLM verification
-
-- **Triggered:** no (M3 UI — defer formal review to M6-T6 per W3)
-- **Focus:** Preview/markdown integration, storage keys
-
-### Concept / NFR registry (this iteration)
-
-| Concept id | Applies | Status | Evidence / trigger |
-|------------|---------|--------|-------------------|
-| MOD-01 | yes | done 2026-05-21 | prompter-ui imports markdown-render only via Preview |
-| MOD-02 | no | n/a | Client-only |
-| MOD-03 | no | n/a | No new billable units |
-| MOD-04 | no | n/a | No ops impact |
-| MOD-05 | no | n/a | Monolith SPA |
-| MOD-06 | yes | pending | Required before `@code-implementation complete` |
+M4 complete — see **Done — M4 iteration (archived)** below.
 
 ---
 
@@ -98,6 +28,105 @@
 | M2 formal complete | 2026-05-21 |
 | Compose approved + committed | 2026-05-21 |
 | MOD-06 (M1, M2) | 2026-05-21 |
+| M3 prompter UI core | 2026-05-21 |
+| M3 formal complete | 2026-05-21 |
+| MOD-06 (M3) | 2026-05-21 |
+| M4 player + PWA | 2026-05-21 |
+| M4 formal complete | 2026-05-21 |
+| MOD-06 (M4) | 2026-05-21 |
+
+---
+
+## Done — M4 iteration (archived)
+
+**Milestone ref:** M4 · `.work/plans/full/20260521-full-plan.md` §19  
+**Status:** complete  
+**Started:** 2026-05-21  
+**Completed:** 2026-05-21  
+**Target SPEC:** `.work/features/prompter-ui/20260520-SPEC.md`
+
+### Tasks
+
+| ID | Description | Completed | Notes |
+|------|-------------|-----------|-------|
+| M4-T1 | Auto-scroll player + speed | 2026-05-21 | `useScroll.ts`, `Player.tsx` |
+| M4-T2 | Player controls | 2026-05-21 | R3–R4 |
+| M4-T3 | Fullscreen + wake lock | 2026-05-21 | R4–R5 |
+| M4-T4 | PWA manifest + vite-plugin-pwa | 2026-05-21 | workbox precache |
+| M4-T5 | SW update UX | 2026-05-21 | R10 banner |
+| M4-T6 | Keyboard shortcuts + help | 2026-05-21 | R12 |
+| M4-T7 | Playwright offline e2e | 2026-05-21 | `bin/e2e-offline.sh` |
+
+### Acceptance criteria (verified)
+
+- [x] prompter-ui SPEC **R3–R8, R12** implemented and tested (`player.test.tsx`, e2e offline)
+- [x] Player renders markdown via `SanitizedHtml` only (R6)
+- [x] Settings from M3 applied in player
+- [x] PWA shell + SW registered; offline client-nav prompter works (R8, e2e)
+- [x] SW update banner prompts reload (R10, `registerSW.ts`)
+- [x] FE `npm test`, `npm run lint`, `npm run typecheck` exit 0 in container
+- [x] Offline e2e via `bin/e2e-offline.sh` — 1/1 pass
+
+### Validation (2026-05-21)
+
+- [x] `npm test` — 48/48 pass
+- [x] `npm run lint` — exit 0
+- [x] `npm run typecheck` — exit 0
+- [x] `bin/e2e-offline.sh` — 1/1 pass
+- [ ] Manual Lighthouse PWA audit — deferred (W6)
+
+### Concept / NFR registry
+
+| Concept id | Status | Evidence |
+|------------|--------|----------|
+| MOD-01 | done 2026-05-21 | Player → SanitizedHtml only |
+| MOD-04 | done 2026-05-21 | SW ops note in MOD-06 M4 |
+| MOD-06 | done 2026-05-21 | `.work/context/20260521-MOD-06-M4.md` |
+
+---
+
+## Done — M3 iteration (archived)
+
+**Milestone ref:** M3 · `.work/plans/full/20260521-full-plan.md` §19  
+**Status:** complete  
+**Started:** 2026-05-21  
+**Completed:** 2026-05-21  
+**Target SPEC:** `.work/features/prompter-ui/20260520-SPEC.md`
+
+### Tasks
+
+| ID | Description | Completed | Notes |
+|------|-------------|-----------|-------|
+| M3-T1 | React Router routes | 2026-05-21 | react-router-dom ^7 |
+| M3-T2 | Script editor | 2026-05-21 | SPEC R1 |
+| M3-T3 | Format selector + preview | 2026-05-21 | SanitizedHtml only (R6) |
+| M3-T4 | localStorage + IndexedDB persistence | 2026-05-21 | SPEC §5 keys |
+| M3-T5 | Settings panel | 2026-05-21 | |
+| M3-T6 | Max size validation (256 KB) | 2026-05-21 | |
+| M3-T7 | Responsive layout shell | 2026-05-21 | |
+| M3-T8 | i18n stub (English) | 2026-05-21 | |
+
+### Acceptance criteria (verified)
+
+- [x] prompter-ui SPEC **R1, R2, R7, R11** covered by tests (`prompter.test.tsx`)
+- [x] Preview uses `SanitizedHtml` only — no raw `dangerouslySetInnerHTML` outside markdown module
+- [x] Storage keys match SPEC §5; reload restores script + format
+- [x] Oversize script blocked with UX message (limits.ts)
+- [x] Task gate: FE `npm test`, `npm run lint`, `npm run typecheck` exit 0 in container
+
+### Validation (2026-05-21)
+
+- [x] `npm test` — 29/29 pass
+- [x] `npm run lint` — exit 0
+- [x] `npm run typecheck` — exit 0
+- [ ] Manual mobile viewport — deferred to M4 Playwright; mobile-first CSS in place (`assumption`)
+
+### Concept / NFR registry
+
+| Concept id | Status | Evidence |
+|------------|--------|----------|
+| MOD-01 | done 2026-05-21 | markdown-render via Preview only |
+| MOD-06 | done 2026-05-21 | `.work/context/20260521-MOD-06-M3.md` |
 
 ---
 

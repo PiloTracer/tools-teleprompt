@@ -171,3 +171,135 @@
     border-color: #444;
   }
 }
+
+.tp-play-page {
+  width: 100%;
+}
+
+.tp-player {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tp-player-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.tp-player-speed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tp-player-viewport {
+  overflow-y: auto;
+  max-height: min(70vh, 32rem);
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.tp-player-content {
+  padding: 2rem 1rem 4rem;
+  line-height: 1.6;
+}
+
+.tp-player-script {
+  border: none;
+  padding: 0;
+  min-height: auto;
+  background: transparent;
+}
+
+.tp-player-empty {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.tp-player-play-stub {
+  align-self: flex-start;
+}
+
+.tp-player-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.tp-player-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+}
+
+.tp-player-play {
+  align-self: center;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+}
+
+.tp-player--dark .tp-player-viewport {
+  background: #111;
+  border-color: #444;
+  color: #eee;
+}
+
+.tp-player--light .tp-player-viewport {
+  background: #fff;
+  color: #111;
+}
+
+.tp-player--mirror .tp-player-content {
+  transform: scaleX(-1);
+}
+
+.tp-player-help-panel {
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fafafa;
+  font-size: 0.875rem;
+}
+
+.tp-player-help-panel h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.tp-player-help-panel ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.tp-sw-update {
+  position: fixed;
+  inset-inline: 1rem;
+  bottom: 1rem;
+  z-index: 1000;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #1a1a1a;
+  color: #fff;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 25%);
+}
+
+.tp-sw-update p {
+  margin: 0;
+  flex: 1 1 12rem;
+}
+
+.tp-sw-update button {
+  padding: 0.35rem 0.75rem;
+}
