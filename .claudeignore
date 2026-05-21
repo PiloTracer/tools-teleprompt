@@ -1,0 +1,14 @@
+# Large / generated — keep out of agent context
+node_modules/
+frontend/dist/
+frontend/dev-dist/
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+htmlcov/
+tmp/
+*.log
+
+# Agent OS vendor-scale trees (read skills on demand)
+.ai/docs/guides/workflows/
