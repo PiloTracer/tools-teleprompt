@@ -2,7 +2,7 @@
 
 ## Session status
 
-**Closed:** 2026-05-21 — M3 formal complete + M4 player/PWA implemented; committed and pushed
+**Open:** 2026-05-21 — goal: `@code-implementation plan - M5` (pairing API and relay handoff)
 
 **Updated:** 2026-05-21
 
