@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-21 — Master plan Approved; M1 platform scaffold complete (tasks T1–T8); compose approved and committed.
+**Closed:** 2026-05-21 — M2 complete + M3 implementation (T1–T8); committed and pushed; M3 formal complete pending MOD-06
 
 **Updated:** 2026-05-21
 
-**Repository state:** Implementation in progress. Approved master plan at `.work/plans/full/20260521-full-plan.md`. Application scaffold: `frontend/` (Vite/React), `api/` (FastAPI + health), `deploy/` (Compose + Caddy), `bin/start.sh`, CI workflow. Docker-first: deps install in containers only. M1 iteration tasks done; **`@code-implementation complete` not yet run** (MOD-06 pending).
+**Repository state:** M1 + M2 **complete**. M3 prompter UI **implemented** (all tasks done): routes, editor, preview, storage, settings, limits, layout, i18n — **29 FE tests pass** in container. M3 **`@code-implementation complete`** not yet run (MOD-06 pending). Markdown pipeline at `frontend/src/markdown/`. Next: `@concept-run - MOD-06` → `@code-implementation complete` (M3) → plan M4.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -26,7 +26,7 @@
 |----|--------|--------------|
 | W1 | `.cursorrules` REPLACE tokens | **Cleared** M1-T8 (bootstrap line remains) |
 | W2 | UNKNOWNS U1, U6, U8 open | Defaults in master plan / ASSUMPTIONS A20–A22 |
-| W3 | Cross-model review not executed | Before pairing + markdown impl (M5/M6) |
+| W3 | Cross-model review not executed | M2/M3 waived with MOD-06; formal M6-T6 |
 | W4 | Docker compose files not committed | **Cleared** 2026-05-21 (`approve compose`) |
 
 ---
@@ -35,7 +35,7 @@
 
 1. `@session-control start`
 2. `.work/plans/NEXT.md`
-3. **`@code-implementation complete`** (M1) → **`@code-implementation plan - M2`**
+3. **`@concept-run - MOD-06`** (M3) → **`@code-implementation complete`** → **`@code-implementation plan - M4`**
 
 ---
 
@@ -47,7 +47,9 @@
 | plan-master-ready | **yes** (2026-05-20) |
 | Master plan | **Approved** (`20260521-full-plan.md`) |
 | Implementation-ready | **yes** |
-| M1 platform scaffold | tasks done; formal **complete** pending |
+| M1 platform scaffold | **complete** 2026-05-21 |
+| M2 markdown render | **complete** 2026-05-21 |
+| M3 prompter UI core | tasks done; formal **complete** pending MOD-06 |
 
 ---
 
@@ -55,9 +57,8 @@
 
 | # | Action |
 |---|--------|
-| 1 | Run `@code-implementation complete` + `@concept-run - MOD-06` for M1 |
-| 2 | Optional: `@code-verify uncommitted` before next push |
-| 3 | Confirm U1 / U8 defaults if overriding plan |
+| 1 | `@concept-run - MOD-06` + `@code-implementation complete` (M3) |
+| 2 | Confirm U1 / U8 defaults if overriding plan |
 
 ---
 
@@ -71,6 +72,11 @@
 | 2026-05-20 | certify | plan-master-ready (pass with waivers) |
 | 2026-05-21 | plan-master greenfield | `20260521-full-plan.md` + trace matrix |
 | 2026-05-21 | M1 implementation | `frontend/`, `api/`, `deploy/`, `bin/start.sh`, `.github/workflows/ci.yml`, `.env.example` |
+| 2026-05-21 | M1 complete + MOD-06 | `.work/context/20260521-MOD-06-M1.md` |
+| 2026-05-21 | M2 markdown pipeline | `frontend/src/markdown/*`, XSS tests |
+| 2026-05-21 | M2 complete + MOD-06 | `.work/context/20260521-MOD-06-M2.md` |
+| 2026-05-21 | M3 prompter UI | `frontend/src/prompter/*`, `routes/`, `lib/i18n/`, `tests/prompter.test.tsx` |
+| 2026-05-21 | session close commit push | M2+M3 bookends + application code on `main` |
 
 ---
 
@@ -82,5 +88,5 @@ See `.work/plans/UNKNOWNS.md` — U1, U6, U8 open with plan defaults (non-blocki
 
 ## Cross-LLM verification
 
-- **Triggered:** recommended (W3) — defer to M5/M6
-- **Focus:** ADR 005, pairing-api, markdown-render SPECs
+- **Triggered:** recommended (W3) — defer formal review to M6-T6
+- **Focus:** ADR 005, pairing-api, markdown-render SPECs, M3 preview integration

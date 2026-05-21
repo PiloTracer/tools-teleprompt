@@ -1,0 +1,62 @@
+[
+  {
+    "id": "plain-script-tag",
+    "format": "plain",
+    "source": "<script>alert('xss')</script>"
+  },
+  {
+    "id": "plain-img-onerror",
+    "format": "plain",
+    "source": "<img src=x onerror=alert(1)>"
+  },
+  {
+    "id": "plain-iframe",
+    "format": "plain",
+    "source": "<iframe src=\"https://evil.example\"></iframe>"
+  },
+  {
+    "id": "plain-object-embed",
+    "format": "plain",
+    "source": "<object data=\"evil.swf\"></object><embed src=\"evil.swf\">"
+  },
+  {
+    "id": "md-script-literal",
+    "format": "markdown",
+    "source": "<script>alert('md')</script>"
+  },
+  {
+    "id": "md-javascript-link",
+    "format": "markdown",
+    "source": "[click me](javascript:alert(1))"
+  },
+  {
+    "id": "md-data-uri-link",
+    "format": "markdown",
+    "source": "[bad](data:text/html,<script>alert(1)</script>)"
+  },
+  {
+    "id": "md-onclick-in-text",
+    "format": "markdown",
+    "source": "<div onclick=\"alert(1)\">hover</div>"
+  },
+  {
+    "id": "md-svg-onload",
+    "format": "markdown",
+    "source": "<svg onload=alert(1)></svg>"
+  },
+  {
+    "id": "md-meta-refresh",
+    "format": "markdown",
+    "source": "<meta http-equiv=\"refresh\" content=\"0;url=javascript:alert(1)\">"
+  },
+  {
+    "id": "md-linkify-javascript",
+    "format": "markdown",
+    "source": "javascript:alert(1)"
+  },
+  {
+    "id": "md-image-javascript",
+    "format": "markdown",
+    "source": "![x](javascript:alert(1))"
+  }
+]
