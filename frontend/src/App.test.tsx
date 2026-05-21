@@ -26,8 +26,8 @@ describe("App routes", () => {
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
   });
 
-  it("renders handoff route", () => {
-    renderAt("/handoff");
-    expect(screen.getByRole("heading", { name: "Handoff" })).toBeInTheDocument();
+  it("renders handoff create route", async () => {
+    renderAt("/handoff/create");
+    expect(await screen.findByRole("heading", { name: "Relay handoff" })).toBeInTheDocument();
   });
 });

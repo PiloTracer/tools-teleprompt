@@ -6,13 +6,13 @@
 
 ## Recommended next
 
-**`@code-implementation plan - M5`** — Pairing API and relay handoff (master plan §19 M5).
+**`@code-implementation plan - M6`** — QR handoff, E2E, and production hardening (master plan §19 M6).
 
 ---
 
 ## Current iteration
 
-M4 complete — see **Done — M4 iteration (archived)** below.
+M5 complete — see **Done — M5 iteration (archived)** below.
 
 ---
 
@@ -34,6 +34,61 @@ M4 complete — see **Done — M4 iteration (archived)** below.
 | M4 player + PWA | 2026-05-21 |
 | M4 formal complete | 2026-05-21 |
 | MOD-06 (M4) | 2026-05-21 |
+| M5 pairing API + relay handoff | 2026-05-21 |
+| M5 formal complete | 2026-05-21 |
+| MOD-06 (M5) | 2026-05-21 |
+
+---
+
+## Done — M5 iteration (archived)
+
+**Milestone ref:** M5 · `.work/plans/full/20260521-full-plan.md` §19  
+**Status:** complete  
+**Started:** 2026-05-21  
+**Completed:** 2026-05-21  
+**Target SPEC:** `.work/features/pairing-api/20260520-SPEC.md` (+ prompter-ui R10–R11)
+
+### Tasks
+
+| ID | Description | Completed | Notes |
+|------|-------------|-----------|-------|
+| M5-T1 | Redis client wrapper | 2026-05-21 | `tp_platform/redis.py` |
+| M5-T2 | Session create | 2026-05-21 | `pairing/service.py`, `models.py` |
+| M5-T3 | Rate limiter per IP | 2026-05-21 | `tp_platform/rate_limit.py` |
+| M5-T4 | Claim endpoint + delete-on-read | 2026-05-21 | `pairing/routes.py`; 410 tombstone |
+| M5-T5 | RFC 7807 errors | 2026-05-21 | `tp_platform/errors.py` |
+| M5-T6 | Pairing metrics | 2026-05-21 | `pairing/metrics.py` |
+| M5-T7 | pytest pairing suite | 2026-05-21 | `api/tests/pairing/` — 8 tests |
+| M5-T8 | Frontend relay handoff UI | 2026-05-21 | `frontend/src/pairing/*` |
+| M5-T9 | Cross-model security review (W3) | 2026-05-21 | MOD-06 M5 review doc |
+
+### Acceptance criteria (verified)
+
+- [x] pairing-api SPEC **R1–R11** covered by pytest (`api/tests/pairing/`)
+- [x] Delete-on-read: second claim 410; expired 404
+- [x] OTP lockout (423); rate limits (429)
+- [x] No script/OTP/token in application logs (R11 test)
+- [x] Frontend relay: create URL+OTP; claim → storage → `/play`
+- [x] API `pytest`, `ruff`, `pyright` exit 0 in container
+- [x] FE `npm test`, `lint`, `typecheck` exit 0 — 50/50 pass
+
+### Validation (2026-05-21)
+
+- [x] `pytest tests/pairing/ -q` — 8/8 pass
+- [x] `pytest tests/ -q` — 9/9 pass
+- [x] `ruff check .` / `pyright .` — exit 0
+- [x] `npm test` — 50/50 pass
+- [x] `npm run lint` / `npm run typecheck` — exit 0
+- [x] Manual curl relay smoke (create → claim → 410)
+- [ ] Full desktop→mobile UX walkthrough — deferred to M6 E2E
+
+### Concept / NFR registry
+
+| Concept id | Status | Evidence |
+|------------|--------|----------|
+| MOD-01 | done 2026-05-21 | FE↔API `pairing/client.ts` |
+| MOD-04 | done 2026-05-21 | Redis relay ops in security review |
+| MOD-06 | done 2026-05-21 | `.work/context/20260521-MOD-06-M5-security-review.md` |
 
 ---
 

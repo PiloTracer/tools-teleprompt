@@ -9,7 +9,10 @@ class Settings(BaseSettings):
     session_ttl_seconds: int = 300
     rate_limit_create: int = 10
     rate_limit_claim: int = 20
+    rate_limit_window_seconds: int = 900
     redis_url: str = Field(default="redis://redis:6379/0", validation_alias="REDIS_URL")
+    public_base_url: str = "http://localhost:8080"
+    otp_hmac_secret: str = Field(default="dev-only-change-me")
     log_level: str = "INFO"
 
 
