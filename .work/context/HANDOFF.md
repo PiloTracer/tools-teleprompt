@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-21 — dev stack manager, safe configurable ports, and environment-suffixed Docker naming; committed and pushed
+**Closed:** 2026-05-21 — M7 serverless handoff (LAN + multi-QR) committed and pushed
 
 **Updated:** 2026-05-21
 
-**Repository state:** M1–M6 **complete** (master plan fully implemented). Dev stack hardened (`bin/start.sh`, `.env.example`, compose naming/ports). **Next:** production deploy per `deploy/README.md` or optional W6 Lighthouse audit.
+**Repository state:** M1–M7 **complete** (plan v1.1). **Next:** production deploy (`deploy/README.md`); hotspot env (`PUBLIC_ORIGIN`, `API_PUBLIC_BASE_URL`).
 
 **Plan-master-ready:** 2026-05-20
 
@@ -26,7 +26,7 @@
 |----|--------|--------------|
 | W1 | `.cursorrules` REPLACE tokens | **Cleared** M1-T8 (bootstrap line remains) |
 | W2 | UNKNOWNS U1, U6, U8 open | **Cleared** 2026-05-21 (M6-T8 — defaults in registry) |
-| W3 | Cross-model review not executed | **Cleared** M5-T9 + M6-T6 (MOD-06 review docs) |
+| W3 | Cross-model review not executed | **Cleared** M5/M6/M7 (MOD-06 review docs) |
 | W4 | Docker compose files not committed | **Cleared** 2026-05-21 (`approve compose`) |
 | W5 | M3 manual mobile viewport check | **Cleared** M4 offline e2e + responsive CSS |
 | W6 | M4 Lighthouse PWA audit | Manual before production deploy |
@@ -37,7 +37,7 @@
 
 1. `@session-control start`
 2. `.work/plans/NEXT.md`
-3. Production deploy (`deploy/README.md`) · optional Lighthouse (W6) · `@plan-master revise` for v2 scope
+3. Production deploy (`deploy/README.md`) · hotspot env · optional Lighthouse (W6)
 
 ---
 
@@ -47,14 +47,10 @@
 |-------|--------|
 | P0–P6 foundation | done |
 | plan-master-ready | **yes** (2026-05-20) |
-| Master plan | **Approved** (`20260521-full-plan.md`) |
+| Master plan | **Approved** v1.1 (`20260521-full-plan.md`) |
 | Implementation-ready | **yes** |
-| M1 platform scaffold | **complete** 2026-05-21 |
-| M2 markdown render | **complete** 2026-05-21 |
-| M3 prompter UI core | **complete** 2026-05-21 |
-| M4 player + PWA | **complete** 2026-05-21 |
-| M5 pairing API + relay | **complete** 2026-05-21 |
-| M6 QR + E2E + hardening | **complete** 2026-05-21 |
+| M1–M6 | **complete** 2026-05-21 |
+| M7 serverless handoff | **complete** 2026-05-21 |
 
 ---
 
@@ -62,9 +58,11 @@
 
 | # | Action |
 |---|--------|
-| 1 | Optional: Lighthouse PWA audit (W6) before production |
-| 2 | Production: set `API_OTP_HMAC_SECRET`; confirm Caddy forwards client IP for rate limits |
-| 3 | Optional: measure coverage ≥80% on `markdown/` + `pairing/` (plan target, not gated) |
+| 1 | Commit uncommitted M7 work (`@session-control close commit`) | **Done** 2026-05-21 |
+| 2 | Hotspot: set `PUBLIC_ORIGIN` + `API_PUBLIC_BASE_URL` in `.env`; restart stack |
+| 3 | Production: set `API_OTP_HMAC_SECRET`; confirm Caddy forwards client IP |
+| 4 | Optional: Lighthouse PWA audit (W6) |
+| 5 | Optional: manual phone test on hotspot IP (LAN + multi-QR) |
 
 ---
 
@@ -94,12 +92,15 @@
 | 2026-05-21 | session close commit push | M6 QR handoff, E2E, CSP, deploy runbook on `main` |
 | 2026-05-21 | dev stack hardening | `bin/start.sh` menu + reliability; `bin/e2e-handoff.sh`; `.env.example` 9xxx ports; compose `-dev` container names |
 | 2026-05-21 | session close commit push | dev stack manager, ports, and Docker naming on `main` |
+| 2026-05-21 | plan-master revise | M7 approved — LAN + multi-QR (ADR 006); full plan v1.1 |
+| 2026-05-21 | M7 serverless handoff | ADR 006; LAN API (`lan_store.py`); multi-QR; mode router; SPEC amendments; E2E LAN/multi-QR |
+| 2026-05-21 | M7 complete + MOD-06 | `.work/context/20260521-MOD-06-M7-security-review.md`; API 18/18 + FE 64/64 + E2E 5/5 |
 
 ---
 
 ## Explicit unknowns
 
-See `.work/plans/UNKNOWNS.md` — all registry items **resolved** (U1/U6/U8 closed 2026-05-21).
+See `.work/plans/UNKNOWNS.md` — U9 resolved (M7 LAN + multi-QR). U1/U6/U8 closed M6.
 
 ---
 
@@ -107,4 +108,4 @@ See `.work/plans/UNKNOWNS.md` — all registry items **resolved** (U1/U6/U8 clos
 
 - **M5-T9:** pairing security paths — done
 - **M6-T6:** markdown-render + ADR 005 — done (MOD-06 M6 review doc)
-- **Focus:** XSS pipeline, QR fragment hygiene, CSP deployment
+- **M7-T9:** LAN + multi-QR handoff — done (MOD-06 M7 review doc)

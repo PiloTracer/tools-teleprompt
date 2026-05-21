@@ -20,7 +20,7 @@ test.describe("QR handoff (J2b)", () => {
     await expect(page.getByTestId("handoff-mode-hint")).not.toContainText(/Checking handoff mode/i, {
       timeout: 15_000,
     });
-    await expect(page.getByTestId("handoff-mode-hint")).toContainText(/QR handoff/i);
+    await expect(page.getByTestId("handoff-mode-hint")).toContainText(/single-QR handoff/i);
     await page.getByTestId("handoff-qr-button").click();
     await expect(page.getByTestId("handoff-qr-image")).toBeVisible();
 

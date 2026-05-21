@@ -1,4 +1,5 @@
 import type { ScriptFormat } from "../markdown/types";
+import { resolveHandoffOrigin } from "./publicOrigin";
 
 export type CreateSessionResponse = {
   token: string;
@@ -7,10 +8,18 @@ export type CreateSessionResponse = {
   expires_at: string;
 };
 
+export type CreateLanHandoffResponse = {
+  token: string;
+  claim_url: string;
+  expires_at: string;
+};
+
 export type ClaimSessionResponse = {
   text: string;
   format: ScriptFormat;
 };
+
+export type LanHandoffPayload = ClaimSessionResponse;
 
 export class PairingApiError extends Error {
   readonly status: number;
@@ -67,4 +76,37 @@ export async function claimRelaySession(
     throw new PairingApiError(await readProblemDetail(response), response.status);
   }
   return (await response.json()) as ClaimSessionResponse;
+}
+
+/** SPA URL for phone to open (frontend route, not raw API GET). */
+export function lanHandoffPageUrl(token: string): string {
+  const origin = resolveHandoffOrigin(
+    typeof window !== "undefined" ? window.location.origin : "http://localhost",
+  );
+  return `${origin}/handoff/lan/${encodeURIComponent(token)}`;
+}
+
+export async function createLanHandoff(
+  text: string,
+  format: ScriptFormat,
+): Promise<CreateLanHandoffResponse> {
+  const response = await fetch(`${apiBaseUrl()}/api/v1/handoff/lan`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, format }),
+  });
+  if (!response.ok) {
+    throw new PairingApiError(await readProblemDetail(response), response.status);
+  }
+  return (await response.json()) as CreateLanHandoffResponse;
+}
+
+export async function claimLanHandoff(token: string): Promise<LanHandoffPayload> {
+  const response = await fetch(
+    `${apiBaseUrl()}/api/v1/handoff/lan/${encodeURIComponent(token)}`,
+  );
+  if (!response.ok) {
+    throw new PairingApiError(await readProblemDetail(response), response.status);
+  }
+  return (await response.json()) as LanHandoffPayload;
 }

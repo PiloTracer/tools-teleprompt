@@ -2,13 +2,25 @@ import QRCode from "qrcode";
 
 import type { ScriptFormat } from "../markdown/types";
 import {
+  HANDOFF_FRAGMENT_PREFIX,
+  HANDOFF_RECEIVE_PATH,
+  handoffReceiveUrlLength,
+  QR_MAX_URL_CHARS,
+} from "./qrConstants";
+import {
   buildHandoffPayload,
   compressBytes,
   serializeHandoffPayload,
 } from "./qrThreshold";
 
-export const HANDOFF_FRAGMENT_PREFIX = "tp=v1.";
-export const HANDOFF_RECEIVE_PATH = "/handoff/receive";
+export { HANDOFF_FRAGMENT_PREFIX, HANDOFF_RECEIVE_PATH } from "./qrConstants";
+
+export class QrGenerationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "QrGenerationError";
+  }
+}
 
 export function bytesToBase64Url(bytes: Uint8Array): string {
   let binary = "";
@@ -29,7 +41,16 @@ export async function encodeHandoffFragment(
 }
 
 export function buildHandoffReceiveUrl(fragment: string, origin: string): string {
-  return `${origin}${HANDOFF_RECEIVE_PATH}#${fragment}`;
+  const base = origin.replace(/\/$/, "");
+  return `${base}${HANDOFF_RECEIVE_PATH}#${fragment}`;
+}
+
+export function assertHandoffUrlFitsInQr(handoffUrl: string): void {
+  if (handoffUrl.length > QR_MAX_URL_CHARS) {
+    throw new QrGenerationError(
+      `Handoff URL exceeds QR capacity (${handoffUrl.length} > ${QR_MAX_URL_CHARS} chars)`,
+    );
+  }
 }
 
 export async function buildHandoffQrUrl(
@@ -38,13 +59,25 @@ export async function buildHandoffQrUrl(
   origin: string,
 ): Promise<string> {
   const fragment = await encodeHandoffFragment(source, format);
-  return buildHandoffReceiveUrl(fragment, origin);
+  const handoffUrl = buildHandoffReceiveUrl(fragment, origin);
+  assertHandoffUrlFitsInQr(handoffUrl);
+  return handoffUrl;
 }
 
 export async function generateHandoffQrDataUrl(handoffUrl: string): Promise<string> {
-  return QRCode.toDataURL(handoffUrl, {
-    margin: 2,
-    width: 256,
-    errorCorrectionLevel: "M",
-  });
+  assertHandoffUrlFitsInQr(handoffUrl);
+  try {
+    return await QRCode.toDataURL(handoffUrl, {
+      margin: 2,
+      width: 256,
+      errorCorrectionLevel: "M",
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "QR encode failed";
+    throw new QrGenerationError(message);
+  }
+}
+
+export function handoffUrlFitsInQr(origin: string, fragment: string): boolean {
+  return handoffReceiveUrlLength(origin, fragment) <= QR_MAX_URL_CHARS;
 }

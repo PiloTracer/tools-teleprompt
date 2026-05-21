@@ -237,6 +237,8 @@ urls_hint() {
   printf '  Health:   %s/health\n' "$base"
   printf '  API:      %s/api/v1/sessions\n' "$base"
   printf '  Vite dev: http://%s:%s/ (HMR WebSocket on same port)\n' "$PUBLIC_HOST" "$FRONTEND_HOST_PORT"
+  printf '  QR handoff: http://%s:%s/handoff/create (set PUBLIC_HOST for LAN/hotspot)\n' \
+    "$PUBLIC_HOST" "$FRONTEND_HOST_PORT"
 }
 
 health_summary_line() {

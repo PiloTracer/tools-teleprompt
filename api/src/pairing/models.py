@@ -37,6 +37,22 @@ class ClaimSessionResponse(BaseModel):
     format: FormatKind
 
 
+class CreateLanHandoffRequest(BaseModel):
+    text: str
+    format: FormatKind = "plain"
+
+
+class CreateLanHandoffResponse(BaseModel):
+    token: str
+    claim_url: str
+    expires_at: datetime
+
+
+class LanHandoffPayloadResponse(BaseModel):
+    text: str
+    format: FormatKind
+
+
 class SessionRecord(BaseModel):
     otp_hash: str
     attempt_count: int = 0

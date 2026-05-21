@@ -6,7 +6,7 @@ import { Player } from "../src/prompter/Player";
 import { Help } from "../src/prompter/Help";
 import { useKeyboard } from "../src/prompter/useKeyboard";
 import { isWakeLockSupported } from "../src/prompter/useWakeLock";
-import { BASE_SCROLL_PX_PER_SEC, scrollDeltaPx } from "../src/prompter/useScroll";
+import { BASE_SCROLL_PX_PER_SEC, applyScrollStep, scrollDeltaPx, simulateScrollPx } from "../src/prompter/useScroll";
 import { PlayPage } from "../src/routes/PlayPage";
 import {
   clearPrompterStorage,
@@ -26,6 +26,26 @@ describe("useScroll (M4-T1)", () => {
   it("clamps speed to 0.5–3×", () => {
     expect(scrollDeltaPx(1000, 0.1)).toBe(scrollDeltaPx(1000, 0.5));
     expect(scrollDeltaPx(1000, 10)).toBe(scrollDeltaPx(1000, 3));
+  });
+
+  it("accumulates fractional scroll at 0.5× (R3)", () => {
+    const withoutCarry = scrollDeltaPx(16.67, 0.5);
+    expect(withoutCarry).toBeLessThan(1);
+
+    const stepped = applyScrollStep(0, 0, withoutCarry, 10_000);
+    expect(stepped.scrollTop).toBe(0);
+    expect(stepped.carryPx).toBeCloseTo(withoutCarry, 5);
+
+    const afterOneSecond = simulateScrollPx(1000, 16.67, 0.5);
+    expect(afterOneSecond).toBeGreaterThan(0);
+    expect(afterOneSecond).toBeGreaterThanOrEqual(20);
+    expect(afterOneSecond).toBeLessThanOrEqual(25);
+  });
+
+  it("scrolls at 1× over one simulated second", () => {
+    const afterOneSecond = simulateScrollPx(1000, 16.67, 1);
+    expect(afterOneSecond).toBeGreaterThanOrEqual(45);
+    expect(afterOneSecond).toBeLessThanOrEqual(50);
   });
 });
 
@@ -78,8 +98,45 @@ describe("Player (M4-T1)", () => {
       expect(screen.getByLabelText(/scroll speed/i)).toBeInTheDocument();
     });
 
+    fireEvent.change(screen.getByLabelText(/scroll speed/i), { target: { value: "0.5" } });
+    expect(screen.getByText("0.5×")).toBeInTheDocument();
+
     fireEvent.change(screen.getByLabelText(/scroll speed/i), { target: { value: "2.5" } });
     expect(screen.getByText("2.5×")).toBeInTheDocument();
+  });
+
+  it("plays at minimum speed 0.5× (R3)", async () => {
+    await saveScriptSource("Slow scroll\n".repeat(80));
+    await saveScriptFormat("plain");
+    await saveSettings({ speed: 0.5, fontSize: 24, theme: "light", mirror: false });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    });
+
+    const viewport = screen.getByTestId("player-viewport");
+    Object.defineProperty(viewport, "clientHeight", { configurable: true, value: 200 });
+    Object.defineProperty(viewport, "scrollHeight", { configurable: true, value: 4000 });
+    viewport.scrollTop = 0;
+
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    expect(screen.getByRole("button", { name: "Pause" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await waitFor(
+      () => {
+        expect(viewport.scrollTop).toBeGreaterThan(0);
+      },
+      { timeout: 3000, interval: 50 },
+    );
   });
 });
 

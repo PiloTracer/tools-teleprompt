@@ -50,7 +50,9 @@ Direct Vite dev + HMR WebSocket (optional): `http://localhost:${FRONTEND_HOST_PO
 | `STACK_NAME` | no | `tools-teleprompt` | Base name for containers/volumes |
 | `STACK_ENV` | no | `dev` | Environment suffix (`-dev`, `-staging`, …) |
 | `COMPOSE_PROJECT_NAME` | no | `${STACK_NAME}-${STACK_ENV}` | Compose project prefix |
-| `PUBLIC_HOST` | no | `localhost` | Hostname in URL hints |
+| `PUBLIC_HOST` | no | `localhost` | LAN/hotspot IP for handoff URL hints (e.g. `10.42.0.1`) |
+| `PUBLIC_ORIGIN` | no | *(derived)* | Full SPA origin for QR/LAN links; overrides `PUBLIC_HOST`+port. Shorter URLs fit more script in a QR (D14). |
+| `API_PUBLIC_BASE_URL` | no | `http://localhost:9080` | Public API base for LAN claim URLs (Caddy port on hotspot) |
 | `CADDY_HOST_PORT` | no | `9080` | Host port → Caddy :80 (primary app URL) |
 | `FRONTEND_HOST_PORT` | no | `9173` | Host port → Vite dev + HMR WebSocket |
 | `FRONTEND_DEV_PORT` | no | `5173` | Vite listen port inside container |
@@ -81,10 +83,32 @@ Caddy forwards `X-Forwarded-For` / `X-Real-IP` to the API for rate limiting.
 
 ## Handoff modes
 
+Cross-device script transfer (ADR 006). Fallback order in the UI: **single QR → multi-QR → LAN → relay**.
+
 | Mode | When | Server stores script? |
 |------|------|------------------------|
-| **QR fragment** | Script ≤ 8192 B compressed | No — payload in URL `#fragment` only |
-| **Relay + OTP** | Script over QR threshold | Yes — Redis TTL 300s, delete-on-read |
+| **Single QR** | Compressed payload fits one QR URL at `PUBLIC_ORIGIN` | No — `#tp=v1.*` fragment only |
+| **Multi-QR** | Over single-QR limit but chunkable into N QR URLs | No — phone reassembles in browser |
+| **LAN one-shot** | Same Wi‑Fi / hotspot; multi-QR unavailable or impractical | Yes — in-memory API map 120s, single GET, **no Redis** |
+| **Relay + OTP** | Over 256 KB or last resort | Yes — Redis TTL 300s, delete-on-read |
+
+### QR size limits (D14)
+
+Two limits apply; do not conflate them:
+
+| Limit | Value | Purpose |
+|-------|-------|---------|
+| **Fragment threshold** | 8192 B compressed (`QR_FRAGMENT_THRESHOLD_BYTES`) | Fast mode heuristic (U8) |
+| **QR encode capacity** | 3360 URL chars (`QR_MAX_URL_CHARS`, EC-M measured) | Hard cap for `qrcode` library |
+
+A script can pass the 8192 B check yet fail QR generation when the full URL exceeds 3360 chars (common with long hotspot hostnames). The UI then falls back to multi-QR, LAN, or relay.
+
+**Hotspot / LAN:** Set in `.env`:
+
+- `PUBLIC_ORIGIN=http://<laptop-ip>:9173` — QR and SPA handoff links (Vite port)
+- `API_PUBLIC_BASE_URL=http://<laptop-ip>:9080` — LAN API claim URLs (Caddy port)
+
+Restart the stack after changing `.env`. Constants live in `frontend/src/pairing/qrConstants.ts`.
 
 ---
 

@@ -3,11 +3,47 @@ import { useEffect, useRef, type RefObject } from "react";
 /** Baseline scroll rate at 1× speed (pixels per second). */
 export const BASE_SCROLL_PX_PER_SEC = 48;
 
+export const SPEED_MIN = 0.5;
+export const SPEED_MAX = 3;
+
 export type UseScrollOptions = {
   isPlaying: boolean;
   /** Multiplier 0.5–3× from settings. */
   speed: number;
 };
+
+export function clampScrollSpeed(speed: number): number {
+  return Math.min(SPEED_MAX, Math.max(SPEED_MIN, speed));
+}
+
+/**
+ * Applies one scroll step, retaining fractional pixels in carryPx.
+ * Browsers use integer scrollTop; without carry, low speeds (e.g. 0.5×) stall.
+ */
+export function applyScrollStep(
+  scrollTop: number,
+  carryPx: number,
+  deltaPx: number,
+  maxScroll: number,
+): { scrollTop: number; carryPx: number } {
+  let carry = carryPx + deltaPx;
+  let next = scrollTop;
+
+  if (maxScroll <= 0) {
+    return { scrollTop: next, carryPx: carry };
+  }
+
+  const step = Math.floor(carry);
+  if (step > 0) {
+    next = Math.min(next + step, maxScroll);
+    carry -= step;
+    if (next >= maxScroll) {
+      carry = 0;
+    }
+  }
+
+  return { scrollTop: next, carryPx: carry };
+}
 
 /**
  * Drives vertical auto-scroll on a viewport element while playing.
@@ -19,11 +55,13 @@ export function useScroll(
 ): void {
   const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
+  const carryRef = useRef(0);
 
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport || !isPlaying) {
       lastTimeRef.current = null;
+      carryRef.current = 0;
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
@@ -39,15 +77,12 @@ export function useScroll(
 
       if (lastTimeRef.current !== null) {
         const deltaSec = (time - lastTimeRef.current) / 1000;
-        const clampedSpeed = Math.min(3, Math.max(0.5, speed));
+        const clampedSpeed = clampScrollSpeed(speed);
         const deltaPx = BASE_SCROLL_PX_PER_SEC * clampedSpeed * deltaSec;
         const maxScroll = el.scrollHeight - el.clientHeight;
-        if (maxScroll <= 0) {
-          lastTimeRef.current = time;
-          rafRef.current = requestAnimationFrame(tick);
-          return;
-        }
-        el.scrollTop = Math.min(el.scrollTop + deltaPx, maxScroll);
+        const result = applyScrollStep(el.scrollTop, carryRef.current, deltaPx, maxScroll);
+        carryRef.current = result.carryPx;
+        el.scrollTop = result.scrollTop;
       }
 
       lastTimeRef.current = time;
@@ -58,6 +93,7 @@ export function useScroll(
 
     return () => {
       lastTimeRef.current = null;
+      carryRef.current = 0;
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
@@ -68,6 +104,27 @@ export function useScroll(
 
 /** Exported for unit tests — scroll delta for one frame at given speed. */
 export function scrollDeltaPx(deltaMs: number, speed: number): number {
-  const clampedSpeed = Math.min(3, Math.max(0.5, speed));
+  const clampedSpeed = clampScrollSpeed(speed);
   return BASE_SCROLL_PX_PER_SEC * clampedSpeed * (deltaMs / 1000);
+}
+
+/** Simulates scroll carry over many frames (tests low-speed reliability). */
+export function simulateScrollPx(
+  totalMs: number,
+  frameMs: number,
+  speed: number,
+): number {
+  let scrollTop = 0;
+  let carry = 0;
+  const frames = Math.floor(totalMs / frameMs);
+
+  for (let i = 0; i < frames; i += 1) {
+    const deltaPx = scrollDeltaPx(frameMs, speed);
+    const maxScroll = Number.MAX_SAFE_INTEGER;
+    const result = applyScrollStep(scrollTop, carry, deltaPx, maxScroll);
+    scrollTop = result.scrollTop;
+    carry = result.carryPx;
+  }
+
+  return scrollTop;
 }

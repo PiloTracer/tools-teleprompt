@@ -1,9 +1,18 @@
 import type { ScriptFormat } from "../markdown/types";
+import { scriptByteLength } from "../prompter/limits";
+import {
+  maxCompressedBytesForHandoffQr,
+  maxMultiQrChunkBytes,
+  multiHandoffUrlLength,
+  QR_FRAGMENT_THRESHOLD_BYTES,
+  QR_MAX_URL_CHARS,
+} from "./qrConstants";
 
-/** Max compressed fragment payload (bytes). Plan default U8 / A21. */
-export const QR_FRAGMENT_THRESHOLD_BYTES = 8192;
+export { QR_FRAGMENT_THRESHOLD_BYTES } from "./qrConstants";
 
 export const HANDOFF_PAYLOAD_VERSION = 1 as const;
+
+export type HandoffMode = "single-qr" | "multi-qr" | "lan" | "relay";
 
 export type HandoffPayload = {
   v: typeof HANDOFF_PAYLOAD_VERSION;
@@ -50,7 +59,11 @@ export async function measureCompressedHandoffSize(
   return compressed.byteLength;
 }
 
-export async function fitsQrHandoff(source: string, format: ScriptFormat): Promise<boolean> {
+export async function fitsQrHandoff(
+  source: string,
+  format: ScriptFormat,
+  origin?: string,
+): Promise<boolean> {
   if (!source.trim()) {
     return false;
   }
@@ -59,8 +72,82 @@ export async function fitsQrHandoff(source: string, format: ScriptFormat): Promi
   }
   try {
     const size = await measureCompressedHandoffSize(source, format);
-    return size <= QR_FRAGMENT_THRESHOLD_BYTES;
+    if (size > QR_FRAGMENT_THRESHOLD_BYTES) {
+      return false;
+    }
+    if (origin) {
+      const qrMax = maxCompressedBytesForHandoffQr(origin);
+      if (size > qrMax) {
+        return false;
+      }
+    }
+    return true;
   } catch {
     return false;
   }
+}
+
+export async function fitsMultiQrHandoff(
+  source: string,
+  format: ScriptFormat,
+  origin: string,
+  maxScriptBytes: number,
+): Promise<boolean> {
+  if (!source.trim() || scriptByteLength(source) > maxScriptBytes) {
+    return false;
+  }
+  if (!compressionSupported()) {
+    return false;
+  }
+  try {
+    const payload = buildHandoffPayload(source, format);
+    const compressed = await compressBytes(serializeHandoffPayload(payload));
+    const singleMax = maxCompressedBytesForHandoffQr(origin);
+    if (compressed.byteLength <= singleMax) {
+      return false;
+    }
+    const chunkSize = maxMultiQrChunkBytes(origin);
+    if (chunkSize <= 0) {
+      return false;
+    }
+    const sessionId = "xxxxxxxx";
+    const total = Math.max(1, Math.ceil(compressed.byteLength / chunkSize));
+    for (let index = 1; index <= total; index += 1) {
+      const start = (index - 1) * chunkSize;
+      const chunk = compressed.slice(start, start + chunkSize);
+      if (multiHandoffUrlLength(origin, sessionId, index, total, chunk.byteLength) > QR_MAX_URL_CHARS) {
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Fallback order: single QR → multi-QR → LAN → relay (ADR 006).
+ */
+export async function resolveHandoffMode(
+  source: string,
+  format: ScriptFormat,
+  origin: string,
+  maxScriptBytes: number,
+): Promise<HandoffMode> {
+  if (!source.trim()) {
+    return "relay";
+  }
+  if (scriptByteLength(source) > maxScriptBytes) {
+    return "relay";
+  }
+  if (!compressionSupported()) {
+    return "lan";
+  }
+  if (await fitsQrHandoff(source, format, origin)) {
+    return "single-qr";
+  }
+  if (await fitsMultiQrHandoff(source, format, origin, maxScriptBytes)) {
+    return "multi-qr";
+  }
+  return "lan";
 }

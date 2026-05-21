@@ -3,16 +3,23 @@ import { Link } from "react-router-dom";
 
 import { en } from "../lib/i18n/en";
 import type { ScriptFormat } from "../markdown/types";
-import { validateScriptSize } from "../prompter/limits";
+import { DEFAULT_MAX_SCRIPT_BYTES, validateScriptSize } from "../prompter/limits";
 import {
   loadScriptFormat,
   loadScriptSource,
 } from "../prompter/storage";
-import { createRelaySession, type CreateSessionResponse, PairingApiError } from "./client";
-import { fitsQrHandoff } from "./qrThreshold";
-import { buildHandoffQrUrl, generateHandoffQrDataUrl } from "./qrEncode";
-
-type HandoffMode = "qr" | "relay";
+import {
+  createLanHandoff,
+  createRelaySession,
+  lanHandoffPageUrl,
+  type CreateLanHandoffResponse,
+  type CreateSessionResponse,
+  PairingApiError,
+} from "./client";
+import { MultiQrCreate } from "./MultiQrCreate";
+import { resolveHandoffOrigin } from "./publicOrigin";
+import { buildHandoffQrUrl, generateHandoffQrDataUrl, QrGenerationError } from "./qrEncode";
+import { type HandoffMode, resolveHandoffMode } from "./qrThreshold";
 
 export function HandoffCreate() {
   const [source, setSource] = useState("");
@@ -23,6 +30,7 @@ export function HandoffCreate() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<CreateSessionResponse | null>(null);
+  const [lanSession, setLanSession] = useState<CreateLanHandoffResponse | null>(null);
   const [qrGenerating, setQrGenerating] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrHandoffUrl, setQrHandoffUrl] = useState<string | null>(null);
@@ -42,14 +50,15 @@ export function HandoffCreate() {
       return;
     }
 
+    const origin = resolveHandoffOrigin(window.location.origin);
     let cancelled = false;
     setModeLoading(true);
-    void fitsQrHandoff(source, format)
-      .then((fits) => {
+    void resolveHandoffMode(source, format, origin, DEFAULT_MAX_SCRIPT_BYTES)
+      .then((mode) => {
         if (cancelled) {
           return;
         }
-        setHandoffMode(fits ? "qr" : "relay");
+        setHandoffMode(mode);
         setModeLoading(false);
       })
       .catch(() => {
@@ -66,6 +75,7 @@ export function HandoffCreate() {
 
   const onCreateRelay = useCallback(async () => {
     setError(null);
+    setLanSession(null);
     const sizeCheck = validateScriptSize(source);
     if (!sizeCheck.ok) {
       setError(sizeCheck.message);
@@ -91,6 +101,34 @@ export function HandoffCreate() {
     }
   }, [source, format]);
 
+  const onCreateLan = useCallback(async () => {
+    setError(null);
+    setSession(null);
+    const sizeCheck = validateScriptSize(source);
+    if (!sizeCheck.ok) {
+      setError(sizeCheck.message);
+      return;
+    }
+    if (!source.trim()) {
+      setError(en.handoff.emptyScript);
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const created = await createLanHandoff(source, format);
+      setLanSession(created);
+    } catch (err) {
+      if (err instanceof PairingApiError) {
+        setError(err.message);
+      } else {
+        setError(en.handoff.lanCreateFailed);
+      }
+    } finally {
+      setCreating(false);
+    }
+  }, [source, format]);
+
   const onPrepareQr = useCallback(async () => {
     setError(null);
     setQrDataUrl(null);
@@ -107,12 +145,25 @@ export function HandoffCreate() {
 
     setQrGenerating(true);
     try {
-      const handoffUrl = await buildHandoffQrUrl(source, format, window.location.origin);
+      const origin = resolveHandoffOrigin(window.location.origin);
+      const handoffUrl = await buildHandoffQrUrl(source, format, origin);
       const dataUrl = await generateHandoffQrDataUrl(handoffUrl);
       setQrHandoffUrl(handoffUrl);
       setQrDataUrl(dataUrl);
-    } catch {
-      setError(en.handoff.qrFailed);
+    } catch (err) {
+      if (err instanceof QrGenerationError) {
+        const origin = resolveHandoffOrigin(window.location.origin);
+        const nextMode = await resolveHandoffMode(
+          source,
+          format,
+          origin,
+          DEFAULT_MAX_SCRIPT_BYTES,
+        );
+        setHandoffMode(nextMode === "single-qr" ? "multi-qr" : nextMode);
+        setError(en.handoff.qrTooLarge);
+      } else {
+        setError(en.handoff.qrFailed);
+      }
     } finally {
       setQrGenerating(false);
     }
@@ -122,12 +173,17 @@ export function HandoffCreate() {
     return <p>{en.handoff.loading}</p>;
   }
 
-  const modeHint =
-    modeLoading
-      ? en.handoff.modeDetecting
-      : handoffMode === "qr"
-        ? en.handoff.modeQr
-        : en.handoff.modeRelay;
+  const modeHint = modeLoading
+    ? en.handoff.modeDetecting
+    : handoffMode === "single-qr"
+      ? en.handoff.modeQr
+      : handoffMode === "multi-qr"
+        ? en.handoff.modeMultiQr
+        : handoffMode === "lan"
+          ? en.handoff.modeLan
+          : en.handoff.modeRelay;
+
+  const lanPageUrl = lanSession ? lanHandoffPageUrl(lanSession.token) : null;
 
   return (
     <section aria-labelledby="handoff-create-title">
@@ -150,7 +206,13 @@ export function HandoffCreate() {
         </>
       )}
 
-      {handoffMode === "qr" && !modeLoading ? (
+      {handoffMode === "multi-qr" && !modeLoading && source.trim() ? (
+        <div data-testid="handoff-multi-qr-mode">
+          <MultiQrCreate />
+        </div>
+      ) : null}
+
+      {handoffMode === "single-qr" && !modeLoading ? (
         <>
           <button
             type="button"
@@ -178,16 +240,44 @@ export function HandoffCreate() {
             </div>
           ) : null}
         </>
-      ) : (
+      ) : null}
+
+      {handoffMode === "lan" && !modeLoading ? (
+        <>
+          <button
+            type="button"
+            onClick={() => void onCreateLan()}
+            disabled={creating || !source.trim()}
+            data-testid="handoff-lan-button"
+          >
+            {creating ? en.handoff.lanCreating : en.handoff.lanCreateButton}
+          </button>
+          {lanSession && lanPageUrl ? (
+            <div className="tp-handoff-result" data-testid="handoff-lan-mode">
+              <p>{en.handoff.lanOpenHint}</p>
+              <p>
+                <strong>{en.handoff.lanLinkLabel}</strong>
+                <br />
+                <a href={lanPageUrl}>{lanPageUrl}</a>
+              </p>
+              <p className="tp-handoff-meta">
+                {en.handoff.expires} {new Date(lanSession.expires_at).toLocaleString()}
+              </p>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+
+      {handoffMode === "relay" && !modeLoading ? (
         <button
           type="button"
           onClick={() => void onCreateRelay()}
-          disabled={creating || !source.trim() || modeLoading}
+          disabled={creating || !source.trim()}
           data-testid="handoff-relay-button"
         >
           {creating ? en.handoff.creating : en.handoff.createRelay}
         </button>
-      )}
+      ) : null}
 
       {error ? (
         <p className="tp-error" role="alert">

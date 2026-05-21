@@ -1,16 +1,24 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-21 (session closed — dev stack commit push)
+**Updated:** 2026-05-21 (M7 complete; committed)
 
 ---
 
 ## Recommended next
 
-Production deploy per **`deploy/README.md`** — copy `.env.example` → `.env`, set `API_OTP_HMAC_SECRET`, enable TLS. App URL defaults to `http://localhost:9080` (`CADDY_HOST_PORT`). Optional: Lighthouse PWA audit (W6).
+1. **Production deploy** — `deploy/README.md` (set `PUBLIC_ORIGIN`, `API_PUBLIC_BASE_URL` for hotspot)
+2. Manual phone test on hotspot IP (LAN + multi-QR handoff)
+3. Optional: Lighthouse PWA audit (W6) · `@plan-master revise` for v2.1 (WebRTC)
 
 ---
 
 ## Current iteration
+
+M7 complete — see **Done — M7 iteration (archived)** below.
+
+---
+
+## Previous iteration
 
 M6 complete — see **Done — M6 iteration (archived)** below.
 
@@ -41,6 +49,60 @@ M6 complete — see **Done — M6 iteration (archived)** below.
 | M6 formal complete | 2026-05-21 |
 | MOD-06 (M6) | 2026-05-21 |
 | Dev stack manager + env ports/naming | 2026-05-21 |
+| M7 serverless handoff approved (LAN + multi-QR) | 2026-05-21 |
+| M7 formal complete | 2026-05-21 |
+| MOD-06 (M7) | 2026-05-21 |
+
+---
+
+## Done — M7 iteration (archived)
+
+**Milestone ref:** M7 · `.work/plans/full/20260521-full-plan.md` § M7 · ADR 006  
+**Status:** complete  
+**Started:** 2026-05-21  
+**Completed:** 2026-05-21  
+**Target SPECs:** `.work/features/prompter-ui/20260521-SPEC-amendment-01.md`, `.work/features/pairing-api/20260521-SPEC-amendment-01.md`
+
+### Tasks
+
+| ID | Description | Completed | Notes |
+|------|-------------|-----------|-------|
+| M7-T1 | ADR 006 serverless handoff modes | 2026-05-21 | `.work/decisions/20260521-006-serverless-handoff-modes.md` |
+| M7-T2 | LAN one-shot API | 2026-05-21 | `lan_store.py`, routes, `test_lan.py` |
+| M7-T3 | LAN handoff UI + consume | 2026-05-21 | `LanConsume.tsx`, `client.ts` |
+| M7-T4 | Multi-QR chunk encode/decode + UX | 2026-05-21 | `qrChunk*.ts`, `MultiQr*.tsx` |
+| M7-T5 | Handoff mode router | 2026-05-21 | `resolveHandoffMode`, `HandoffCreate.tsx` |
+| M7-T6 | SPEC amendments | 2026-05-21 | prompter-ui + pairing-api amendment 01 |
+| M7-T7 | Playwright E2E LAN + multi-QR | 2026-05-21 | 5/5 handoff E2E pass |
+| M7-T8 | D14 QR limit docs | 2026-05-21 | `qrConstants.ts`, `deploy/README.md`, `.env.example` |
+| M7-T9 | MOD-06 + milestone verify | 2026-05-21 | pass with gaps (uncommitted tree) |
+
+### Acceptance criteria (verified)
+
+- [x] LAN (J2c): API + E2E; no Redis key (`test_lan.py` I3)
+- [x] Multi-QR (J2d): E2E reassembly; zero API on consume
+- [x] Fallback chain: single QR → multi-QR → LAN → relay (`resolveHandoffMode`)
+- [x] NFR-11: LAN log test; no script in pairing logs
+- [x] Regression: relay + single-QR E2E pass
+- [x] `@code-verify milestone` pass with gaps at complete
+
+### Validation (2026-05-21)
+
+- [x] API `pytest tests/ -q` — 18/18 pass
+- [x] API ruff + pyright — exit 0
+- [x] FE `npm test` — 64/64 pass
+- [x] FE lint + typecheck — exit 0
+- [x] Playwright handoff — 5/5 pass
+- [ ] Manual hotspot phone test — unverified (env docs in M7-T8)
+- [ ] Redis audit on live LAN create — covered by `test_lan_create_does_not_write_redis`
+
+### Concept / NFR registry
+
+| Concept id | Status | Evidence |
+|------------|--------|----------|
+| MOD-01 | done 2026-05-21 | LAN FE↔API; MOD-06 M7 review |
+| MOD-04 | done 2026-05-21 | Hotspot deploy docs |
+| MOD-06 | done 2026-05-21 | `.work/context/20260521-MOD-06-M7-security-review.md` |
 
 ---
 
