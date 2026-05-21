@@ -11,6 +11,16 @@ Supplement to `skill.md`.
 @code-verify milestone          # full plan + SPEC matrix (legacy: @code-implementation verify)
 @code-verify uncommitted        # working tree diff only
 @code-verify last               # last commit OR last push (whichever was later)
+@code-verify status             # read-only: suggest which mode to run
+```
+
+Open language (agent maps to mode + emits Request interpretation):
+
+```text
+@code-verify - are my changes safe to commit?
+@code-verify - audit what I just pushed
+@code-verify - check milestone M2 against the SPEC before I complete
+@code-verify - what should I verify right now?
 ```
 
 Legacy (still valid - agents should route here):

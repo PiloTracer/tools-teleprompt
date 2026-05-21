@@ -31,6 +31,8 @@ Use for **new** skills and for any **rename** (update `.cursorrules`, this READM
 |----------|--------|------|
 | plan-foundation | `plan-foundation/` | **Orchestrator:** P0–P6 foundation gates, ADRs, SPECs, registries; certifies **plan-master-ready** |
 | plan-master | `plan-master/` | Master implementation plan, integrity, traceability; certifies **implementation-ready** |
+| plan-verify | `plan-verify/` | Plan audits: foundation, master, alignment, **brownfield** (framework slot map without formal greenfield) |
+| plan-repair | `plan-repair/` | Fix plan gaps; **brownfield synthesis** from code/README/ROADMAP; optional formal certify later |
 | session-control | `session-control/` | Session open/close, HANDOFF, NEXT, optional git |
 | db-migration | `db-migration/` | Idempotent numbered SQL migration scripts; no version table, no chain conflicts |
 | code-implementation | `code-implementation/` | Iteration execution: `NEXT.md` scope, task gates, completion |

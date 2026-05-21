@@ -40,11 +40,15 @@ Supplement to `skill.md`. Invocation examples and source-mode mapping.
 @code-repair repair - from feature-spec - identity/20260518-SPEC.md
 ```
 
-### Custom brief
+### Custom brief / open language
 
 ```text
 @code-repair repair - custom - fix lint in apis/src/foo.py and add missing test for R3 edge case
+@code-repair - fix the failing tests in the payment module
+@code-repair - add observability per SPEC R9 for the webhook handler
 ```
+
+Free requests run **R0-free** (Implementation alignment map) before F* rows — same pattern as `@plan-repair` R0-free for planning.
 
 ### Default (infer source)
 
@@ -102,5 +106,5 @@ Supplement to `skill.md`. Invocation examples and source-mode mapping.
 |--------|---------|-------------|
 | `@code-repair` without any findings | No F* table | Run verifier first or paste report |
 | **repaired** without re-verify output | Violates skill | R4 mandatory |
-| Repair master plan gaps | Wrong layer | `@plan-master revise` |
+| Repair master plan gaps | Wrong layer | `@plan-repair master - <goal>` or `@plan-master revise - <reason>` |
 | Mass backfill in repair | Forbidden | Present SQL to human per `.cursorrules` |

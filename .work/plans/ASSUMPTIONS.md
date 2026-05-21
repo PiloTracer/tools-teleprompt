@@ -1,6 +1,6 @@
 # ASSUMPTIONS - planning registry
 
-**Updated:** 2026-05-20 · **Maintained by:** plan-foundation / plan-master
+**Updated:** 2026-05-21 · **Maintained by:** plan-foundation / plan-master
 
 Label every entry: **Confirmed** | **Inference** | **Unverified** | **Rejected**
 
@@ -25,6 +25,9 @@ Label every entry: **Confirmed** | **Inference** | **Unverified** | **Rejected**
 | A17 | Single public instance; no accounts or multi-tenancy | Confirmed | ADR 004 | |
 | A18 | Markdown → DOMPurify-sanitized HTML in prompter | Confirmed | ADR 005 | |
 | A19 | UI language v1: English only | Confirmed | ADR 001 | |
+| A20 | CI platform: **GitHub Actions** (plan default; resolves U6) | Inference | plan-master 2026-05-21 | Owner may override |
+| A21 | QR threshold: **8192 bytes** compressed (plan default; resolves U8) | Inference | plan-master 2026-05-21 | |
+| A22 | Max script size: **262144 bytes** (plan default; resolves U1) | Inference | plan-master 2026-05-21 | |
 
 ## Rejected
 
@@ -39,3 +42,4 @@ Label every entry: **Confirmed** | **Inference** | **Unverified** | **Rejected**
 |------|----------|--------|
 | 2026-05-20 | plan-foundation P0 | Initial capture |
 | 2026-05-20 | plan-foundation certify | plan-master-ready: pass with waivers |
+| 2026-05-21 | plan-master greenfield | Added A20–A22 (U1/U6/U8 defaults) |

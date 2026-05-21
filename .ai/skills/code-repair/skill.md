@@ -1,11 +1,10 @@
 ---
 name: code-repair
 description: >-
-  Remediate failures and gaps from code-verify, db-migration verify, feature-spec
-  review, or custom instructions. Applies fixes under .cursorrules, standards,
-  SPECs, and concept triggers; re-runs the originating verifier before claiming
-  repair. Use when the user says code-repair, fix verify findings, or repair after
-  audit, uncommitted, milestone, or migration verify.
+  Remediate failures from code-verify, db-migration verify, feature-spec review,
+  or open-language fix requests. Maps free text to implementation framework
+  (SPECs, CONVENTIONS, NEXT, concepts); re-runs originating verifier before pass.
+  Use code-repair repair - from …, repair - custom - …, or natural-language fixes.
 ---
 
 # code-repair
@@ -48,6 +47,17 @@ Normalize to **mode** + optional **source** or **brief**. Use ASCII hyphen **`-`
 | `@code-repair` **fix** - … | repair | Alias for **repair** |
 | `@code-repair` **status** | status | [Status protocol](#status-protocol) - read-only |
 
+**Open language examples (map to rows above):**
+
+```text
+@code-repair - fix the lint errors in apis/src/foo.py
+@code-repair repair - custom - add test for SPEC R3 edge case in identity module
+@code-repair - tests failed on the payment webhook handler
+@code-repair fix verify findings from the last commit
+```
+
+**Free request → implementation alignment:** When findings come from **open language** (`repair - custom - …`, goal text after `-`, or implicit source resolution with no verifier report in chat), run **[R0-free](#r0-free---implementation-alignment-free-requests-only)** before triage. The map feeds F* rows (add **Implementation ref** column) and constrains R2/R3 to framework-consistent fixes.
+
 **Legacy / colloquial:** `remediate` → **repair**; `audit` as source → **from uncommitted** (same alias as `code-verify`).
 
 **Default source when omitted:**
@@ -55,7 +65,10 @@ Normalize to **mode** + optional **source** or **brief**. Use ASCII hyphen **`-`
 1. If the current chat contains a **fail** report from `@code-verify` or `@db-migration verify` in the last 3 assistant turns → use that mode.
 2. Else if working tree dirty → **from uncommitted**.
 3. Else if `.work/plans/NEXT.md` has valid `## Current iteration` → **from milestone**.
-4. Else ask once: **Q:** Which findings should I repair? (paste report, or `from uncommitted` / `from migration` / `custom - …`)
+4. Else if user message describes a code/test/lint fix without naming source → **custom** (run R0-free).
+5. Else ask once: **Q:** Which findings should I repair? (paste report, `from uncommitted`, `from migration`, or `custom - …`)
+
+When invocation is explicit (`repair - from milestone`, `from uncommitted`, …), skip R0-free; record `**Request:** explicit source`.
 
 ---
 
@@ -65,17 +78,49 @@ Normalize to **mode** + optional **source** or **brief**. Use ASCII hyphen **`-`
 
 Build a **Findings table** before editing:
 
-| ID | Source | Severity | Finding | Affected paths | Fix strategy |
-|----|--------|----------|---------|----------------|--------------|
-| F1 | code-verify uncommitted | fail | … | … | code / config / owner |
+| ID | Source | Severity | Finding | Affected paths | Fix strategy | Implementation ref |
+|----|--------|----------|---------|----------------|--------------|---------------------|
+| F1 | code-verify uncommitted | fail | … | … | code / config / owner | `—` (verify-sourced) |
+
+**Implementation ref** — populate for **open language** / **custom** / inferred fixes; may be `—` when rows come from `@code-verify`, `@db-migration verify`, or `@feature-spec review` reports. Must cite at least one: SPEC rule (R{n}), task `M{N}-T{N}`, `.cursorrules` section, CONVENTIONS/FEATURE_STANDARD, concept MOD id, `{MASTER_PLAN}` §19, migration policy, or HANDOFF waiver.
 
 **Obtain findings by:**
 
 1. **Chat report** - parse the latest verifier output in the session, or
 2. **Run source now** - invoke the matching skill (see [Source → re-verify map](#r4--re-verify-mandatory)), or
-3. **Custom brief** - decompose user text into F* rows with explicit paths.
+3. **Custom brief / open language** - run [R0-free](#r0-free---implementation-alignment-free-requests-only), then decompose into F* rows with explicit paths.
 
 If there are **no fixable findings** and the tree is clean after optional source run → stop with verdict **nothing to repair**; suggest `@code-verify uncommitted` or `@session-control status`.
+
+### R0-free - Implementation alignment (free requests only)
+
+**When:** Findings from **custom** brief, open-language message, or goal text after `-` without a verifier report in the last 3 turns. **Skip** when all F* rows come from `@code-verify`, `@db-migration verify`, or `@feature-spec review`.
+
+Produce an **Implementation alignment map** before filing F* rows:
+
+```markdown
+### Free request → Implementation alignment
+
+**Request:** <one-line paraphrase>
+
+| Aspect | Framework component | Artifact / gate | Action |
+|--------|---------------------|-------------------|--------|
+| <phrase from request> | SPEC rule | `.work/features/<slug>/*-SPEC.md` R{n} | Implement / test |
+| <…> | Iteration task | `NEXT.md` M{N}-T{n} | Scope / Notes |
+| <…> | CONVENTIONS | `.ai/standards/*CONVENTIONS*` | Naming / layout |
+| <…> | FEATURE_STANDARD | `.ai/standards/*FEATURE_STANDARD*` | Test plan shape |
+| <…> | Migration policy | `.cursorrules` § Database | `@db-migration create` if schema |
+| <…> | MOD-06 | `.ai/concepts/` | Required for agent-authored fix |
+| <…> | MOD-01 | `{BOUNDARY_MAP}` / DIRECTORY_MAP | Cross-boundary check |
+| <…> | Task gate | `code-implementation` § Task gate | tests/lint/type after fix |
+| <…> | Master plan FR | `{MASTER_PLAN}` §19 / §3–4 | Traceability |
+```
+
+**Rules:**
+
+- Minimum one row per distinct aspect; label probabilistic mappings **Inference**.
+- Redirect plan-only gaps to `@plan-repair` / `@plan-master revise` in triage — do not fix in code-repair.
+- Freeze map before F* triage; update if new connections appear.
 
 **Triage each row** (annotate in report):
 
@@ -84,7 +129,7 @@ If there are **no fixable findings** and the tree is clean after optional source
 | **fix-now** | Agent resolves under standards |
 | **owner** | Log in `.work/plans/UNKNOWNS.md` or HANDOFF § Open owner actions; do not claim pass |
 | **waiver** | Only with HANDOFF or same-message user approval; cite in report |
-| **redirect** | Wrong layer (plan → `@plan-master revise`; missing iteration → `@code-implementation plan - M{N}`) |
+| **redirect** | Wrong layer (plan docs → `@plan-repair` / `@plan-master revise`; missing iteration → `@code-implementation plan - M{N}`) |
 
 If **>50%** of rows are **owner** and the user did not ask for documentation-only → stop and list owner actions.
 
@@ -152,6 +197,7 @@ Task M{N}-T{N} re-gated <YYYY-MM-DD> after code-repair: pass | fail (<reason>)
 ## code-repair - <source> - <verdict>
 
 **Date:** <ISO> · **Branch:** <branch> · **Tree:** clean | dirty
+<when open language / custom — insert ### Free request → Implementation alignment; else: **Request:** explicit source>
 
 ### Findings
 | ID | Disposition | Status | Evidence |
@@ -162,6 +208,7 @@ Task M{N}-T{N} re-gated <YYYY-MM-DD> after code-repair: pass | fail (<reason>)
 | # | Check | Result | Evidence |
 |---|-------|--------|----------|
 | 1 | Findings table (R0) | pass/fail | |
+| 1b | R0-free map (open language only) | pass/skip | |
 | 2 | Context load (R1) | pass/fail | |
 | 3 | Repair plan shown (R2) | pass/fail | |
 | 4 | Standards / SPEC / concepts applied | pass/fail | |
@@ -219,6 +266,8 @@ Read-only. No fixes.
 - Skipping MOD-06 on agent-authored code fixes
 - Marking owner/legal/vendor items as fixed in code
 - Using **milestone** re-verify for a one-line typo when **uncommitted** suffices (heavy but allowed if user asked)
+- Open-language repair without **R0-free** Implementation alignment map
+- Plan-doc-only fixes in code-repair (redirect to `@plan-repair`)
 
 ---
 

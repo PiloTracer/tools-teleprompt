@@ -62,12 +62,20 @@ foundation-complete  →  plan-master-ready  →  implementation-ready
 | **plan-master** `revise` | Existing `*-full-plan.md`; **plan-master-ready** still valid | **Required** |
 | **plan-master** `integrity` | Target artifacts exist (foundation set **or** master plan for P5) | Invoked by plan-foundation certify **or** standalone |
 | **plan-master** `status` / `show` *(alias: `task`)* | - | Read-only |
+| **plan-verify** `foundation` / `master` / `alignment` | Target artifacts exist for mode (alignment: valid `NEXT` iteration + `{MASTER_PLAN}`) | Read-only; orchestrates plan-foundation status + plan-master integrity; **BF branch** when brownfield |
+| **plan-verify** `brownfield` | Code-first or legacy-doc repo; formal plan-foundation/master may never have run | Read-only; framework slot map + substitute paths |
+| **plan-verify** `status` | - | Read-only |
+| **plan-repair** `repair` / `foundation` / `master` / `brownfield` | Findings from `@plan-verify`, user goal after `-`, or brownfield discovery (R0 gate) | **Recommended:** run source verify if no report in chat |
+| **plan-repair** `brownfield` | BF0 = yes; may synthesize `.work/` without prior formal greenfield | May write; re-verify with `@plan-verify brownfield`; formal certify optional after |
+| **plan-repair** `status` | - | Read-only |
 | **code-implementation** `plan` *(alias: `plan-iteration`)* | Approved `*-full-plan.md` **or** HANDOFF M{N} waiver (PI1 gate) | **Required** |
 | **code-implementation** `start` / `continue` | Valid `NEXT.md` iteration block; **implementation-ready** or HANDOFF waiver (ST0 gate); auto-invokes `@code-verify uncommitted` at batch end (see § Self-verify auto-invoke) | **Required** |
 | **code-implementation** `complete` | Active iteration; `@code-verify milestone` pass | **Required** |
 | **code-implementation** `status` | - | Read-only |
 | **code-verify** `milestone` | Active milestone exists in `{MASTER_PLAN}` §19 **or** `NEXT.md` § Current iteration (M0 gate) | **Required** |
 | **code-verify** `uncommitted` / `last` | - | - |
+| **code-verify** `status` | - | Read-only |
+| **code-repair** `repair` (open language / **custom**) | R0-free implementation alignment when no verifier report in chat | **Recommended** before F* rows |
 | **code-repair** `repair` | Findings from verifier report, fresh `@code-verify` / `@db-migration verify` / `@feature-spec review`, or **custom** brief (R0 gate) | **Recommended:** run source verifier if no report in chat |
 | **code-repair** `status` | - | Read-only |
 | **feature-spec** `create` | FEATURE_STANDARD; **CR0** hard-stops if `<slug>/` folder exists; warns if `plan-master-ready: no` | **Required** (brownfield) + **Recommended** (readiness) |
@@ -89,6 +97,8 @@ foundation-complete  →  plan-master-ready  →  implementation-ready
 | Situation | Rule |
 |-----------|------|
 | **plan-master greenfield** without prior certify | **Forbidden** unless HANDOFF already records `Plan-master-ready: <date>` from a prior certify, or user supplies structured YAML with complete `foundation_docs:` paths **and** confirms foundation was completed out-of-band in the same message. |
+| **plan-repair brownfield** without plan-master-ready | **Allowed** — synthesize Draft master plan + HANDOFF `Brownfield-aligned:` / `Brownfield master synthesis:` lines; **implementation-ready** remains **no** until formal Approved plan. |
+| **plan-verify brownfield** without foundation docs | **Allowed** — score substitutes (README, ROADMAP, code tree); verdict `aligned-best-effort` not formal certify. |
 | **plan-master reference edge case** | Do **not** draft a master plan when foundation is not ready - **stop** and list blockers (see `plan-master/skill.md` § Prerequisite gate). |
 | **code-implementation** before **implementation-ready** | **Stop** unless HANDOFF explicitly waives a named milestone (e.g. M1 platform skeleton). |
 | **plan-master integrity** on foundation only | Does **not** require an existing `*-full-plan.md`; plan-foundation **certify** invokes this. |
@@ -114,6 +124,10 @@ foundation-complete  →  plan-master-ready  →  implementation-ready
 | "Ready to code?" in plan-foundation | Wrong skill | `@plan-master status` |
 | `@code-verify` / sweep **fail** | Findings need remediation | `@code-repair repair - from uncommitted` (or matching source mode) |
 | `@db-migration verify` **fail** | Script not idempotent or runner error | `@code-repair repair - from migration` |
+| `@plan-verify` **fail** (foundation/master/alignment) | Plan doc gaps or drift | `@plan-repair repair - from <same mode>` |
+| `@plan-repair master` | Not plan-master-ready (formal) | `@plan-repair brownfield` **or** `@plan-repair foundation` → `@plan-foundation certify` |
+| Legacy repo, no `.work/plans/` | No formal planning | `@plan-verify brownfield` → `@plan-repair brownfield` |
+| Plan gaps during code work | Wrong layer | `@plan-repair` / `@plan-master revise` (not `code-repair`) |
 
 ---
 
@@ -123,8 +137,9 @@ All skills use the same verbs where applicable. This keeps muscle memory portabl
 
 | Canonical verb | Meaning | Skills that implement it |
 |----------------|---------|---------------------------|
-| `status` | Read-only: report current state | plan-foundation, plan-master, session-control, code-implementation, code-verify (via `last`/`uncommitted`/`milestone`), code-repair, feature-spec, db-migration, concept-run, dev-stack, project-bootstrap |
-| `repair` | Fix reported issues; re-verify | code-repair |
+| `status` | Read-only: report current state | plan-foundation, plan-master, plan-verify, plan-repair, session-control, code-implementation, code-verify, code-repair, feature-spec, db-migration, concept-run, dev-stack, project-bootstrap |
+| `repair` | Fix reported issues; re-verify | code-repair, plan-repair |
+| `verify` | Audit planning artifacts (foundation / master / alignment) | plan-verify |
 | `start` | Begin a unit of work | session-control, code-implementation |
 | `continue` | Resume in-progress work | plan-foundation, plan-master, code-implementation |
 | `continue` + target (`code-implementation` only) | Batch tasks: `- N`, `- until blocked`, `- M{N}-T{a}..T{b}`; stop on gate fail or blocker | code-implementation |
@@ -138,7 +153,9 @@ All skills use the same verbs where applicable. This keeps muscle memory portabl
 | `revise` | Structured edit | plan-master |
 | `certify` | Formal sign-off transitioning a readiness state | plan-foundation |
 | `greenfield` | First-time creation | plan-foundation, plan-master |
-| `verify` / `milestone` / `uncommitted` / `last` | Runtime/output checks | code-verify (scope flag), db-migration |
+| `verify` / `milestone` / `uncommitted` / `last` | Runtime/output checks | code-verify (scope flag), db-migration; **plan-verify** uses `foundation` / `master` / `alignment` (not bare `verify` alone) |
+| `brownfield` | Discover/create missing planning artifacts from existing repo | plan-repair |
+| `alignment` / `drift` | NEXT vs master plan consistency | plan-verify (read-only), plan-repair (fix) |
 | `run` | Execute (scripts / prompts) | db-migration, concept-run |
 | `show` | Read-only inspect of a specific record | plan-master *(alias: `task`)* |
 | `list` | Enumerate available items | concept-run |

@@ -126,11 +126,13 @@ Reusable agent skills live under `.ai/skills/`. Each skill is a subfolder contai
 |-------|--------|---------|
 | plan-foundation | `.ai/skills/plan-foundation/` | P0–P6 orchestration; certify plan-master-ready |
 | plan-master | `.ai/skills/plan-master/` | Master implementation plan; certify implementation-ready |
+| plan-verify | `.ai/skills/plan-verify/` | Plan audits incl. **brownfield** framework alignment without formal plan-foundation/master |
+| plan-repair | `.ai/skills/plan-repair/` | Remediate plan gaps; **brownfield synthesis** from repo evidence; mandatory re-verify |
 | session-control | `.ai/skills/session-control/` | Session open/close; HANDOFF, NEXT; optional git |
 | db-migration | `.ai/skills/db-migration/` | Idempotent numbered SQL migration scripts |
 | code-implementation | `.ai/skills/code-implementation/` | Iteration execution from NEXT.md |
-| code-verify | `.ai/skills/code-verify/` | Milestone, uncommitted, last commit/push audits |
-| code-repair | `.ai/skills/code-repair/` | Fix verifier/migration/SPEC findings; re-verify before pass |
+| code-verify | `.ai/skills/code-verify/` | Milestone/uncommitted/last audits; open-language → Request interpretation |
+| code-repair | `.ai/skills/code-repair/` | Fix verify/SPEC/migration findings; open-language → R0-free alignment map |
 | dev-stack | `.ai/skills/dev-stack/` | Isolated Docker Compose dev stack helper (`bin/start.sh`) |
 | process-router | `.ai/skills/process-router/` | Read-only process Q&A router |
 | feature-spec | `.ai/skills/feature-spec/` | Author, review, amend feature SPECs |

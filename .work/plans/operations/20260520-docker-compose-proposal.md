@@ -1,6 +1,6 @@
 # Local development stack — proposal
 
-**Status:** Draft — awaiting owner approval for protected files  
+**Status:** Draft — compose files created 2026-05-21 (owner `approve compose`)
 **Created:** 2026-05-20  
 **Requires:** explicit owner **`approve compose`** before creating `deploy/docker-compose.yml`, `frontend/Dockerfile`, `api/Dockerfile`, `deploy/Caddyfile`, `.env.example` (`.cursorrules` § Protected Files)
 
@@ -137,7 +137,7 @@ bin/start.sh
 | Role | Approved | Date |
 |------|----------|------|
 | Owner — proposal | approved | 2026-05-20 |
-| Owner — create compose/Dockerfiles | **pending** (`approve compose`) | |
+| Owner — create compose/Dockerfiles | **approved** (`approve compose`) | 2026-05-21 |
 
 After **`approve compose`**: create protected files, update HANDOFF, verify `docker compose config`.
 

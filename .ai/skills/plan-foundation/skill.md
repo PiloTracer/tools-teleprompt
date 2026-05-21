@@ -339,6 +339,8 @@ Detect from the user message. If ambiguous, ask once:
 
 **Registry:** Full matrix - [`.ai/skills/SKILL_DEPENDENCIES.md`](../SKILL_DEPENDENCIES.md).
 
+**Symmetric verify/repair:** `@plan-verify foundation` orchestrates this skill's **status** + `@plan-master integrity` on foundation artifacts; gaps → `@plan-repair foundation` or `@plan-foundation continue`.
+
 ---
 
 ## Prerequisite gate

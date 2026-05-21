@@ -24,3 +24,4 @@ Status: **Open** | **Mitigated** | **Accepted** | **Closed**
 |------|----------|--------|
 | 2026-05-20 | plan-foundation P0 | Initial product risks |
 | 2026-05-20 | plan-foundation P5 | R11 compose exposure; deploy/rollback in proposal |
+| 2026-05-21 | plan-master greenfield | Mapped R4–R10 to M2/M4/M5/M6 tasks |

@@ -55,7 +55,7 @@ You forgot where you were? Run **one** of these - pick the lightest that answers
 | **Where am I / what's next?** | `@session-control status` + `.work/context/HANDOFF.md` + `.work/plans/NEXT.md` |
 | One-paragraph status (no writes) | `@session-control status` |
 | Where the iteration is (read-only) | `@code-implementation status` |
-| Are we still planning or coding? | `@plan-foundation status` (planning) **or** `@plan-master status` (master plan / implementation-ready) |
+| Are we still planning or coding? | `@plan-verify status` **or** `@plan-foundation status` / `@plan-master status` |
 
 If those don't help, read **in this order, no more**: `.work/context/HANDOFF.md` → `.work/plans/NEXT.md` (top section: *Recommended next*). That is the ground truth for "what's next."
 
@@ -114,6 +114,9 @@ Replace `M{N}` with the milestone you're working on (see `NEXT.md ## Recommended
 |---|---|
 | To start a brand-new project | `@plan-foundation greenfield` |
 | To check if foundation work is done | `@plan-foundation status` then `@plan-foundation certify` |
+| To audit foundation or master plans (symmetric to code-verify) | `@plan-verify foundation` · `@plan-verify master` · `@plan-verify alignment` |
+| Existing repo never ran plan-foundation / plan-master (brownfield) | `@plan-verify brownfield` → `@plan-repair brownfield` → `@plan-verify brownfield` |
+| To fix plan gaps or brownfield planning docs | `@plan-repair foundation - <goal>` · `@plan-repair master - <goal>` · `@plan-repair brownfield` |
 | To author the master implementation plan | `@plan-master greenfield` (foundation must be `plan-master-ready` first; if a draft plan exists - `@plan-master continue`) |
 | To check if you can start coding | `@plan-master status` (only this skill scores `implementation-ready`) |
 | A new feature SPEC | `@feature-spec create - <slug>` (see `FEATURE_STANDARD` §3; **do not skip §15**) |
@@ -227,7 +230,7 @@ Use **`@process-router - <question>`** for anything not listed - it routes to th
 | New feature SPEC? | `@feature-spec create - <slug>` |
 | Which concept prompt (MOD)? | `@concept-run list` · `@concept-run - MOD-06` (required for agent/Cursor code sessions unless **`human-only`**) |
 | Add a DB table/column? | `@db-migration create - <description>` |
-| Fix broken `NEXT.md`? | `20260518-tutorial-next-fix.md` · `@code-implementation plan - M{N}`   *(legacy alias: `plan-iteration`)* |
+| Fix broken `NEXT.md` / plan drift? | `@plan-verify alignment` · `@plan-repair repair - from alignment` · `20260518-tutorial-fix-existing-plans.md` · `@code-implementation plan - M{N}` |
 | Tests/lint/type-check failed? | §6 above · re-run task gate per `.cursorrules` |
 | Close session safely? | `@session-control close` · `@session-control close commit` · `@session-control close commit push` |
 | Foundation vs master plan? | `plan-foundation` = P0–P6 + **plan-master-ready** · `plan-master` = full plan + **implementation-ready** |

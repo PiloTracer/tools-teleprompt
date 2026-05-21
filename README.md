@@ -2,7 +2,7 @@
 
 Dockerized web teleprompter: paste or upload a script, configure scroll speed and display, present fullscreen on any device. Optional cross-device handoff (QR or short-lived relay + OTP). No accounts, no database — scripts stay on your devices after handoff.
 
-**Status:** Foundation planning complete · application code not started
+**Status:** M1 platform scaffold in progress · master plan Approved
 
 ---
 
@@ -22,41 +22,24 @@ Dockerized web teleprompter: paste or upload a script, configure scroll speed an
 
 ---
 
-## Planning workflow (next steps)
+## Local development (Docker only)
 
-```text
-@plan-foundation certify plan-master-ready   ← you are here after P6
-@plan-master greenfield                        ← master implementation plan
-@plan-master status                            ← implementation-ready check
-```
-
-Compose files (`deploy/docker-compose.yml`, Dockerfiles) are **proposed** but not committed until owner runs **`approve compose`**. See `.work/plans/operations/20260520-docker-compose-proposal.md`.
-
----
-
-## Repository layout (planned)
-
-| Path | Purpose |
-|------|---------|
-| `frontend/` | React + Vite PWA (prompter UI) — *not yet created* |
-| `api/` | FastAPI pairing API — *not yet created* |
-| `deploy/` | Docker Compose + Caddy — *proposal only* |
-| `.work/` | Plans, SPECs, ADRs |
-| `.ai/` | Agent OS (skills, standards) |
-
-See `.ai/standards/20260520-DIRECTORY_MAP.md`.
-
----
-
-## Local development (after compose approval)
+**Do not run `npm install` or `pip install` on the host.** Dependencies install inside compose services via bind mounts.
 
 ```bash
-cp .env.example .env
+cp .env.example .env   # optional; bin/start.sh falls back to .env.example
 bin/start.sh
 # Open http://localhost:8080
 ```
 
-Until compose exists, see `DOCS_TECH_STACK.md` §4 for host-based test commands.
+Run tests/lint inside containers:
+
+```bash
+docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm run lint && npm run typecheck && npm test"
+docker compose -f deploy/docker-compose.yml exec api sh -c "cd /app && ruff check . && pyright . && pytest tests/ -q"
+```
+
+See `DOCS_TECH_STACK.md` §4 and `deploy/docker-compose.yml`.
 
 ---
 

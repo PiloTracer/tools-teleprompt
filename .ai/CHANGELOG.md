@@ -5,6 +5,11 @@ All notable changes to Agent OS are documented here. Format inspired by [Keep a 
 ## [Unreleased]
 
 ### Added
+- **`plan-verify`** and **`plan-repair`** skills — symmetric planning verify/repair; brownfield framework alignment without formal `@plan-foundation` / `@plan-master`; open-language Request interpretation and R0-free alignment maps.
+- **`code-verify`** / **`code-repair`** — open-language free requests: Request interpretation (verify), Implementation alignment map R0-free (repair); `code-verify status` mode.
+- **`scripts/framework-verify.sh`** — expects **14** skill directories (was 12).
+
+### Added
 - **`code-implementation continue` batch targets:** `- N` (e.g. `- 5`), `- until blocked`, `- M{N}-T{a}..T{b}`; default `continue` = 1 task. All modes stop on task gate fail or blocker; progress lines `Batch k/N: M4-T4 done`; mandatory batch summary.
 
 ### Changed

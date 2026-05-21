@@ -24,10 +24,10 @@ for f in START_HERE.md README.md skills/README.md skills/SKILL_DEPENDENCIES.md t
 done
 
 skill_count="$(find skills -mindepth 1 -maxdepth 1 -type d ! -name '.*' 2>/dev/null | wc -l | tr -d ' ')"
-if [[ "${skill_count}" -eq 12 ]]; then
-  ok "12 skill directories"
+if [[ "${skill_count}" -eq 14 ]]; then
+  ok "14 skill directories"
 else
-  die "expected 12 skill directories, found ${skill_count}"
+  die "expected 14 skill directories, found ${skill_count}"
 fi
 
 for s in skills/*/skill.md; do

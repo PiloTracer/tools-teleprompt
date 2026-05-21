@@ -1,10 +1,10 @@
 ---
 name: code-verify
 description: >-
-  Run implementation verification gates: milestone audit (plan + SPEC matrix),
-  uncommitted diff audit, or last commit/push audit. Use when the user says
-  code-verify, verify, verify uncommitted, verify last, or legacy
-  code-implementation verify. Tool-agnostic; verification commands from .cursorrules.
+  Run implementation verification gates: milestone, uncommitted, last commit/push,
+  or read-only status. Accepts explicit modes or open-language requests mapped to
+  implementation context (.cursorrules, NEXT, SPECs, plan §19). Tool-agnostic;
+  verification commands from .cursorrules.
 ---
 
 # code-verify
@@ -23,28 +23,83 @@ Verification layer for the implementation workflow. **Does not implement feature
 - **No HANDOFF/NEXT writes** except optional update to `### Cross-LLM verification` when user explicitly asks to record milestone verify result.
 - **Protected files** (`.cursorrules` §Protected Files): modified in diff without owner permission → **fail**.
 - **AI-assisted default:** Diffs from Cursor/agent sessions are AI-assisted unless the human declared **`human-only`** in the same message. MOD-06 **fail** (not `skip`) when code changed and no MOD-06 output path is cited.
+- **Open language** — when the user does not name an explicit mode, emit a [Request interpretation](#open-language-interpretation-free-requests) block before running the protocol; map intent to `milestone` | `uncommitted` | `last` | `status`.
 - Every mode ends with a **Completion checklist** - each item `pass` | `fail` | `skip` with evidence.
 
 ---
 
 ## Parse invocation
 
-Normalize to **mode** + optional scope.
+Normalize to **mode** + optional scope. Use ASCII hyphen **`-`** between tokens.
 
 | User says | Mode | Action |
 |-----------|------|--------|
 | `@code-verify` **milestone** | milestone | [Milestone verify](#milestone-verify-protocol) - alias of legacy full **verify** |
-| `@code-verify` **verify** | milestone | Same as **milestone** (default if bare `@code-verify`) |
+| `@code-verify` **verify** | milestone | Same as **milestone** (default if bare `@code-verify` and iteration active) |
 | `@code-verify` **uncommitted** | uncommitted | [Uncommitted verify](#uncommitted-verify-protocol) |
 | `@code-verify` **last** | last | [Last verify](#last-verify-protocol) |
+| `@code-verify` **status** | status | [Status protocol](#status-protocol) - read-only; suggests verify mode |
 | `code-verify` **last commit** | last | Same as **last** |
 | `code-verify` **last push** | last | Same as **last** (mode resolves which event was later) |
 | `@code-implementation` **verify** | milestone | **Legacy** - run this skill **milestone** mode |
 | `@code-implementation` **verify** **uncommitted** | uncommitted | **Legacy** - run **uncommitted** mode |
+| Open language (see below) | *(infer)* | [Open language interpretation](#open-language-interpretation-free-requests) → then protocol |
 
-**Aliases:** `audit`, `check` → **uncommitted** if working tree dirty, else ask once; `gate` → **uncommitted** before commit.
+**Open language → mode hints** (non-exhaustive; confirm via interpretation block):
 
-**Default:** bare `@code-verify` → **milestone** when `NEXT.md` has an active iteration; else **uncommitted** if tree dirty, else **last**.
+| User intent (examples) | Likely mode |
+|------------------------|-------------|
+| "safe to commit", "before commit", "audit my changes", "dirty tree", "pre-commit" | **uncommitted** |
+| "last commit", "what I pushed", "post-push", "after commit" | **last** |
+| "milestone", "iteration done", "ready to complete", "SPEC matrix", "M2 coverage" | **milestone** |
+| "what should I verify?", "where am I in implementation?" | **status** |
+| "fix lint/tests" only (no verify keyword) | Route to `@code-repair` — not code-verify |
+
+**Aliases:** `audit`, `check` → **uncommitted** if working tree dirty, else **last** if clean and synced, else ask once; `gate` → **uncommitted** before commit.
+
+**Default:** bare `@code-verify` → **milestone** when `NEXT.md` has active `## Current iteration`; else **uncommitted** if tree dirty; else **last**; if ambiguous after interpretation → ask once.
+
+When mode is explicit (e.g. `@code-verify uncommitted`), skip the interpretation block and record: `**Request:** explicit mode — no interpretation needed`.
+
+---
+
+## Open language interpretation (free requests)
+
+**When:** The user message does **not** contain an explicit mode keyword (`milestone`, `uncommitted`, `last`, `status`, `verify`) — or the keyword appears inside a free-form sentence (e.g. "check if my changes are safe to commit", "audit the last push").
+
+Before running any protocol, emit a **Request interpretation** block:
+
+```markdown
+### Request interpretation
+
+**User said:** <raw text or one-line paraphrase>
+
+**Detected mode:** milestone | uncommitted | last | status
+**Mapped via:** <keyword match | default inference | git/NEXT state>
+**Implementation context examined:**
+| Component | Path / source | Why |
+|-----------|---------------|-----|
+| Agent rules | `.cursorrules` | Test/lint/type commands, protected files, Docker |
+| Iteration | `{ITERATION_CARRIER}` § Current iteration | Scope (S2), milestone id |
+| Master plan §19 | `{PLANS_ROOT}/full/*-full-plan.md` | FR/NFR trace (milestone mode) |
+| SPECs | `{FEATURE_SPEC_ROOT}/<slug>/*-SPEC.md` | R1… rules for touched contexts |
+| Standards | `.ai/standards/*CONVENTIONS*`, `*FEATURE_STANDARD*` | Invariants, naming |
+| Boundary map | `.ai/standards/*DIRECTORY_MAP*` or `{BOUNDARY_MAP}` | Cross-context edits |
+| Concepts | `.ai/concepts/README.md` § Trigger table | MOD-06 (AI-assisted), MOD-01 (boundaries) |
+| HANDOFF | `{HANDOFF}` | Waivers, high-risk milestone review |
+| Git state | `git status`, diff range | uncommitted / last event |
+
+**Assumption ledger:** <Confirmed | Inference | Unverified> for mode choice and scope
+```
+
+**Rules:**
+
+- Emit **once** before the mode protocol; include in the report header (see report formats below).
+- Unambiguous mapping (e.g. "before I commit" → **uncommitted**) → label mode **Confirmed**.
+- Ambiguous (e.g. "verify my work") → label **Inference**, run **status** or ask once.
+- No valid iteration and user asks milestone-level audit → **Inference**: recommend `@code-implementation plan - M{N}` first; may still run **uncommitted** on dirty tree.
+
+**No iteration / informal implementation (code brownfield):** When `{ITERATION_CARRIER}` lacks `## Current iteration` but the tree is dirty → prefer **uncommitted**; cite missing iteration as **Med** gap in report; do not claim milestone **pass** without iteration block.
 
 ---
 
@@ -162,6 +217,7 @@ Waivers for high-risk milestones do not carry forward to the next high-risk mile
 ## code-verify milestone - M{N}: {name}
 
 **Date:** {ISO} · **Triggered by:** {reason}
+<when open language — insert ### Request interpretation block; else: **Request:** explicit mode>
 
 ### Check matrix
 | Dimension | Result | Evidence / gap |
@@ -209,6 +265,7 @@ If clean → report `clean` and **stop** (verdict: pass - nothing to audit).
 ## code-verify uncommitted
 
 **Date:** {ISO} · **Branch:** {branch} · **Tree:** dirty
+<when open language — insert ### Request interpretation block; else: **Request:** explicit mode>
 
 ### Diff summary
 | Path | Status | In scope? |
@@ -288,6 +345,7 @@ Only rows relevant to files in range (security, scope, test coverage partial) - 
 ## code-verify last
 
 **Date:** {ISO} · **Last event:** commit | push · **Range:** `{range}` · **Commit:** `{sha}` `{subject}`
+<when open language — insert ### Request interpretation block; else: **Request:** explicit mode>
 
 ### Push state
 {ahead/behind/synced - N unpushed}
@@ -313,12 +371,48 @@ Only rows relevant to files in range (security, scope, test coverage partial) - 
 
 ---
 
+## Status protocol
+
+Read-only. No writes to HANDOFF/NEXT unless user asks.
+
+1. `git status -sb` · infer dirty vs clean.
+2. `{ITERATION_CARRIER}` — active `## Current iteration`? milestone id?
+3. Last `@code-verify` mention in chat if visible.
+
+```markdown
+## code-verify status
+
+**Tree:** clean | dirty (<N> files)
+**Iteration:** M{N} active | none
+**Last event hint:** commit ahead | synced | no upstream
+
+**Suggested verify:** @code-verify uncommitted | last | milestone
+**Request:** <explicit status mode — or open-language interpretation if user asked a question>
+```
+
+---
+
+## Completion checklist (all modes)
+
+| # | Check | Result | Evidence |
+|---|-------|--------|----------|
+| 1 | Mode detected | pass/fail | |
+| 2 | Request interpretation (open language) | pass/skip | block in report |
+| 3 | Shared reads / git evidence | pass/fail | paths, exit codes |
+| 4 | Check matrix or diff checks complete | pass/fail | |
+| 5 | Verdict matches evidence | pass/fail | |
+| 6 | Next step names exact command | pass/fail | |
+| 7 | No implementation edits in verify mode | pass | |
+
+---
+
 ## Integration
 
 | Skill | Use |
 |-------|-----|
 | `code-implementation` | **Auto-invokes `@code-verify uncommitted`** at end of every `continue` batch (see `code-implementation` § Batch-end sweep) - not optional. Also calls **milestone** before **complete** (CO2); task gate runs inline mechanical checks. On sweep **fail** → `@code-repair repair - from uncommitted`. |
-| `code-repair` | **Downstream remediator** - on any mode **fail**, recommend `@code-repair repair - from <same mode>`. Does not auto-invoke. |
+| `code-repair` | **Downstream remediator** - on any mode **fail**, recommend `@code-repair repair - from <same mode>` or `repair - custom - …` for free-text fixes. Does not auto-invoke. |
+| `plan-verify` / `plan-repair` | **Planning layer** - plan doc gaps are not code-verify scope; use `@plan-verify` then `@plan-repair` |
 | `session-control` | **uncommitted** or **last** before `close commit` |
 | `concept-run` | Clear MOD rows before milestone **pass** |
 
@@ -335,3 +429,5 @@ Registry: `SKILL_DEPENDENCIES.md` § Self-verify auto-invoke.
 - Full milestone matrix on every task (too heavy - use **uncommitted**)
 - Marking MOD-06 **skip** on agent-authored diffs - use **fail** or attach output
 - Accepting `Confirmed` assumptions in implementation reports without file or test cite
+- Running open-language verify without a **Request interpretation** block
+- Claiming milestone **pass** with no `## Current iteration` block (use uncommitted + gap note)

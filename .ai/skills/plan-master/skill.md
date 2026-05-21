@@ -50,6 +50,8 @@ If **plan-master-ready** is **no**, stop - run `@plan-foundation certify` first.
 
 **Registry:** Full matrix - [`.ai/skills/SKILL_DEPENDENCIES.md`](../SKILL_DEPENDENCIES.md).
 
+**Symmetric verify/repair:** `@plan-verify master` orchestrates this skill's **status** + **integrity**; gaps → `@plan-repair master` or `@plan-master revise - <reason>`.
+
 ---
 
 ## Prerequisite gate (mutating modes)

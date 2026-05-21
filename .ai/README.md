@@ -170,13 +170,15 @@ Agent OS is a **gated pipeline**: each stage unlocks the next. Skills enforce th
 
 ### Skills at a glance
 
-All **12** skills live under [`skills/`](skills/README.md). Invoke as `@<skill-id>` plus a mode (e.g. `@plan-foundation status`).
+All **14** skills live under [`skills/`](skills/README.md). Invoke as `@<skill-id>` plus a mode (e.g. `@plan-foundation status`).
 
 | Skill | One line | Typical invoke |
 |-------|----------|----------------|
 | **project-bootstrap** | Scaffold `.work/`, `.cursorrules`, stack doc from templates | `init` · `status` |
 | **plan-foundation** | Foundation docs 01–04, ADRs, SPECs, registries; certifies **plan-master-ready** | `greenfield` · `status` · `certify plan-master-ready` |
 | **plan-master** | Master plan with milestones; certifies **implementation-ready** | `greenfield` · `continue` · `status` · `revise` |
+| **plan-verify** | Plan audits; **brownfield** align without formal plan-foundation/master | `brownfield` · `foundation` · `master` · `alignment` |
+| **plan-repair** | Fix gaps; synthesize `.work/` from code/README/ROADMAP | `brownfield` · `foundation - <goal>` · `master - <goal>` |
 | **session-control** | Session bookends; updates HANDOFF + NEXT | `start` · `close` · `status` |
 | **code-implementation** | Run one milestone from `NEXT.md`; per-task gates | `plan - M{N}` · `start` · `continue` · `continue - N` · `complete` |
 | **code-verify** | Audits (not implementation): milestone, dirty tree, last commit/push | `milestone` · `uncommitted` · `last` |
