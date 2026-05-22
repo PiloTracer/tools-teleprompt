@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-21 — hotspot handoff reliability (PUBLIC_ORIGIN, CSP), multi-QR mobile chunk assembly, player mobile UI, `start.sh` `.env.dev`/`.env.prd` context loading
+**Closed:** 2026-05-22 — player UX: side/bottom clearance sliders, compact toolbar, controls below text in fullscreen only
 
-**Updated:** 2026-05-21
+**Updated:** 2026-05-22
 
-**Repository state:** M1–M7 **complete** (plan v1.1). Handoff fixes committed. **Next:** production deploy (`deploy/README.md`); manual phone verify on hotspot.
+**Repository state:** v0.1.0 released. M1–M7 complete. Player padding + fullscreen toolbar layout committed this session. **Next:** production deploy; manual phone verify on hotspot.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -97,6 +97,9 @@
 | 2026-05-21 | M7 complete + MOD-06 | `.work/context/20260521-MOD-06-M7-security-review.md`; API 18/18 + FE 64/64 + E2E 5/5 |
 | 2026-05-21 | Hotspot handoff hardening | `public_config.py`, `publicOrigin.ts`, CSP, `start.sh` env context, multi-QR `localStorage`, player mobile UI |
 | 2026-05-21 | session close commit push | handoff origin + multi-QR mobile + dev stack on `main` |
+| 2026-05-21 | session close commit push | README v0.1.0 release + GitHub release |
+| 2026-05-22 | Player UX polish | side/bottom clearance, scroll tail, compact toolbar, fullscreen-only bottom controls |
+| 2026-05-22 | session close commit push | player layout improvements on `main` |
 
 ---
 

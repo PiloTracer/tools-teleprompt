@@ -4,7 +4,7 @@ import { en } from "../lib/i18n/en";
 import { renderScript } from "../markdown/render";
 import { SanitizedHtml } from "../markdown/SanitizedHtml";
 import type { ScriptFormat } from "../markdown/types";
-import { Help } from "./Help";
+import { computeScrollTailPx } from "./playerLayout";
 import { PlayerControls } from "./PlayerControls";
 import {
   DEFAULT_SETTINGS,
@@ -17,6 +17,7 @@ import {
 import { useFullscreen } from "./useFullscreen";
 import { useKeyboard } from "./useKeyboard";
 import { useScroll } from "./useScroll";
+import { useViewportHeight } from "./useViewportHeight";
 import { useWakeLock } from "./useWakeLock";
 
 const SPEED_MIN = 0.5;
@@ -54,9 +55,11 @@ export function Player() {
 
   const html = useMemo(() => renderScript(source, format), [source, format]);
 
-  useScroll(viewportRef, { isPlaying, speed: settings.speed });
-
   const hasScript = source.trim().length > 0;
+  const viewportHeight = useViewportHeight(viewportRef, hasScript && hydrated);
+  const scrollTailPx = computeScrollTailPx(viewportHeight, settings.bottomPadding);
+
+  useScroll(viewportRef, { isPlaying, speed: settings.speed });
 
   const onSettingsChange = useCallback((next: PrompterSettings) => {
     setSettings(next);
@@ -106,69 +109,42 @@ export function Player() {
       className={`tp-player ${themeClass} ${mirrorClass}`.trim()}
       aria-label="Teleprompter player"
     >
-      <header className="tp-player-header">
-        <div className="tp-player-header__primary">
-          <button
-            type="button"
-            className="tp-player-play"
-            disabled={!hasScript}
-            aria-pressed={isPlaying}
-            onClick={() => setIsPlaying((prev) => !prev)}
-          >
-            {isPlaying ? en.play.pause : en.play.play}
-          </button>
-          <label className="tp-player-speed">
-            <span className="tp-player-speed__label">{en.settings.speed}</span>
-            <input
-              type="range"
-              min={SPEED_MIN}
-              max={SPEED_MAX}
-              step={SPEED_STEP}
-              value={settings.speed}
-              disabled={!hasScript}
-              onChange={(e) => onSpeedChange(Number(e.target.value))}
-              aria-label={en.settings.speed}
-              aria-valuemin={SPEED_MIN}
-              aria-valuemax={SPEED_MAX}
-              aria-valuenow={settings.speed}
-            />
-            <span className="tp-player-speed__value">{settings.speed.toFixed(1)}×</span>
-          </label>
-          {isSupported ? (
-            <button
-              type="button"
-              className="tp-player-fullscreen"
-              disabled={!hasScript}
-              aria-pressed={isFullscreen}
-              onClick={() => void toggleFullscreen()}
-            >
-              {isFullscreen ? en.play.exitFullscreen : en.play.fullscreen}
-            </button>
-          ) : null}
-          <Help open={helpOpen} onToggle={() => setHelpOpen((prev) => !prev)} />
-        </div>
-        <PlayerControls
-          settings={settings}
-          isPlaying={isPlaying}
-          disabled={!hasScript}
-          onSettingsChange={onSettingsChange}
-          onPlayPause={() => setIsPlaying((prev) => !prev)}
-          showPlayButton={false}
-        />
-      </header>
       {!hasScript ? (
         <p className="tp-player-empty">{en.play.empty}</p>
       ) : (
         <div ref={viewportRef} className="tp-player-viewport" data-testid="player-viewport">
           <div
             className="tp-player-content"
-            style={{ fontSize: `${settings.fontSize}px` }}
+            style={{
+              fontSize: `${settings.fontSize}px`,
+              paddingLeft: `calc(1rem + ${settings.sidePadding}vw)`,
+              paddingRight: `calc(1rem + ${settings.sidePadding}vw)`,
+            }}
             data-testid="player-content"
           >
             <SanitizedHtml html={html} className="tp-player-script" />
+            <div
+              className="tp-player-scroll-tail"
+              data-testid="player-scroll-tail"
+              style={{ height: `${scrollTailPx}px` }}
+              aria-hidden
+            />
           </div>
         </div>
       )}
+      <PlayerControls
+        settings={settings}
+        isPlaying={isPlaying}
+        disabled={!hasScript}
+        isFullscreen={isFullscreen}
+        isFullscreenSupported={isSupported}
+        helpOpen={helpOpen}
+        onSettingsChange={onSettingsChange}
+        onPlayPause={() => setIsPlaying((prev) => !prev)}
+        onSpeedChange={onSpeedChange}
+        onToggleFullscreen={() => void toggleFullscreen()}
+        onHelpToggle={() => setHelpOpen((prev) => !prev)}
+      />
     </section>
   );
 }

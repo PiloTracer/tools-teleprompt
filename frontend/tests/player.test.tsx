@@ -10,6 +10,7 @@ import { BASE_SCROLL_PX_PER_SEC, applyScrollStep, scrollDeltaPx, simulateScrollP
 import { PlayPage } from "../src/routes/PlayPage";
 import {
   clearPrompterStorage,
+  DEFAULT_SETTINGS,
   saveScriptFormat,
   saveScriptSource,
   saveSettings,
@@ -86,7 +87,7 @@ describe("Player (M4-T1)", () => {
   it("speed slider updates displayed multiplier", async () => {
     await saveScriptSource("Line one");
     await saveScriptFormat("plain");
-    await saveSettings({ speed: 1, fontSize: 24, theme: "light", mirror: false });
+    await saveSettings({ ...DEFAULT_SETTINGS });
 
     render(
       <MemoryRouter>
@@ -108,7 +109,7 @@ describe("Player (M4-T1)", () => {
   it("plays at minimum speed 0.5× (R3)", async () => {
     await saveScriptSource("Slow scroll\n".repeat(80));
     await saveScriptFormat("plain");
-    await saveSettings({ speed: 0.5, fontSize: 24, theme: "light", mirror: false });
+    await saveSettings({ ...DEFAULT_SETTINGS, speed: 0.5 });
 
     render(
       <MemoryRouter>
@@ -170,7 +171,7 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
   it("adjusts font size on player content (R3)", async () => {
     await saveScriptSource("Sized text");
     await saveScriptFormat("plain");
-    await saveSettings({ speed: 1, fontSize: 24, theme: "light", mirror: false });
+    await saveSettings({ ...DEFAULT_SETTINGS });
 
     render(
       <MemoryRouter>
@@ -184,6 +185,66 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
 
     fireEvent.change(screen.getByLabelText(/font size/i), { target: { value: "32" } });
     expect(screen.getByTestId("player-content")).toHaveStyle({ fontSize: "32px" });
+  });
+
+  it("adjusts side padding on player content (R3)", async () => {
+    await saveScriptSource("Inset text");
+    await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("player-content")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/side padding/i), { target: { value: "12" } });
+    expect(screen.getByTestId("player-content")).toHaveStyle({
+      paddingLeft: "calc(1rem + 12vw)",
+      paddingRight: "calc(1rem + 12vw)",
+    });
+  });
+
+  it("adjusts bottom clearance via scroll tail (R3)", async () => {
+    const resizeCallbacks: ResizeObserverCallback[] = [];
+    class ResizeObserverMock {
+      constructor(cb: ResizeObserverCallback) {
+        resizeCallbacks.push(cb);
+      }
+      observe(target: Element) {
+        Object.defineProperty(target, "clientHeight", {
+          configurable: true,
+          value: 500,
+        });
+        for (const cb of resizeCallbacks) {
+          cb([{ target } as ResizeObserverEntry], this);
+        }
+      }
+      unobserve() {}
+      disconnect() {}
+    }
+    vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+
+    await saveScriptSource("Bottom inset");
+    await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("player-scroll-tail")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/bottom clearance/i), { target: { value: "20" } });
+    expect(screen.getByTestId("player-scroll-tail")).toHaveStyle({ height: "100px" });
   });
 
   it("applies dark theme class (R3)", async () => {
@@ -225,7 +286,7 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
   it("persists control changes to storage (R2 settings)", async () => {
     await saveScriptSource("Persist");
     await saveScriptFormat("plain");
-    await saveSettings({ speed: 1, fontSize: 24, theme: "light", mirror: false });
+    await saveSettings({ ...DEFAULT_SETTINGS });
 
     render(
       <MemoryRouter>
@@ -361,7 +422,7 @@ describe("Keyboard shortcuts (M4-T6, R12)", () => {
   it("adjusts speed with +/- keys", async () => {
     await saveScriptSource("Speed keys");
     await saveScriptFormat("plain");
-    await saveSettings({ speed: 1, fontSize: 24, theme: "light", mirror: false });
+    await saveSettings({ ...DEFAULT_SETTINGS });
 
     render(
       <MemoryRouter>

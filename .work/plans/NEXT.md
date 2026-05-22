@@ -1,6 +1,6 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-21 (hotspot handoff fixes committed)
+**Updated:** 2026-05-22 (player UX committed)
 
 ---
 
@@ -50,6 +50,8 @@ M6 complete — see **Done — M6 iteration (archived)** below.
 | MOD-06 (M6) | 2026-05-21 |
 | Dev stack manager + env ports/naming | 2026-05-21 |
 | Hotspot handoff origin + multi-QR mobile fix | 2026-05-21 |
+| README v0.1.0 release + GitHub release | 2026-05-21 |
+| Player side/bottom clearance + fullscreen toolbar | 2026-05-22 |
 | M7 serverless handoff approved (LAN + multi-QR) | 2026-05-21 |
 | M7 formal complete | 2026-05-21 |
 | MOD-06 (M7) | 2026-05-21 |

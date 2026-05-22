@@ -11,13 +11,25 @@ export type Theme = "light" | "dark";
 export type PrompterSettings = {
   speed: number;
   fontSize: number;
+  /** Extra horizontal inset per side (vw) to narrow the scrolling column. */
+  sidePadding: number;
+  /** Clearance below text as % of viewport height (scroll tail for overhead camera). */
+  bottomPadding: number;
   theme: Theme;
   mirror: boolean;
 };
 
+export const SIDE_PADDING_MIN = 0;
+export const SIDE_PADDING_MAX = 30;
+
+export const BOTTOM_PADDING_MIN = 0;
+export const BOTTOM_PADDING_MAX = 100;
+
 export const DEFAULT_SETTINGS: PrompterSettings = {
   speed: 1,
   fontSize: 24,
+  sidePadding: 0,
+  bottomPadding: 0,
   theme: "light",
   mirror: false,
 };
@@ -141,6 +153,14 @@ export async function loadSettings(): Promise<PrompterSettings> {
       speed: typeof parsed.speed === "number" ? parsed.speed : DEFAULT_SETTINGS.speed,
       fontSize:
         typeof parsed.fontSize === "number" ? parsed.fontSize : DEFAULT_SETTINGS.fontSize,
+      sidePadding:
+        typeof parsed.sidePadding === "number"
+          ? Math.min(SIDE_PADDING_MAX, Math.max(SIDE_PADDING_MIN, parsed.sidePadding))
+          : DEFAULT_SETTINGS.sidePadding,
+      bottomPadding:
+        typeof parsed.bottomPadding === "number"
+          ? Math.min(BOTTOM_PADDING_MAX, Math.max(BOTTOM_PADDING_MIN, parsed.bottomPadding))
+          : DEFAULT_SETTINGS.bottomPadding,
       theme: parsed.theme === "dark" ? "dark" : "light",
       mirror: Boolean(parsed.mirror),
     };

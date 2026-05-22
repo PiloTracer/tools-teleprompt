@@ -7,6 +7,10 @@ import {
   saveSettings,
   type PrompterSettings,
   type Theme,
+  BOTTOM_PADDING_MAX,
+  BOTTOM_PADDING_MIN,
+  SIDE_PADDING_MAX,
+  SIDE_PADDING_MIN,
 } from "./storage";
 
 export function Settings() {
@@ -29,7 +33,8 @@ export function Settings() {
   };
 
   const onNumberChange =
-    (key: "speed" | "fontSize") => (event: ChangeEvent<HTMLInputElement>) => {
+    (key: "speed" | "fontSize" | "sidePadding" | "bottomPadding") =>
+    (event: ChangeEvent<HTMLInputElement>) => {
       update(key, Number(event.target.value));
     };
 
@@ -59,6 +64,30 @@ export function Settings() {
           onChange={onNumberChange("fontSize")}
         />
         <span>{settings.fontSize}px</span>
+      </label>
+      <label>
+        {en.settings.sidePadding}
+        <input
+          type="range"
+          min={SIDE_PADDING_MIN}
+          max={SIDE_PADDING_MAX}
+          step={1}
+          value={settings.sidePadding}
+          onChange={onNumberChange("sidePadding")}
+        />
+        <span>{settings.sidePadding}%</span>
+      </label>
+      <label>
+        {en.settings.bottomPadding}
+        <input
+          type="range"
+          min={BOTTOM_PADDING_MIN}
+          max={BOTTOM_PADDING_MAX}
+          step={1}
+          value={settings.bottomPadding}
+          onChange={onNumberChange("bottomPadding")}
+        />
+        <span>{settings.bottomPadding}%</span>
       </label>
       <label>
         {en.settings.theme}

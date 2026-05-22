@@ -3,7 +3,9 @@ import { expect, test } from "@playwright/test";
 const SETTINGS = {
   speed: 1,
   fontSize: 24,
-  theme: "light",
+  sidePadding: 0,
+  bottomPadding: 0,
+  theme: "light" as const,
   mirror: false,
 };
 
