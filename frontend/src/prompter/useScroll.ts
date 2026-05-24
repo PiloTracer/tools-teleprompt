@@ -5,27 +5,13 @@ import { prefersReducedMotion } from "./motion";
 /** Baseline scroll rate at 1× speed (pixels per second). */
 export const BASE_SCROLL_PX_PER_SEC = 48;
 
-export const SPEED_MIN = 0.1;
+export const SPEED_MIN = 0.5;
 export const SPEED_MAX = 3;
-/** Speed slider step — also used when rounding adaptive effective speed upward. */
-export const SPEED_STEP = 0.1;
 
 export type UseScrollOptions = {
   isPlaying: boolean;
-  /** Multiplier 0.1–3× from settings. */
+  /** Multiplier 0.5–3× from settings. */
   speed: number;
-  /**
-   * Optional per-frame rate multiplier for adaptive sync.
-   * `null` or omitted → 1× baseline. `0` → pause scroll for this frame.
-   */
-  resolveRate?: (ctx: ScrollFrameContext) => number | null;
-};
-
-export type ScrollFrameContext = {
-  scrollTop: number;
-  viewportHeight: number;
-  maxScroll: number;
-  reducedMotion: boolean;
 };
 
 export function clampScrollSpeed(speed: number): number {
@@ -33,21 +19,8 @@ export function clampScrollSpeed(speed: number): number {
 }
 
 /**
- * Applies an adaptive rule multiplier then rounds **up** to one decimal place
- * (0.1× steps).  E.g. 0.1× at +30 % → 0.13 → 0.2×; 0.7× at +50 % → 1.05 → 1.1×.
- */
-export function applySpeedMultiplierRoundedUp(
-  speed: number,
-  multiplier: number,
-): number {
-  const raw = clampScrollSpeed(speed) * multiplier;
-  const stepped = Math.ceil((raw - 1e-9) / SPEED_STEP) * SPEED_STEP;
-  return clampScrollSpeed(stepped);
-}
-
-/**
  * Applies one scroll step, retaining fractional pixels in carryPx.
- * Browsers use integer scrollTop; without carry, low speeds (e.g. 0.1×) stall.
+ * Browsers use integer scrollTop; without carry, low speeds (e.g. 0.5×) stall.
  */
 export function applyScrollStep(
   scrollTop: number,
@@ -80,15 +53,12 @@ export function applyScrollStep(
  */
 export function useScroll(
   viewportRef: RefObject<HTMLElement | null>,
-  { isPlaying, speed, resolveRate }: UseScrollOptions,
+  { isPlaying, speed }: UseScrollOptions,
 ): void {
   const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
   const carryRef = useRef(0);
-  const resolveRateRef = useRef(resolveRate);
   const speedRef = useRef(speed);
-
-  resolveRateRef.current = resolveRate;
   speedRef.current = speed;
 
   useEffect(() => {
@@ -129,18 +99,8 @@ export function useScroll(
       if (lastTimeRef.current !== null) {
         const deltaSec = (time - lastTimeRef.current) / 1000;
         const clampedSpeed = clampScrollSpeed(speedRef.current);
+        const deltaPx = BASE_SCROLL_PX_PER_SEC * clampedSpeed * deltaSec;
         const maxScroll = el.scrollHeight - el.clientHeight;
-        const rate =
-          resolveRateRef.current?.({
-            scrollTop: el.scrollTop,
-            viewportHeight: el.clientHeight,
-            maxScroll,
-            reducedMotion,
-          }) ?? 1;
-        const effectiveSpeed =
-          rate > 0 ? applySpeedMultiplierRoundedUp(clampedSpeed, rate) : 0;
-        const deltaPx =
-          effectiveSpeed > 0 ? BASE_SCROLL_PX_PER_SEC * effectiveSpeed * deltaSec : 0;
         const result = applyScrollStep(el.scrollTop, carryRef.current, deltaPx, maxScroll);
         carryRef.current = result.carryPx;
         el.scrollTop = result.scrollTop;

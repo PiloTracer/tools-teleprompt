@@ -1,6 +1,6 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Player } from "../src/prompter/Player";
 import { Help } from "../src/prompter/Help";
@@ -28,8 +28,8 @@ describe("useScroll (M4-T1)", () => {
     expect(at2x).toBe(BASE_SCROLL_PX_PER_SEC * 2);
   });
 
-  it("clamps speed to 0.1–3×", () => {
-    expect(scrollDeltaPx(1000, 0.05)).toBe(scrollDeltaPx(1000, 0.1));
+  it("clamps speed to 0.5–3×", () => {
+    expect(scrollDeltaPx(1000, 0.1)).toBe(scrollDeltaPx(1000, 0.5));
     expect(scrollDeltaPx(1000, 10)).toBe(scrollDeltaPx(1000, 3));
   });
 
@@ -110,10 +110,10 @@ describe("Player (M4-T1)", () => {
     expect(screen.getByText("2.5×")).toBeInTheDocument();
   });
 
-  it("plays at minimum speed 0.1× (R3)", async () => {
+  it("plays at minimum speed 0.5× (R3)", async () => {
     await saveScriptSource("Slow scroll\n".repeat(80));
     await saveScriptFormat("plain");
-    await saveSettings({ ...DEFAULT_SETTINGS, speed: 0.1 });
+    await saveSettings({ ...DEFAULT_SETTINGS, speed: 0.5 });
 
     render(
       <MemoryRouter>
@@ -135,139 +135,6 @@ describe("Player (M4-T1)", () => {
       "aria-pressed",
       "true",
     );
-
-    await waitFor(
-      () => {
-        expect(viewport.scrollTop).toBeGreaterThan(0);
-      },
-      { timeout: 3000, interval: 50 },
-    );
-  });
-
-  it("scrolls at 1× when auto-sync is active and SR has no line yet (Rule 4 — continue normally)", async () => {
-    // The user-facing 4-rule spec defines Rule 4 as "if not reading at all,
-    // continue scrolling normally".  At cold start (sync just engaged, SR
-    // hasn't matched a line yet) the resolver returns 1× rather than 0,
-    // so the prompter advances at the user-selected speed.
-    //
-    // Adaptive sync is hard-gated on SpeechRecognition support, so we stub
-    // it here — without the stub the Player would (correctly) ignore the
-    // saved adaptive flags and run the fixed-speed scroll path.
-    class MockSpeechRecognition {
-      continuous = true;
-      interimResults = true;
-      maxAlternatives = 1;
-      lang = "";
-      onstart?: () => void;
-      onerror?: (e: { error: string }) => void;
-      onend?: () => void;
-      onresult?: (e: SpeechRecognitionEvent) => void;
-      start() {
-        this.onstart?.();
-      }
-      stop() {}
-    }
-    vi.stubGlobal("SpeechRecognition", MockSpeechRecognition);
-
-    await saveScriptSource("Auto sync cold start scroll\n".repeat(80));
-    await saveScriptFormat("plain");
-    await saveSettings({
-      ...DEFAULT_SETTINGS,
-      adaptiveEnabled: true,
-      adaptiveAutoSync: true,
-    });
-
-    try {
-      render(
-        <MemoryRouter>
-          <Player />
-        </MemoryRouter>,
-      );
-
-      await waitFor(() => {
-        expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
-      });
-
-      const viewport = screen.getByTestId("player-viewport");
-      Object.defineProperty(viewport, "clientHeight", { configurable: true, value: 200 });
-      Object.defineProperty(viewport, "scrollHeight", { configurable: true, value: 4000 });
-      viewport.scrollTop = 0;
-
-      fireEvent.click(screen.getByRole("button", { name: "Play" }));
-
-      // Rule 4: SR has no line lock yet → resolver returns 1× → viewport
-      // advances at the user-selected speed.
-      await waitFor(
-        () => {
-          expect(viewport.scrollTop).toBeGreaterThan(0);
-        },
-        { timeout: 3000, interval: 50 },
-      );
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it("falls back to fixed-speed scroll on browsers without SpeechRecognition", async () => {
-    // No SpeechRecognition stub installed → feature is hard-gated off.
-    // Even with adaptiveEnabled=true in saved settings, the Player must
-    // ignore it and run the regular fixed-speed scroll loop.
-    await saveScriptSource("Fixed speed fallback\n".repeat(80));
-    await saveScriptFormat("plain");
-    await saveSettings({
-      ...DEFAULT_SETTINGS,
-      adaptiveEnabled: true,
-      adaptiveAutoSync: true,
-    });
-
-    render(
-      <MemoryRouter>
-        <Player />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
-    });
-
-    // Mic button must NOT render when SR is unavailable.
-    expect(screen.queryByTestId("player-mic-sync")).not.toBeInTheDocument();
-
-    const viewport = screen.getByTestId("player-viewport");
-    Object.defineProperty(viewport, "clientHeight", { configurable: true, value: 200 });
-    Object.defineProperty(viewport, "scrollHeight", { configurable: true, value: 4000 });
-    viewport.scrollTop = 0;
-
-    fireEvent.click(screen.getByRole("button", { name: "Play" }));
-
-    // Fixed-speed scroll must advance — adaptive sync is bypassed.
-    await waitFor(
-      () => expect(viewport.scrollTop).toBeGreaterThan(0),
-      { timeout: 3000, interval: 50 },
-    );
-  });
-
-  it("scrolls on play with auto-sync off (fixed speed, R8c)", async () => {
-    await saveScriptSource("Fixed speed scroll\n".repeat(80));
-    await saveScriptFormat("plain");
-    await saveSettings({ ...DEFAULT_SETTINGS });
-
-    render(
-      <MemoryRouter>
-        <Player />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
-    });
-
-    const viewport = screen.getByTestId("player-viewport");
-    Object.defineProperty(viewport, "clientHeight", { configurable: true, value: 200 });
-    Object.defineProperty(viewport, "scrollHeight", { configurable: true, value: 4000 });
-    viewport.scrollTop = 0;
-
-    fireEvent.click(screen.getByRole("button", { name: "Play" }));
 
     await waitFor(
       () => {
@@ -650,194 +517,6 @@ describe("useKeyboard hook", () => {
     expect(onSpeedUp).toHaveBeenCalledTimes(1);
     expect(onSpeedDown).toHaveBeenCalledTimes(1);
     expect(onToggleFullscreen).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("Player adaptive mic (M8-T7, R20–R23, I5)", () => {
-  // Shared SpeechRecognition mock state
-  const startSpy = vi.fn();
-  const stopSpy = vi.fn();
-  let recognitionHandlers: {
-    onstart?: () => void;
-    onerror?: (e: { error: string }) => void;
-    onend?: () => void;
-    onresult?: (e: SpeechRecognitionEvent) => void;
-  } = {};
-
-  beforeEach(async () => {
-    localStorage.clear();
-    await clearPrompterStorage();
-    startSpy.mockReset();
-    stopSpy.mockReset();
-    recognitionHandlers = {};
-
-    class MockSpeechRecognition {
-      continuous = true;
-      interimResults = true;
-      maxAlternatives = 1;
-      lang = "";
-
-      set onstart(fn: (() => void) | undefined) {
-        recognitionHandlers.onstart = fn;
-      }
-      set onerror(fn: ((e: { error: string }) => void) | undefined) {
-        recognitionHandlers.onerror = fn;
-      }
-      set onend(fn: (() => void) | undefined) {
-        recognitionHandlers.onend = fn;
-      }
-      set onresult(fn: ((e: SpeechRecognitionEvent) => void) | undefined) {
-        recognitionHandlers.onresult = fn;
-      }
-
-      start() {
-        startSpy();
-        recognitionHandlers.onstart?.();
-      }
-
-      stop() {
-        stopSpy();
-      }
-    }
-
-    vi.stubGlobal("SpeechRecognition", MockSpeechRecognition);
-
-    // Stub getUserMedia so VAD doesn't reject — returns a silent stream.
-    const silentStream = {
-      getTracks: () => [{ stop: vi.fn() }],
-    };
-    Object.defineProperty(navigator, "mediaDevices", {
-      configurable: true,
-      value: { getUserMedia: vi.fn().mockResolvedValue(silentStream) },
-    });
-    // Stub AudioContext so Web Audio pipeline initialises without errors.
-    vi.stubGlobal(
-      "AudioContext",
-      class MockAudioContext {
-        state = "running";
-        createMediaStreamSource = () => ({ connect: vi.fn() });
-        createAnalyser = () => ({
-          fftSize: 2048,
-          getByteTimeDomainData: (buf: Uint8Array) => buf.fill(128),
-        });
-        close = vi.fn().mockResolvedValue(undefined);
-      },
-    );
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("hides mic button when adaptive is off (R20, I5)", async () => {
-    await saveScriptSource("Line one");
-    await saveScriptFormat("plain");
-    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: false });
-
-    render(
-      <MemoryRouter>
-        <Player />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
-    });
-
-    expect(screen.queryByTestId("player-mic-sync")).not.toBeInTheDocument();
-    expect(startSpy).not.toHaveBeenCalled();
-  });
-
-  it("shows mic button when adaptive is enabled (R20)", async () => {
-    await saveScriptSource("Line one");
-    await saveScriptFormat("plain");
-    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: true });
-
-    render(
-      <MemoryRouter>
-        <Player />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId("player-mic-sync")).toBeInTheDocument();
-    });
-    expect(screen.getByRole("button", { name: /microphone sync/i })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
-  });
-
-  it("toggles sync active on mic tap (R21)", async () => {
-    await saveScriptSource("Line one");
-    await saveScriptFormat("plain");
-    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: true });
-
-    render(
-      <MemoryRouter>
-        <Player />
-      </MemoryRouter>,
-    );
-
-    const mic = await screen.findByTestId("player-mic-sync");
-    fireEvent.click(mic);
-
-    await waitFor(() => {
-      expect(mic).toHaveAttribute("aria-pressed", "true");
-    });
-    // Recognition should have started after sync was engaged.
-    await waitFor(() => {
-      expect(startSpy).toHaveBeenCalled();
-    });
-
-    fireEvent.click(mic);
-    expect(mic).toHaveAttribute("aria-pressed", "false");
-  });
-
-  it("shows permission hint when mic access denied (R23)", async () => {
-    await saveScriptSource("Line one");
-    await saveScriptFormat("plain");
-    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: true });
-
-    render(
-      <MemoryRouter>
-        <Player />
-      </MemoryRouter>,
-    );
-
-    fireEvent.click(await screen.findByTestId("player-mic-sync"));
-
-    // Wait for recognition to start, then fire a not-allowed error.
-    await waitFor(() => expect(startSpy).toHaveBeenCalled());
-
-    await act(async () => {
-      recognitionHandlers.onerror?.({ error: "not-allowed" });
-    });
-
-    await waitFor(() => {
-      expect(screen.getByTestId("player-mic-denied-hint")).toHaveTextContent(
-        /microphone access was denied/i,
-      );
-    });
-  });
-
-  it("does not start recognition when adaptive off", async () => {
-    await saveScriptSource("Line one");
-    await saveScriptFormat("plain");
-    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: false });
-
-    render(
-      <MemoryRouter>
-        <Player />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Play" }));
-    expect(startSpy).not.toHaveBeenCalled();
   });
 });
 

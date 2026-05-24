@@ -11,15 +11,6 @@ export const en = {
     hint: "Paste, type, or drop a .txt or .md file",
     dropHint: "Drop file here",
     upload: "Upload .txt / .md",
-    metaSummary: "Adaptive teleprompter markup (optional)",
-    metaIntro:
-      "Mark whole lines as stage directions or cues. They scroll faster during adaptive sync and are not held on speech pauses.",
-    metaBracket: "[DATACARD] or [CARD: title]",
-    metaParen: "(beat) or (stage direction) — whole line only",
-    metaComment: "/* note */ — whole line",
-    metaBlockquote: "> direction — Markdown blockquote",
-    metaParenNote:
-      "Spoken lines in parentheses? Prefer a blockquote (e.g. > Hello?) instead of (Hello?).",
   },
   preview: {
     title: "Preview",
@@ -37,11 +28,6 @@ export const en = {
     themeLight: "Light",
     themeDark: "Dark",
     mirror: "Mirror text (camera setups)",
-    autoSyncOnPlay: "Auto-sync on play",
-    adaptivePrivacy:
-      "Speech is recognised on-device by your browser (Chrome / Edge). Nothing is uploaded.",
-    autoSyncNotSupported:
-      "Auto-sync requires Chrome or Edge — not supported by this browser.",
     save: "Save settings",
     saved: "Settings saved",
   },
@@ -65,9 +51,6 @@ export const en = {
     stub: "Teleprompter player — implemented in M4.",
     play: "Play",
     pause: "Pause",
-    micSync: "Microphone sync",
-    micPermissionDenied:
-      "Microphone access was denied. Scrolling continues at fixed speed.",
     loading: "Loading script…",
     empty: "No script loaded — add text on the editor page.",
     emptyCta: "Go to editor",

@@ -559,50 +559,6 @@
   min-width: 4.5rem;
 }
 
-.tp-player-mic {
-  flex: 0 0 auto;
-  min-width: var(--size-touch-min);
-  min-height: var(--size-touch-min);
-  padding: var(--space-1);
-}
-
-.tp-player-mic__icon {
-  display: block;
-  width: 1.125rem;
-  height: 1.125rem;
-}
-
-.tp-player-mic--denied {
-  opacity: 0.75;
-}
-
-/*
- * Mic button "language locked" state — switches blue → red once
- * SpeechRecognition has matched a script line at least once.
- * Visual cue that adaptive sync is now tracking the reader's voice.
- */
-.tp-player-mic--calibrated.ds-button[data-variant="primary"] {
-  background: var(--color-danger);
-  border-color: var(--color-danger);
-  color: #fff;
-}
-
-.tp-player-mic--calibrated.ds-button[data-variant="primary"]:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-danger) 85%, black);
-  border-color: color-mix(in srgb, var(--color-danger) 85%, black);
-}
-
-.tp-player-mic--calibrated.ds-button[data-variant="primary"][aria-pressed="true"] {
-  background: var(--color-danger);
-  border-color: var(--color-danger);
-}
-
-.tp-player-mic-hint {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-snug);
-}
-
 .tp-player-lever-strip {
   display: flex;
   align-items: stretch;

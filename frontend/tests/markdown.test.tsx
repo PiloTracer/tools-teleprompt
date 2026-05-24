@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/react";
 
 import { renderScript } from "../src/markdown/render";
 import { SanitizedHtml } from "../src/markdown/SanitizedHtml";
-import { isMetaSourceLine } from "../src/markdown/sanitize";
 import { asSafeHtml } from "../src/markdown/types";
 import fixtures from "./xss-fixtures.json";
 
@@ -44,46 +43,6 @@ describe("renderScript", () => {
     expect(link?.getAttribute("href")).toBe("https://example.com");
     expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
     expect(link?.getAttribute("target")).toBe("_blank");
-  });
-
-  it("renders blockquote with tp-meta class (R9)", () => {
-    const html = renderScript("> stage direction", "markdown");
-    const { container } = render(<SanitizedHtml html={html} />);
-    const blockquote = container.querySelector("blockquote");
-    expect(blockquote?.classList.contains("tp-meta")).toBe(true);
-    expect(blockquote?.textContent).toContain("stage direction");
-  });
-
-  it("re-exports isMetaSourceLine aligned with blockquote prefix (R10)", () => {
-    expect(isMetaSourceLine("> whisper")).toBe(true);
-    expect(isMetaSourceLine("Hello world")).toBe(false);
-  });
-
-  it("tags markdown block elements with data-line-start / data-line-end (adaptive)", () => {
-    // The adaptive teleprompter reads these attributes from the rendered DOM
-    // to measure ACTUAL line positions (accounting for paragraph margins,
-    // padding, and wrap) instead of using a fictional `i * lineHeight` model.
-    const source = ["First paragraph.", "", "Second paragraph.", "", "# Heading"].join("\n");
-    const { container } = renderPipeline(source, "markdown");
-    const tagged = container.querySelectorAll("[data-line-start]");
-    expect(tagged.length).toBeGreaterThanOrEqual(3);
-
-    const paragraphs = container.querySelectorAll("p");
-    expect(paragraphs[0]?.getAttribute("data-line-start")).toBe("0");
-    expect(paragraphs[1]?.getAttribute("data-line-start")).toBe("2");
-
-    const heading = container.querySelector("h1");
-    expect(heading?.getAttribute("data-line-start")).toBe("4");
-  });
-
-  it("wraps each plain-text line in a span with data-line-index (adaptive)", () => {
-    const source = ["Line zero.", "Line one.", "Line two."].join("\n");
-    const { container } = renderPipeline(source, "plain");
-    const spans = container.querySelectorAll<HTMLElement>("span[data-line-index]");
-    expect(spans.length).toBe(3);
-    expect(spans[0]?.getAttribute("data-line-index")).toBe("0");
-    expect(spans[1]?.textContent).toBe("Line one.");
-    expect(spans[2]?.getAttribute("data-line-index")).toBe("2");
   });
 });
 

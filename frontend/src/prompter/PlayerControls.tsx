@@ -10,8 +10,9 @@ import {
   SIDE_PADDING_MIN,
   type PrompterSettings,
 } from "./storage";
-import { SPEED_MAX, SPEED_MIN } from "./useScroll";
 
+const SPEED_MIN = 0.5;
+const SPEED_MAX = 3;
 const SPEED_STEP = 0.1;
 
 type LeverId = "speed" | "fontSize" | "sidePadding" | "bottomPadding";
@@ -32,27 +33,11 @@ export type PlayerControlsProps = {
   isFullscreen: boolean;
   isFullscreenSupported: boolean;
   helpOpen: boolean;
-  /**
-   * Effective adaptive state from the parent (settings AND browser support).
-   * The mic button is rendered iff this is true; without it, no
-   * SpeechRecognition-dependent UI shows up regardless of saved settings.
-   */
-  adaptiveActive?: boolean;
-  syncActive?: boolean;
-  /**
-   * True once SpeechRecognition has matched a script line at least once
-   * this session — i.e. the system has locked onto the user's spoken
-   * language.  Mic button shifts from blue → red as a visible cue that
-   * adaptive sync is now actively tracking the reader.
-   */
-  trackerCalibrated?: boolean;
-  micPermissionDenied?: boolean;
   onSettingsChange: (settings: PrompterSettings) => void;
   onPlayPause: () => void;
   onSpeedChange: (speed: number) => void;
   onToggleFullscreen: () => void;
   onHelpToggle: () => void;
-  onSyncToggle?: () => void;
 };
 
 function leverIndex(id: LeverId): number {
@@ -71,16 +56,11 @@ export function PlayerControls({
   isFullscreen,
   isFullscreenSupported,
   helpOpen,
-  adaptiveActive = false,
-  syncActive = false,
-  trackerCalibrated = false,
-  micPermissionDenied = false,
   onSettingsChange,
   onPlayPause,
   onSpeedChange,
   onToggleFullscreen,
   onHelpToggle,
-  onSyncToggle,
 }: PlayerControlsProps) {
   const [activeLever, setActiveLever] = useState<LeverId>("speed");
 
@@ -212,40 +192,6 @@ export function PlayerControls({
             {isPlaying ? en.play.pause : en.play.play}
           </button>
 
-          {adaptiveActive ? (
-            <button
-              type="button"
-              className={[
-                "ds-button",
-                "tp-player-mic",
-                syncActive && trackerCalibrated ? "tp-player-mic--calibrated" : "",
-                micPermissionDenied ? "tp-player-mic--denied" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              data-variant={syncActive ? "primary" : "secondary"}
-              data-size="sm"
-              data-calibrated={syncActive && trackerCalibrated ? "true" : "false"}
-              disabled={disabled}
-              aria-label={en.play.micSync}
-              aria-pressed={syncActive}
-              data-testid="player-mic-sync"
-              onClick={onSyncToggle}
-            >
-              <svg
-                className="tp-player-mic__icon"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path
-                  fill="currentColor"
-                  d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.92V19H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-1.08A7 7 0 0 0 17 11z"
-                />
-              </svg>
-            </button>
-          ) : null}
-
           <div className="tp-player-lever-strip" data-testid="player-lever-dock">
             <div
               className="tp-player-lever-tabs"
@@ -282,17 +228,6 @@ export function PlayerControls({
             </label>
           </div>
         </div>
-
-        {adaptiveActive && micPermissionDenied ? (
-          <p
-            className="tp-player-mic-hint ds-alert"
-            data-variant="status"
-            role="status"
-            data-testid="player-mic-denied-hint"
-          >
-            {en.play.micPermissionDenied}
-          </p>
-        ) : null}
 
         <div className="tp-player-toolbar__row tp-player-toolbar__row--lever">
           {isFullscreenSupported ? (

@@ -2,12 +2,10 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { Button } from "../components/ds/Button";
 import { en } from "../lib/i18n/en";
-import { isSpeechRecognitionSupported } from "./adaptive/useSpeechTracker";
 import {
   BOTTOM_PADDING_MAX,
   BOTTOM_PADDING_MIN,
   DEFAULT_SETTINGS,
-  isAutoSyncOnPlay,
   loadSettings,
   saveSettings,
   SIDE_PADDING_MAX,
@@ -16,8 +14,9 @@ import {
   type Theme,
 } from "./storage";
 import { applyDocumentTheme } from "./theme";
-import { SPEED_MAX, SPEED_MIN } from "./useScroll";
 
+const SPEED_MIN = 0.5;
+const SPEED_MAX = 3;
 const SPEED_STEP = 0.1;
 
 export function Settings() {
@@ -174,37 +173,6 @@ export function Settings() {
           />
           <span className="ds-checkbox__label">{en.settings.mirror}</span>
         </label>
-
-        {isSpeechRecognitionSupported() ? (
-          <>
-            <label className="tp-settings__mirror ds-checkbox">
-              <input
-                type="checkbox"
-                checked={isAutoSyncOnPlay(settings)}
-                onChange={(e) => {
-                  const on = e.target.checked;
-                  setSettings((prev) => ({
-                    ...prev,
-                    adaptiveEnabled: on,
-                    adaptiveAutoSync: on,
-                  }));
-                  setSaved(false);
-                  setError(null);
-                }}
-              />
-              <span className="ds-checkbox__label">{en.settings.autoSyncOnPlay}</span>
-            </label>
-            {isAutoSyncOnPlay(settings) ? (
-              <p className="ds-alert" data-variant="status" role="note">
-                {en.settings.adaptivePrivacy}
-              </p>
-            ) : null}
-          </>
-        ) : (
-          <p className="ds-alert" data-variant="warning" role="note">
-            {en.settings.autoSyncNotSupported}
-          </p>
-        )}
       </div>
 
       <div className="tp-settings__actions">

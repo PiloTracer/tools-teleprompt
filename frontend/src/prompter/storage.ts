@@ -17,27 +17,7 @@ export type PrompterSettings = {
   bottomPadding: number;
   theme: Theme;
   mirror: boolean;
-  /**
-   * Adaptive teleprompter (mic + read-zone scroll). Kept in sync with `adaptiveAutoSync`
-   * from Settings — one user-facing "Auto-sync on play" toggle controls both.
-   */
-  adaptiveEnabled: boolean;
-  /** Start mic sync when Play is pressed. Always matches `adaptiveEnabled` after Settings save. */
-  adaptiveAutoSync: boolean;
 };
-
-/** Single user-facing adaptive flag (both storage fields must match). */
-export function isAutoSyncOnPlay(settings: PrompterSettings): boolean {
-  return settings.adaptiveEnabled && settings.adaptiveAutoSync;
-}
-
-/** Normalize legacy/partial saves to the one-toggle model. */
-export function normalizeAdaptiveFlags(
-  parsed: Partial<PrompterSettings>,
-): Pick<PrompterSettings, "adaptiveEnabled" | "adaptiveAutoSync"> {
-  const on = Boolean(parsed.adaptiveAutoSync) || Boolean(parsed.adaptiveEnabled);
-  return { adaptiveEnabled: on, adaptiveAutoSync: on };
-}
 
 export const SIDE_PADDING_MIN = 0;
 export const SIDE_PADDING_MAX = 30;
@@ -52,8 +32,6 @@ export const DEFAULT_SETTINGS: PrompterSettings = {
   bottomPadding: 0,
   theme: "light",
   mirror: false,
-  adaptiveEnabled: false,
-  adaptiveAutoSync: false,
 };
 
 const IDB_NAME = "tools-teleprompt";
@@ -185,7 +163,6 @@ export async function loadSettings(): Promise<PrompterSettings> {
           : DEFAULT_SETTINGS.bottomPadding,
       theme: parsed.theme === "dark" ? "dark" : "light",
       mirror: Boolean(parsed.mirror),
-      ...normalizeAdaptiveFlags(parsed),
     };
   } catch {
     return { ...DEFAULT_SETTINGS };

@@ -1,29 +1,14 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { Settings } from "../src/prompter/Settings";
-import {
-  DEFAULT_SETTINGS,
-  STORAGE_KEYS,
-  loadSettings,
-  saveSettings,
-} from "../src/prompter/storage";
+import { STORAGE_KEYS, saveSettings } from "../src/prompter/storage";
 
 describe("Settings (S3)", () => {
   beforeEach(() => {
     localStorage.clear();
     delete document.documentElement.dataset.theme;
-    // Expose SpeechRecognition so the auto-sync toggle is rendered.
-    (window as Record<string, unknown>)["SpeechRecognition"] = class MockSR {
-      start = vi.fn();
-      stop = vi.fn();
-    };
-  });
-
-  afterEach(() => {
-    delete (window as Record<string, unknown>)["SpeechRecognition"];
-    vi.restoreAllMocks();
   });
 
   it("renders catalog controls after hydration", async () => {
@@ -68,8 +53,12 @@ describe("Settings (S3)", () => {
 
   it("restores saved theme on mount", async () => {
     await saveSettings({
-      ...DEFAULT_SETTINGS,
+      speed: 1,
+      fontSize: 22,
+      sidePadding: 0,
+      bottomPadding: 0,
       theme: "dark",
+      mirror: false,
     });
 
     render(
@@ -82,88 +71,5 @@ describe("Settings (S3)", () => {
       expect(screen.getByRole("radio", { name: /dark/i })).toBeChecked();
     });
     expect(document.documentElement.dataset.theme).toBe("dark");
-  });
-
-  it("defaults adaptive toggles to off (R18–R19)", async () => {
-    const loaded = await loadSettings();
-    expect(loaded.adaptiveEnabled).toBe(false);
-    expect(loaded.adaptiveAutoSync).toBe(false);
-  });
-
-  it("merges legacy settings without adaptive fields as false", async () => {
-    localStorage.setItem(
-      STORAGE_KEYS.settings,
-      JSON.stringify({
-        speed: 1.5,
-        fontSize: 20,
-        sidePadding: 0,
-        bottomPadding: 0,
-        theme: "light",
-        mirror: false,
-      }),
-    );
-    const loaded = await loadSettings();
-    expect(loaded.adaptiveEnabled).toBe(false);
-    expect(loaded.adaptiveAutoSync).toBe(false);
-    expect(loaded.speed).toBe(1.5);
-  });
-
-  it("shows privacy copy only when auto-sync on play is enabled (R19, R24)", async () => {
-    render(
-      <MemoryRouter>
-        <Settings />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByRole("checkbox", { name: /auto-sync on play/i })).toBeInTheDocument();
-    });
-
-    expect(
-      screen.queryByText(/speech is recognised on-device/i),
-    ).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("checkbox", { name: /auto-sync on play/i }));
-
-    expect(screen.getByText(/speech is recognised on-device/i)).toBeInTheDocument();
-  });
-
-  it("normalizes legacy adaptive-only saves to auto-sync on play", async () => {
-    localStorage.setItem(
-      STORAGE_KEYS.settings,
-      JSON.stringify({
-        ...DEFAULT_SETTINGS,
-        adaptiveEnabled: true,
-        adaptiveAutoSync: false,
-      }),
-    );
-    const loaded = await loadSettings();
-    expect(loaded.adaptiveEnabled).toBe(true);
-    expect(loaded.adaptiveAutoSync).toBe(true);
-  });
-
-  it("persists auto-sync on play (both adaptive flags) on save", async () => {
-    render(
-      <MemoryRouter>
-        <Settings />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByRole("checkbox", { name: /auto-sync on play/i })).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole("checkbox", { name: /auto-sync on play/i }));
-    fireEvent.click(screen.getByRole("button", { name: /save settings/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("status")).toHaveTextContent(/saved/i);
-    });
-
-    const raw = localStorage.getItem(STORAGE_KEYS.settings);
-    expect(JSON.parse(raw ?? "{}")).toMatchObject({
-      adaptiveEnabled: true,
-      adaptiveAutoSync: true,
-    });
   });
 });
