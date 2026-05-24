@@ -1,6 +1,6 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-24 (session close — adaptive removed; player bottom clearance + text wrap fixed)
+**Updated:** 2026-05-24 (session close — no new safe commits; protected paths still dirty)
 
 ---
 

@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-24 — removed adaptive auto-sync; fixed player bottom clearance (viewport-% grid) and horizontal text wrap; speed range 0.1–3×
+**Closed:** 2026-05-24 — player fixes shipped (`d955307`); protected compose/vite paths still local-only
 
 **Updated:** 2026-05-24
 
-**Repository state:** v0.1.0. M1–M8 complete. Adaptive feature **removed** (`95f804e`). This session: bottom clearance measured via `ResizeObserver` + CSS grid empty row; script content forced to wrap (`pre-wrap`, `overflow-x: hidden`); speed min 0.1×. Last commit on `main`: pending this close (prior `95f804e`). Protected paths still dirty: `deploy/docker-compose.yml`, `frontend/vite.config.ts`.
+**Repository state:** v0.1.0. M1–M8 complete. Adaptive **removed** (`95f804e`). Player bottom clearance + text wrap + speed 0.1–3× on `main` (`d955307`, pushed). **Uncommitted (protected):** `deploy/docker-compose.yml`, `frontend/vite.config.ts`. **Untracked:** `frontend/pnpm-lock.yaml`.
 
 **Plan-master-ready:** 2026-05-20
 
