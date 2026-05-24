@@ -1,8 +1,8 @@
 import { useCallback, useState, type ChangeEvent } from "react";
 
 import { Button } from "../components/ds/Button";
-import { en } from "../lib/i18n/en";
 import { Help } from "./Help";
+import { en } from "../lib/i18n/en";
 import {
   BOTTOM_PADDING_MAX,
   BOTTOM_PADDING_MIN,
@@ -94,6 +94,19 @@ export function PlayerControls({
     }
   };
 
+  const activeSliderLabel = (() => {
+    switch (activeLever) {
+      case "speed":
+        return en.settings.speed;
+      case "fontSize":
+        return en.settings.fontSize;
+      case "sidePadding":
+        return en.settings.sidePadding;
+      case "bottomPadding":
+        return en.settings.bottomPadding;
+    }
+  })();
+
   const renderActiveSlider = () => {
     switch (activeLever) {
       case "speed":
@@ -106,7 +119,7 @@ export function PlayerControls({
             value={settings.speed}
             disabled={disabled}
             onChange={(e) => onSpeedChange(Number(e.target.value))}
-            aria-label={en.settings.speed}
+            aria-label={activeSliderLabel}
             aria-valuemin={SPEED_MIN}
             aria-valuemax={SPEED_MAX}
             aria-valuenow={settings.speed}
@@ -122,7 +135,7 @@ export function PlayerControls({
             value={settings.fontSize}
             disabled={disabled}
             onChange={onNumberChange("fontSize")}
-            aria-label={en.settings.fontSize}
+            aria-label={activeSliderLabel}
             aria-valuemin={14}
             aria-valuemax={48}
             aria-valuenow={settings.fontSize}
@@ -138,7 +151,7 @@ export function PlayerControls({
             value={settings.sidePadding}
             disabled={disabled}
             onChange={onNumberChange("sidePadding")}
-            aria-label={en.settings.sidePadding}
+            aria-label={activeSliderLabel}
             aria-valuemin={SIDE_PADDING_MIN}
             aria-valuemax={SIDE_PADDING_MAX}
             aria-valuenow={settings.sidePadding}
@@ -154,7 +167,7 @@ export function PlayerControls({
             value={settings.bottomPadding}
             disabled={disabled}
             onChange={onNumberChange("bottomPadding")}
-            aria-label={en.settings.bottomPadding}
+            aria-label={activeSliderLabel}
             aria-valuemin={BOTTOM_PADDING_MIN}
             aria-valuemax={BOTTOM_PADDING_MAX}
             aria-valuenow={settings.bottomPadding}
@@ -166,40 +179,72 @@ export function PlayerControls({
   return (
     <footer className="tp-player-footer">
       <div className="tp-player-toolbar" role="toolbar" aria-label="Player settings">
-        <button
-          type="button"
-          className="ds-button tp-player-play"
-          data-variant="primary"
-          data-size="sm"
-          disabled={disabled}
-          aria-pressed={isPlaying}
-          onClick={onPlayPause}
-        >
-          {isPlaying ? en.play.pause : en.play.play}
-        </button>
-
-        <div className="tp-player-lever-dock" data-testid="player-lever-dock">
-          <div
-            className="tp-player-lever-tabs"
-            role="tablist"
-            aria-label={en.playerControls.leverGroup}
+        <div className="tp-player-toolbar__row tp-player-toolbar__row--primary">
+          <button
+            type="button"
+            className="ds-button tp-player-play"
+            data-variant="primary"
+            data-size="sm"
+            disabled={disabled}
+            aria-pressed={isPlaying}
+            onClick={onPlayPause}
           >
-            {LEVER_ORDER.map((id) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                id={`player-lever-tab-${id}`}
-                className="tp-player-lever-tab"
-                aria-selected={activeLever === id}
-                aria-controls="player-lever-panel"
+            {isPlaying ? en.play.pause : en.play.play}
+          </button>
+
+          <div className="tp-player-lever-strip" data-testid="player-lever-dock">
+            <div
+              className="tp-player-lever-tabs"
+              role="tablist"
+              aria-label={en.playerControls.leverGroup}
+            >
+              {LEVER_ORDER.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  id={`player-lever-tab-${id}`}
+                  className="tp-player-lever-tab"
+                  aria-selected={activeLever === id}
+                  aria-controls="player-lever-panel"
+                  disabled={disabled}
+                  onClick={() => setActiveLever(id)}
+                >
+                  {LEVER_TAB_LABEL[id]}
+                </button>
+              ))}
+            </div>
+
+            <label className="tp-player-mirror" title={en.settings.mirror}>
+              <input
+                type="checkbox"
                 disabled={disabled}
-                onClick={() => setActiveLever(id)}
-              >
-                {LEVER_TAB_LABEL[id]}
-              </button>
-            ))}
+                checked={settings.mirror}
+                aria-label={en.settings.mirror}
+                onChange={(e) => update("mirror", e.target.checked)}
+              />
+              <span className="tp-player-mirror__control" aria-hidden="true" />
+              <span className="tp-player-mirror__label">{en.playerControls.mirror}</span>
+            </label>
           </div>
+        </div>
+
+        <div className="tp-player-toolbar__row tp-player-toolbar__row--lever">
+          {isFullscreenSupported ? (
+            <button
+              type="button"
+              className="ds-button tp-player-fullscreen"
+              data-variant="secondary"
+              data-size="sm"
+              disabled={disabled}
+              aria-pressed={isFullscreen}
+              onClick={onToggleFullscreen}
+            >
+              {isFullscreen ? en.play.exitFullscreenShort : en.play.fullscreenShort}
+            </button>
+          ) : (
+            <span className="tp-player-toolbar__spacer" aria-hidden />
+          )}
 
           <div
             id="player-lever-panel"
@@ -220,7 +265,6 @@ export function PlayerControls({
             </Button>
 
             <label className="tp-player-lever-slider ds-range ds-range--player ds-range--player-focus">
-              <span className="ds-range__label">{LEVER_TAB_LABEL[activeLever]}</span>
               {renderActiveSlider()}
               <span className="ds-range__value">{formatLeverValue(activeLever)}</span>
             </label>
@@ -237,69 +281,8 @@ export function PlayerControls({
               ›
             </Button>
           </div>
-        </div>
 
-        <div
-          className="tp-player-control tp-player-control--theme ds-segmented"
-          role="group"
-          aria-label={en.settings.theme}
-        >
-          <span className="ds-segmented__group-label">{en.playerControls.theme}</span>
-          <div className="ds-segmented__track">
-            <label className="ds-segmented__option">
-              <input
-                type="radio"
-                name="player-theme"
-                value="light"
-                disabled={disabled}
-                checked={settings.theme === "light"}
-                onChange={() => update("theme", "light")}
-              />
-              <span className="ds-segmented__label">{en.settings.themeLight}</span>
-            </label>
-            <label className="ds-segmented__option">
-              <input
-                type="radio"
-                name="player-theme"
-                value="dark"
-                disabled={disabled}
-                checked={settings.theme === "dark"}
-                onChange={() => update("theme", "dark")}
-              />
-              <span className="ds-segmented__label">{en.settings.themeDark}</span>
-            </label>
-          </div>
-        </div>
-
-        <label
-          className="tp-player-control tp-player-control--mirror ds-checkbox"
-          title={en.settings.mirror}
-        >
-          <input
-            type="checkbox"
-            disabled={disabled}
-            checked={settings.mirror}
-            aria-label={en.settings.mirror}
-            onChange={(e) => update("mirror", e.target.checked)}
-          />
-          <span className="ds-checkbox__label">{en.playerControls.mirror}</span>
-        </label>
-
-        <div className="tp-player-toolbar__actions">
-          {isFullscreenSupported ? (
-            <button
-              type="button"
-              className="ds-button tp-player-fullscreen"
-              data-variant="secondary"
-              data-size="sm"
-              disabled={disabled}
-              aria-pressed={isFullscreen}
-              onClick={onToggleFullscreen}
-            >
-              {isFullscreen ? en.play.exitFullscreen : en.play.fullscreen}
-            </button>
-          ) : null}
-          <Help open={helpOpen} onToggle={onHelpToggle} disabled={disabled} />
+          <Help open={helpOpen} disabled={disabled} onToggle={onHelpToggle} compact />
         </div>
       </div>
     </footer>

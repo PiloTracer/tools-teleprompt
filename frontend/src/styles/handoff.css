@@ -146,3 +146,43 @@
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
 }
+
+.tp-handoff-claim-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ds-otp-input__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.ds-otp-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--size-touch-min);
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.3em;
+  text-align: center;
+  color: var(--color-text-primary);
+  background: var(--surface-inset);
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevation-inset);
+}
+
+.ds-otp-input:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.ds-otp-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

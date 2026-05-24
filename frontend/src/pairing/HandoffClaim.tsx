@@ -1,10 +1,18 @@
 import type { FormEvent } from "react";
 import { useCallback, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
+import { Button } from "../components/ds/Button";
+import {
+  HandoffReceiveCard,
+  HandoffReceiveError,
+  HandoffReceiveSection,
+} from "../components/ds/HandoffReceiveLayout";
 import { en } from "../lib/i18n/en";
 import { saveScriptFormat, saveScriptSource } from "../prompter/storage";
 import { claimRelaySession, PairingApiError } from "./client";
+
+const titleId = "handoff-claim-title";
 
 export function HandoffClaim() {
   const { token = "" } = useParams<{ token: string }>();
@@ -43,45 +51,46 @@ export function HandoffClaim() {
 
   if (!token) {
     return (
-      <p className="tp-error" role="alert">
-        {en.handoff.missingToken}
-      </p>
+      <HandoffReceiveSection titleId={titleId} title={en.handoff.claimTitle}>
+        <HandoffReceiveCard>
+          <HandoffReceiveError message={en.handoff.missingToken} />
+        </HandoffReceiveCard>
+      </HandoffReceiveSection>
     );
   }
 
   return (
-    <section aria-labelledby="handoff-claim-title">
-      <h1 id="handoff-claim-title">{en.handoff.claimTitle}</h1>
-      <p>{en.handoff.claimHint}</p>
+    <HandoffReceiveSection titleId={titleId} title={en.handoff.claimTitle}>
+      <HandoffReceiveCard>
+        <p className="tp-handoff-meta">{en.handoff.claimHint}</p>
 
-      <form onSubmit={(event) => void onSubmit(event)}>
-        <label htmlFor="handoff-otp">{en.handoff.otpLabel}</label>
-        <input
-          id="handoff-otp"
-          name="otp"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="\d{6}"
-          maxLength={6}
-          value={otp}
-          onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
-          required
-        />
-        <button type="submit" disabled={submitting}>
-          {submitting ? en.handoff.claiming : en.handoff.claimButton}
-        </button>
-      </form>
+        <form
+          className="tp-handoff-claim-form"
+          data-testid="handoff-claim-form"
+          onSubmit={(event) => void onSubmit(event)}
+        >
+          <label className="ds-otp-input__label" htmlFor="handoff-otp">
+            {en.handoff.otpLabel}
+          </label>
+          <input
+            id="handoff-otp"
+            className="ds-otp-input"
+            name="otp"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="\d{6}"
+            maxLength={6}
+            value={otp}
+            onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+            required
+          />
+          <Button type="submit" variant="primary" size="lg" disabled={submitting}>
+            {submitting ? en.handoff.claiming : en.handoff.claimButton}
+          </Button>
+        </form>
 
-      {error ? (
-        <p className="tp-error" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <p>
-        <Link to="/handoff/create">{en.handoff.createTitle}</Link> ·{" "}
-        <Link to="/">{en.handoff.backEditor}</Link>
-      </p>
-    </section>
+        {error ? <HandoffReceiveError message={error} /> : null}
+      </HandoffReceiveCard>
+    </HandoffReceiveSection>
   );
 }

@@ -2,7 +2,7 @@
 
 > **Path:** `<repo-root>/.work.ui/plans/NEXT_UI.md` · **`@ui-component-build`** owns `## Current UI iteration`.
 
-**Updated:** 2026-05-23 (`@ui-component-build complete` S4)
+**Updated:** 2026-05-23 (`@ui-component-build complete` S5)
 
 ---
 
@@ -10,8 +10,9 @@
 
 | Priority | Item |
 |----------|------|
-| **1** | `@ui-component-build plan - S5` — LAN + claim consume polish |
-| **2** | Optional `@ui-concept-run - UIS-06` (S1–S4 record) |
+| **1** | Production deploy — `deploy/README.md` + `.env.prd` (Agent OS `NEXT.md`) |
+| **2** | Optional `@ui-concept-run - UIS-06` (S1–S5 record) |
+| **3** | Optional shared `handoff-consume` SCREEN-SPEC for receive variants |
 
 ---
 
@@ -19,34 +20,42 @@
 
 **Milestone:** — · **Status:** idle · **Started:** —
 
-_Last completed: **S4** (handoff) 2026-05-23. **S5** queued below._
+_Last completed: **S5** (handoff-lan/claim + player toolbar compaction) 2026-05-23._
 
 ---
 
-## Queued UI iteration (S5)
+## Completed: S5 (handoff consume + player toolbar) — archived
 
-**Milestone:** S5 · **Status:** queued · **Depends on:** S4 complete
+**Completed:** 2026-05-23  
+**Scope:** `handoff-lan`, `handoff-claim`, player 2-line toolbar  
+**Reports:** [VISUAL_VERIFY_S5.md](../context/VISUAL_VERIFY_S5.md) · [ACCESSIBILITY_AUDIT_S5.md](../context/ACCESSIBILITY_AUDIT_S5.md)
 
-**Scope (screen map 04):** `handoff-lan` · `handoff-claim` (lower traffic; reuse S4 consume patterns)
+### Tasks (all done)
 
-**Target SPEC:** TBD — optional shared `handoff-consume` SCREEN SPEC; until then, screen-map slugs + pairing feature SPECs.
+| ID | Description | Completed |
+|----|-------------|-----------|
+| S5-T1 | LanConsume styled states | 2026-05-23 |
+| S5-T2 | HandoffClaim relay OTP form | 2026-05-23 |
+| S5-T3 | Shared consume loading pattern | 2026-05-23 |
+| S5-T4 | Tests + handoff E2E regression | 2026-05-23 |
+| S5-T5 | Verify S5 | 2026-05-23 |
+| S5-T6 | Player 2-line toolbar; theme → Settings only | 2026-05-23 |
 
-### Tasks (queued)
+### Acceptance criteria (closed)
 
-| ID | Description | Files | Status | Notes |
-|----|-------------|-------|--------|-------|
-| S5-T1 | **LanConsume** styled states | `pairing/LanConsume.tsx` | queued | screen · Layout, Card, `ds-alert` errors (404/410) |
-| S5-T2 | **HandoffClaim** relay OTP form | `pairing/HandoffClaim.tsx` | queued | screen · `ds-button`, OTP input styling, OtpDisplay hint |
-| S5-T3 | Shared consume loading pattern | extract if duplicated from S4-T8/T9 | queued | pattern · DRY with S4 receive screens |
-| S5-T4 | Tests + handoff E2E regression | `tests/**`, `bin/e2e-handoff.sh` | queued | gate |
-| S5-T5 | Verify S5 | `VISUAL_VERIFY_S5.md`, `ACCESSIBILITY_AUDIT_S5.md` | queued | visual + a11y milestones |
+- [x] `/handoff/lan/:token` and `/handoff/claim/:token` match app shell + tokenized error/success UX
+- [x] Claim form: 6-digit OTP, accessible labels, primary submit `ds-button`
+- [x] No API/claim behaviour changes without domain SPEC update
+- [x] Handoff E2E suite still green (21/21)
+- [x] Player toolbar: 2 rows — Play + tabs + Mirror / Full + slider + Shortcuts
 
-### Acceptance criteria (S5)
+### UIS registry (S5 closed)
 
-- [ ] `/handoff/lan/:token` and `/handoff/claim/:token` match app shell + tokenized error/success UX
-- [ ] Claim form: 6-digit OTP, accessible labels, primary submit `ds-button`
-- [ ] No API/claim behaviour changes without domain SPEC update
-- [ ] Handoff E2E suite still green
+| UIS | Status |
+|-----|--------|
+| UIS-01 … UIS-05 | pass |
+| UIS-06 | waived |
+| UIS-07 | pass |
 
 ---
 
@@ -61,6 +70,7 @@ _Last completed: **S4** (handoff) 2026-05-23. **S5** queued below._
 | **S2** home-editor | 2026-05-23 | [VISUAL_VERIFY_S2.md](../context/VISUAL_VERIFY_S2.md) · [ACCESSIBILITY_AUDIT_S2.md](../context/ACCESSIBILITY_AUDIT_S2.md) |
 | **S3** settings | 2026-05-23 | [VISUAL_VERIFY_S3.md](../context/VISUAL_VERIFY_S3.md) · [ACCESSIBILITY_AUDIT_S3.md](../context/ACCESSIBILITY_AUDIT_S3.md) |
 | **S4** handoff hub + receive/multi | 2026-05-23 | [VISUAL_VERIFY_S4.md](../context/VISUAL_VERIFY_S4.md) · [ACCESSIBILITY_AUDIT_S4.md](../context/ACCESSIBILITY_AUDIT_S4.md) |
+| **S5** handoff-lan/claim + player toolbar | 2026-05-23 | [VISUAL_VERIFY_S5.md](../context/VISUAL_VERIFY_S5.md) · [ACCESSIBILITY_AUDIT_S5.md](../context/ACCESSIBILITY_AUDIT_S5.md) |
 
 ---
 

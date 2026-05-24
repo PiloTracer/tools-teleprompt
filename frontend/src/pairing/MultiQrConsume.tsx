@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { HandoffStepIndicator } from "../components/ds/HandoffStepIndicator";
+import {
+  HandoffReceiveCard,
+  HandoffReceiveError,
+  HandoffReceiveLoading,
+  HandoffReceiveSection,
+} from "../components/ds/HandoffReceiveLayout";
 import { en } from "../lib/i18n/en";
 import { validateScriptSize } from "../prompter/limits";
 import { saveScriptFormat, saveScriptSource } from "../prompter/storage";
@@ -10,6 +16,8 @@ import {
   MultiQrDecodeError,
 } from "./qrChunkDecode";
 import { HandoffDecodeError } from "./qrDecode";
+
+const titleId = "handoff-multi-receive-title";
 
 export function MultiQrConsume() {
   const location = useLocation();
@@ -77,55 +85,36 @@ export function MultiQrConsume() {
 
   if (loading && !error && !pending) {
     return (
-      <section className="tp-handoff-receive" aria-labelledby="handoff-multi-receive-title">
-        <h1 id="handoff-multi-receive-title" className="tp-handoff-receive__title">
-          {en.handoff.multiReceiveTitle}
-        </h1>
-        <div className="ds-card">
-          <p className="tp-handoff-meta" aria-busy="true">
-            {en.handoff.multiConsuming}
-          </p>
-        </div>
-      </section>
+      <HandoffReceiveSection titleId={titleId} title={en.handoff.multiReceiveTitle}>
+        <HandoffReceiveCard>
+          <HandoffReceiveLoading message={en.handoff.multiConsuming} />
+        </HandoffReceiveCard>
+      </HandoffReceiveSection>
     );
   }
 
   if (pending) {
     return (
-      <section className="tp-handoff-receive" aria-labelledby="handoff-multi-receive-title">
-        <h1 id="handoff-multi-receive-title" className="tp-handoff-receive__title">
-          {en.handoff.multiReceiveTitle}
-        </h1>
-        <div className="ds-card tp-handoff-panel" data-testid="multi-qr-pending">
+      <HandoffReceiveSection titleId={titleId} title={en.handoff.multiReceiveTitle}>
+        <HandoffReceiveCard className="tp-handoff-panel" testId="multi-qr-pending">
           <HandoffStepIndicator
             index={pending.received}
             total={pending.total}
             label={en.handoff.multiPendingProgress(pending.received, pending.total)}
           />
           <p className="tp-handoff-meta">{en.handoff.multiPendingHint}</p>
-        </div>
-        <p>
-          <Link to="/">{en.handoff.backEditor}</Link>
-        </p>
-      </section>
+        </HandoffReceiveCard>
+      </HandoffReceiveSection>
     );
   }
 
   if (error) {
     return (
-      <section className="tp-handoff-receive" aria-labelledby="handoff-multi-receive-title">
-        <h1 id="handoff-multi-receive-title" className="tp-handoff-receive__title">
-          {en.handoff.multiReceiveTitle}
-        </h1>
-        <div className="ds-card">
-          <p className="ds-alert" data-variant="error" role="alert">
-            {error}
-          </p>
-        </div>
-        <p>
-          <Link to="/">{en.handoff.backEditor}</Link>
-        </p>
-      </section>
+      <HandoffReceiveSection titleId={titleId} title={en.handoff.multiReceiveTitle}>
+        <HandoffReceiveCard>
+          <HandoffReceiveError message={error} />
+        </HandoffReceiveCard>
+      </HandoffReceiveSection>
     );
   }
 

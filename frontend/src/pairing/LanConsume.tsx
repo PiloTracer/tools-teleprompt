@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
+import {
+  HandoffReceiveCard,
+  HandoffReceiveError,
+  HandoffReceiveLoading,
+  HandoffReceiveSection,
+} from "../components/ds/HandoffReceiveLayout";
 import { en } from "../lib/i18n/en";
 import { validateScriptSize } from "../prompter/limits";
 import { saveScriptFormat, saveScriptSource } from "../prompter/storage";
 import { claimLanHandoff, PairingApiError } from "./client";
+
+const titleId = "handoff-lan-receive-title";
 
 export function LanConsume() {
   const { token = "" } = useParams<{ token: string }>();
@@ -64,20 +72,22 @@ export function LanConsume() {
   }, [token, navigate]);
 
   if (loading && !error) {
-    return <p data-testid="lan-consuming">{en.handoff.lanConsuming}</p>;
+    return (
+      <HandoffReceiveSection titleId={titleId} title={en.handoff.lanReceiveTitle}>
+        <HandoffReceiveCard>
+          <HandoffReceiveLoading message={en.handoff.lanConsuming} testId="lan-consuming" />
+        </HandoffReceiveCard>
+      </HandoffReceiveSection>
+    );
   }
 
   if (error) {
     return (
-      <section aria-labelledby="handoff-lan-receive-title">
-        <h1 id="handoff-lan-receive-title">{en.handoff.lanReceiveTitle}</h1>
-        <p className="tp-error" role="alert">
-          {error}
-        </p>
-        <p>
-          <Link to="/">{en.handoff.backEditor}</Link>
-        </p>
-      </section>
+      <HandoffReceiveSection titleId={titleId} title={en.handoff.lanReceiveTitle}>
+        <HandoffReceiveCard>
+          <HandoffReceiveError message={error} />
+        </HandoffReceiveCard>
+      </HandoffReceiveSection>
     );
   }
 

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
 import { Button } from "../components/ds/Button";
 import { HandoffResultCard } from "../components/ds/HandoffResultCard";
@@ -240,10 +239,7 @@ export function HandoffCreate() {
 
       {!source.trim() ? (
         <div className="ds-card tp-handoff-panel">
-          <p>
-            {en.handoff.noScript}{" "}
-            <Link to="/">{en.handoff.backEditor}</Link>
-          </p>
+          <p className="tp-handoff-meta">{en.handoff.noScript}</p>
         </div>
       ) : (
         <div className="ds-card tp-handoff-panel">
@@ -344,10 +340,6 @@ export function HandoffCreate() {
           </p>
         </HandoffResultCard>
       ) : null}
-
-      <p>
-        <Link to="/">{en.handoff.backEditor}</Link>
-      </p>
     </section>
   );
 }

@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-23 — UI Design OS S1–S4 shipped; `start.sh prd` env injection; player single-lever dock
+**Closed:** 2026-05-23 — UI S5 shipped; player toolbar compaction; env template alignment; handoff nav cleanup
 
 **Updated:** 2026-05-23
 
-**Repository state:** v0.1.0 released. M1–M7 complete. **UI S1–S4 committed** (tokens, ds primitives, handoff hub + receive/multi). **Next:** production deploy with `.env.prd`; UI **S5** (LAN + claim consume).
+**Repository state:** v0.1.0 released. M1–M7 complete. **UI S1–S5 complete** (2026-05-23). **Next:** production deploy with `.env.prd`.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -37,7 +37,7 @@
 
 1. `@session-control start`
 2. `.work/plans/NEXT.md` · `.work.ui/plans/NEXT_UI.md`
-3. Production deploy (`deploy/README.md` + `.env.prd`) · `@ui-component-build plan - S5`
+3. Production deploy (`deploy/README.md` + `.env.prd`)
 
 ---
 
@@ -102,6 +102,7 @@
 | 2026-05-22 | session close commit push | player layout improvements on `main` |
 | 2026-05-23 | UI Design OS + S4 handoff | `.ai.ui/`, `.work.ui/`, tokens, ds components, S1–S4 screens, Playwright S1–S4, `bin/start.sh` prd env |
 | 2026-05-23 | session close commit push | UI framework + handoff polish + player lever dock on `main` |
+| 2026-05-23 | session close commit push | UI S5, player toolbar, env example alignment, handoff UX on `main` |
 
 ---
 
@@ -122,5 +123,5 @@ See `.work/plans/UNKNOWNS.md` — U9 resolved (M7 LAN + multi-QR). U1/U6/U8 clos
 - **Framework:** `.ai.ui/` (sibling to `.ai/`)
 - **UI handoff:** `.work.ui/context/HANDOFF_UI.md`
 - **UI next:** `.work.ui/plans/NEXT_UI.md`
-- **Status:** **S1–S4 complete** 2026-05-23 · **S5 queued** (`handoff-lan`, `handoff-claim`)
-- **Next UI:** `@ui-component-build plan - S5`
+- **Status:** **S1–S5 complete** 2026-05-23 · **ui-implementation-ready: yes**
+- **Next UI:** Production deploy (Agent OS track) · optional UIS-06 record

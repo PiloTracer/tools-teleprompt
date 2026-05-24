@@ -8,7 +8,7 @@ test.describe("S4 handoff visual milestone", () => {
     await expect(page).toHaveURL(/\/handoff\/create$/);
   });
 
-  test("empty script shows elevated card and editor link @s4-visual", async ({ page }) => {
+  test("empty script shows elevated card and primary nav @s4-visual", async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.removeItem("tp:script:source");
       localStorage.setItem("tp:script:format", "plain");
@@ -20,7 +20,9 @@ test.describe("S4 handoff visual milestone", () => {
 
     await expect(page.getByRole("heading", { name: /cross-device handoff/i })).toBeVisible();
     await expect(page.locator(".ds-card")).toBeVisible();
-    await expect(page.locator(".ds-card").getByRole("link", { name: /back to editor/i })).toBeVisible();
+    await expect(page.locator(".ds-card")).toContainText(/no script loaded/i);
+    await expect(page.getByRole("link", { name: /back to editor/i })).toHaveCount(0);
+    await expect(page.locator(".ds-mobile-nav").getByRole("link", { name: /editor/i })).toBeVisible();
 
     await page.screenshot({
       path: "../tmp/playwright-results/s4-handoff-empty-desktop.png",

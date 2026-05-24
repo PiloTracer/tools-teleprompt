@@ -254,9 +254,10 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
     expect(screen.getByTestId("player-scroll-tail")).toHaveStyle({ height: "100px" });
   });
 
-  it("applies dark theme class (R3)", async () => {
+  it("applies dark theme class from saved settings (R3)", async () => {
     await saveScriptSource("Theme test");
     await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS, theme: "dark" });
 
     render(
       <MemoryRouter>
@@ -265,11 +266,10 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("group", { name: /theme/i })).toBeInTheDocument();
+      expect(screen.getByLabelText(/teleprompter player/i)).toHaveClass("tp-player--dark");
     });
 
-    fireEvent.click(screen.getByRole("radio", { name: /dark/i }));
-    expect(screen.getByLabelText(/teleprompter player/i)).toHaveClass("tp-player--dark");
+    expect(screen.queryByRole("group", { name: /theme/i })).not.toBeInTheDocument();
   });
 
   it("applies mirror class (R4)", async () => {
@@ -383,7 +383,7 @@ describe("Fullscreen and wake lock (M4-T3, R4–R5)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Fullscreen" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Full" })).toBeInTheDocument();
     });
 
     const section = screen.getByLabelText(/teleprompter player/i);
@@ -392,7 +392,7 @@ describe("Fullscreen and wake lock (M4-T3, R4–R5)", () => {
       value: requestFullscreen,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Fullscreen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Full" }));
 
     await waitFor(() => {
       expect(requestFullscreen).toHaveBeenCalled();

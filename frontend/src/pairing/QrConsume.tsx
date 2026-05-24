@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
+import {
+  HandoffReceiveCard,
+  HandoffReceiveError,
+  HandoffReceiveLoading,
+  HandoffReceiveSection,
+} from "../components/ds/HandoffReceiveLayout";
 import { en } from "../lib/i18n/en";
 import { validateScriptSize } from "../prompter/limits";
 import { saveScriptFormat, saveScriptSource } from "../prompter/storage";
 import { decodeHandoffFromHash, HandoffDecodeError } from "./qrDecode";
+
+const titleId = "handoff-qr-receive-title";
 
 export function QrConsume() {
   const location = useLocation();
@@ -61,34 +69,21 @@ export function QrConsume() {
 
   if (loading && !error) {
     return (
-      <section className="tp-handoff-receive" aria-labelledby="handoff-qr-receive-title">
-        <h1 id="handoff-qr-receive-title" className="tp-handoff-receive__title">
-          {en.handoff.qrReceiveTitle}
-        </h1>
-        <div className="ds-card">
-          <p className="tp-handoff-meta" aria-busy="true">
-            {en.handoff.qrConsuming}
-          </p>
-        </div>
-      </section>
+      <HandoffReceiveSection titleId={titleId} title={en.handoff.qrReceiveTitle}>
+        <HandoffReceiveCard>
+          <HandoffReceiveLoading message={en.handoff.qrConsuming} />
+        </HandoffReceiveCard>
+      </HandoffReceiveSection>
     );
   }
 
   if (error) {
     return (
-      <section className="tp-handoff-receive" aria-labelledby="handoff-qr-receive-title">
-        <h1 id="handoff-qr-receive-title" className="tp-handoff-receive__title">
-          {en.handoff.qrReceiveTitle}
-        </h1>
-        <div className="ds-card">
-          <p className="ds-alert" data-variant="error" role="alert">
-            {error}
-          </p>
-        </div>
-        <p>
-          <Link to="/">{en.handoff.backEditor}</Link>
-        </p>
-      </section>
+      <HandoffReceiveSection titleId={titleId} title={en.handoff.qrReceiveTitle}>
+        <HandoffReceiveCard>
+          <HandoffReceiveError message={error} />
+        </HandoffReceiveCard>
+      </HandoffReceiveSection>
     );
   }
 

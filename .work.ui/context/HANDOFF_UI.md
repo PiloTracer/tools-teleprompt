@@ -4,15 +4,13 @@
 
 ## Session status
 
-**Open:** -
+**Closed:** 2026-05-23 — UI S5 complete (handoff-lan/claim + compact player toolbar)
 
 **Updated:** 2026-05-23
 
-**Closed:** 2026-05-23 — UI S1–S4 shipped (handoff + player lever dock + elevation surfaces)
+**UI layer state:** **S1–S5 complete** (2026-05-23). Screen map P0–P2 screens implemented.
 
-**UI layer state:** **S1–S4 complete** (2026-05-23). **S5 queued** (`handoff-lan`, `handoff-claim`).
-
-**Recommended pick-up:** `@ui-component-build plan - S5`
+**Recommended pick-up:** Production deploy (`NEXT.md`) · optional UIS-06 record
 
 **Lost or new?** Read `.ai.ui/START_HERE.md`
 
@@ -24,13 +22,13 @@
 |-------|-------|------|
 | ui-foundation-complete | yes | 2026-05-23 |
 | screen-spec-ready | yes | 2026-05-23 |
-| ui-implementation-ready | no | S5 consume screens remain |
+| ui-implementation-ready | yes | S5 closed 2026-05-23 |
 
 ## Active UI milestone
 
-- **Milestone:** none · **Queued:** S5
+- **Milestone:** none
 - **NEXT_UI:** [.work.ui/plans/NEXT_UI.md](../plans/NEXT_UI.md)
-- **Last closed:** S4 — [handoff-hub SPEC](../screens/handoff-hub/20260523-SCREEN-SPEC.md) (Implemented)
+- **Last closed:** S5 — [VISUAL_VERIFY_S5.md](./VISUAL_VERIFY_S5.md) · [ACCESSIBILITY_AUDIT_S5.md](./ACCESSIBILITY_AUDIT_S5.md)
 
 ---
 
@@ -38,7 +36,7 @@
 
 1. **`@session-control start`** when `.ai/` is present.
 2. Read **this file** and `.work.ui/plans/NEXT_UI.md`.
-3. **`@ui-component-build plan - S5`** for LAN + claim consume polish.
+3. Production deploy or optional UIS-06 / handoff-consume SCREEN-SPEC.
 
 ---
 
@@ -46,7 +44,7 @@
 
 | # | Action | Blocks | Owner |
 |---|--------|--------|-------|
-| 1 | Optional `@ui-concept-run - UIS-06` for S1–S4 record | waiver only | eng |
+| 1 | Optional `@ui-concept-run - UIS-06` for S1–S5 record | waiver only | eng |
 
 ---
 
@@ -60,6 +58,7 @@
 | 2026-05-23 | **ui-component-build complete S3** | Settings `ds-*` form, `theme.ts`, `dark.css` nav fix; verify reports |
 | 2026-05-23 | E2E smoke S1–S3 | `s1-*`, `s2-*`, `s3-*` specs |
 | 2026-05-23 | **ui-component-build complete S4** | Handoff hub + receive/multi, elevation UI, player lever dock; `VISUAL_VERIFY_S4`, `ACCESSIBILITY_AUDIT_S4` |
+| 2026-05-23 | **ui-component-build complete S5** | LAN/claim consume, `HandoffReceiveLayout`, 2-line player toolbar; `VISUAL_VERIFY_S5`, `ACCESSIBILITY_AUDIT_S5` |
 
 ---
 
@@ -68,10 +67,9 @@
 - **Archetype:** mobile-app · **Style stack:** `vanilla-css`
 - **Tokens:** `frontend/src/styles/tokens.css` · **Dark:** `themes/dark.css` · **Player dark:** `themes/player-dark.css`
 - **Catalog:** `.work.ui/design-system/CATALOG.md`
-- **Implemented screens:** `player` (S1), `home-editor` (S2), `settings` (S3), `handoff-hub` + receive/multi (S4)
-- **Pending screens:** `handoff-lan`, `handoff-claim` (S5)
-- **Last visual verify:** S4 pass — [VISUAL_VERIFY_S4.md](./VISUAL_VERIFY_S4.md)
-- **Last a11y audit:** S4 pass — [ACCESSIBILITY_AUDIT_S4.md](./ACCESSIBILITY_AUDIT_S4.md)
+- **Implemented screens:** all screen-map slugs S1–S5 (player, home-editor, settings, handoff hub/receive/multi/lan/claim)
+- **Last visual verify:** S5 pass — [VISUAL_VERIFY_S5.md](./VISUAL_VERIFY_S5.md)
+- **Last a11y audit:** S5 pass — [ACCESSIBILITY_AUDIT_S5.md](./ACCESSIBILITY_AUDIT_S5.md)
 
 ---
 

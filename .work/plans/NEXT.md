@@ -1,6 +1,6 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-23 (UI S1–S4 committed; session close)
+**Updated:** 2026-05-23 (UI S5 committed; session close)
 
 ---
 

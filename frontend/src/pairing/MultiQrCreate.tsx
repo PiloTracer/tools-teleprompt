@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
 import { Button } from "../components/ds/Button";
 import { HandoffResultCard } from "../components/ds/HandoffResultCard";
@@ -127,10 +126,7 @@ export function MultiQrCreate({ embedded = false }: MultiQrCreateProps) {
       {!embedded ? <p className="tp-handoff-page__hint">{en.handoff.multiHint}</p> : null}
 
       {!embedded && !source.trim() ? (
-        <p>
-          {en.handoff.noScript}{" "}
-          <Link to="/">{en.handoff.backEditor}</Link>
-        </p>
+        <p className="tp-handoff-meta">{en.handoff.noScript}</p>
       ) : null}
 
       {!embedded && source.trim() ? (
@@ -193,12 +189,6 @@ export function MultiQrCreate({ embedded = false }: MultiQrCreateProps) {
             </Button>
           </div>
         </HandoffResultCard>
-      ) : null}
-
-      {!embedded ? (
-        <p>
-          <Link to="/">{en.handoff.backEditor}</Link>
-        </p>
       ) : null}
     </section>
   );

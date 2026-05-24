@@ -7,9 +7,10 @@
   --color-bg-canvas: #0d0d0d;
   --color-bg-surface: #1a1a1a;
   --color-bg-elevated: #242424;
+  --color-bg-inset: #141414;
   --color-bg-player: #000000;
   --color-text-primary: #f0f0f0;
-  --color-text-secondary: #a8a8a8;
+  --color-text-secondary: #b8b8b8;
   --color-text-muted: #888888;
   --color-border-default: #333333;
   --color-border-strong: #555555;
@@ -18,4 +19,6 @@
   --color-accent-hover: #1e40af;
   --color-accent-contrast: #ffffff;
   --color-focus-ring: #60a5fa;
+  --surface-inset: var(--color-bg-inset);
+  --elevation-inset: inset 0 1px 2px rgb(0 0 0 / 45%);
 }

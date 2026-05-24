@@ -57,7 +57,8 @@ test.describe("S4 handoff accessibility milestone", () => {
 
     await expect(page.getByRole("heading", { name: /cross-device handoff/i })).toBeVisible();
     await expect(page.getByTestId("handoff-mode-hint")).toBeVisible();
-    await expect(page.getByRole("link", { name: /back to editor/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /back to editor/i })).toHaveCount(0);
+    await expect(page.locator(".ds-mobile-nav").getByRole("link", { name: /editor/i })).toBeVisible();
   });
 
   test("axe wcag2aa on /handoff/create has no critical or serious violations @s4-a11y", async ({

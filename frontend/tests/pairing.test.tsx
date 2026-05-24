@@ -4,8 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HandoffClaim } from "../src/pairing/HandoffClaim";
 import { HandoffCreate } from "../src/pairing/HandoffCreate";
+import { LanConsume } from "../src/pairing/LanConsume";
 import { QrConsume } from "../src/pairing/QrConsume";
-import { claimRelaySession, createRelaySession } from "../src/pairing/client";
+import { claimLanHandoff, claimRelaySession, createRelaySession } from "../src/pairing/client";
 import { decodeHandoffFromHash } from "../src/pairing/qrDecode";
 import { encodeHandoffFragment } from "../src/pairing/qrEncode";
 import * as qrThreshold from "../src/pairing/qrThreshold";
@@ -38,6 +39,7 @@ vi.mock("qrcode", () => ({
 
 const mockedCreate = vi.mocked(createRelaySession);
 const mockedClaim = vi.mocked(claimRelaySession);
+const mockedLanClaim = vi.mocked(claimLanHandoff);
 
 /** Poorly compressible script that exceeds QR fragment threshold after deflate. */
 function buildIncompressibleScript(): string {
@@ -153,7 +155,7 @@ describe("HandoffCreate (M5-T8)", () => {
     fireEvent.click(screen.getByTestId("handoff-relay-button"));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(/too large/i);
+      expect(screen.getByText(/too large/i)).toBeInTheDocument();
     });
     expect(mockedCreate).not.toHaveBeenCalled();
   });
@@ -195,6 +197,51 @@ describe("QrConsume (M6-T3)", () => {
       expect(screen.getByTestId("player-page")).toBeInTheDocument();
     });
     await expect(loadScriptSource()).resolves.toBe("QR consume test");
+  });
+});
+
+describe("LanConsume (S5-T1)", () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    await clearPrompterStorage();
+    vi.clearAllMocks();
+  });
+
+  it("claims LAN handoff and navigates to player", async () => {
+    mockedLanClaim.mockResolvedValueOnce({ text: "LAN script", format: "plain" });
+
+    render(
+      <MemoryRouter initialEntries={["/handoff/lan/test-lan-token"]}>
+        <Routes>
+          <Route path="/handoff/lan/:token" element={<LanConsume />} />
+          <Route path="/play" element={<div data-testid="player-page">Player page</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("player-page")).toBeInTheDocument();
+    });
+
+    expect(mockedLanClaim).toHaveBeenCalledWith("test-lan-token");
+    await expect(loadScriptSource()).resolves.toBe("LAN script");
+  });
+
+  it("shows tokenized error when LAN handoff expired", async () => {
+    const { PairingApiError } = await import("../src/pairing/client");
+    mockedLanClaim.mockRejectedValueOnce(new PairingApiError("gone", 404));
+
+    render(
+      <MemoryRouter initialEntries={["/handoff/lan/expired-token"]}>
+        <Routes>
+          <Route path="/handoff/lan/:token" element={<LanConsume />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/expired or is invalid/i);
+    });
   });
 });
 

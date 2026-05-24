@@ -5,10 +5,11 @@ import { en } from "../lib/i18n/en";
 type HelpProps = {
   open: boolean;
   disabled?: boolean;
+  compact?: boolean;
   onToggle: () => void;
 };
 
-export function Help({ open, disabled = false, onToggle }: HelpProps) {
+export function Help({ open, disabled = false, compact = false, onToggle }: HelpProps) {
   const toggleRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -43,10 +44,10 @@ export function Help({ open, disabled = false, onToggle }: HelpProps) {
         disabled={disabled}
         aria-expanded={open}
         aria-controls="tp-player-help-panel"
-        aria-label={en.play.helpToggle}
+        aria-label={compact ? en.play.helpToggleShort : en.play.helpToggle}
         onClick={onToggle}
       >
-        {en.play.helpToggle}
+        {compact ? en.play.helpToggleShort : en.play.helpToggle}
       </button>
       {open ? (
         <div
