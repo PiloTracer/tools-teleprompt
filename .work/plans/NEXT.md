@@ -1,6 +1,6 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-22 (player UX committed)
+**Updated:** 2026-05-23 (UI S1–S4 committed; session close)
 
 ---
 

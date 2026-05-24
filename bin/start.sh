@@ -14,7 +14,9 @@
 #   ./bin/start.sh --help
 #
 # Env files (per context, never sourced — parsed safely):
-#   .env.{dev|prd}  then  .env  then  .env.example
+#   dev: .env.dev  →  .env  →  .env.example (warn if .env.dev missing)
+#   prd: .env.prd only (error if missing — no fallback)
+#   Compose + api/frontend containers receive the full file via TP_ENV_FILE.
 # Keys read: STACK_NAME, STACK_ENV, COMPOSE_PROJECT_NAME, PUBLIC_HOST,
 #           CADDY_HOST_PORT, FRONTEND_HOST_PORT, FRONTEND_DEV_PORT
 #
@@ -78,7 +80,14 @@ resolve_env_file() {
   local context_file="$REPO_ROOT/.env.${STACK_CONTEXT}"
   if [[ -f "$context_file" ]]; then
     ENV_FILE="$context_file"
-  elif [[ -f "$REPO_ROOT/.env" ]]; then
+    return 0
+  fi
+  if [[ "$STACK_CONTEXT" == "prd" ]]; then
+    printf '%sERROR: Production context requires %s (e.g. cp .env.example .env.prd).%s\n' \
+      "$C_RED" "$context_file" "$C_RESET" >&2
+    exit 1
+  fi
+  if [[ -f "$REPO_ROOT/.env" ]]; then
     ENV_FILE="$REPO_ROOT/.env"
   elif [[ -f "$REPO_ROOT/.env.example" ]]; then
     ENV_FILE="$REPO_ROOT/.env.example"
@@ -113,7 +122,7 @@ load_env() {
     [[ -n "$v" ]] && PUBLIC_HOST="$v"
   fi
   STACK_ENV="$context_env"
-  [[ -n "$COMPOSE_PROJECT_NAME" ]] || COMPOSE_PROJECT_NAME="${STACK_NAME}-${STACK_ENV}"
+  reconcile_stack_identity
 }
 
 require_compose_file() {
@@ -197,9 +206,19 @@ wait_for_stack_ready() {
 _compose_invoke() {
   resolve_env_file
   reconcile_stack_identity
-  local env_args=()
-  [[ -n "$ENV_FILE" ]] && env_args=(--env-file "$ENV_FILE")
-  docker compose \
+  local env_args=() compose_env=()
+  if [[ -n "$ENV_FILE" ]]; then
+    env_args=(--env-file "$ENV_FILE")
+    # Absolute path so deploy/docker-compose.yml env_file resolves reliably.
+    # Shell exports override .env.* for compose interpolation (container names, -p).
+    compose_env=(
+      TP_ENV_FILE="$(cd "$(dirname "$ENV_FILE")" && pwd)/$(basename "$ENV_FILE")"
+      STACK_ENV="$STACK_CONTEXT"
+      STACK_NAME="$STACK_NAME"
+      COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT_NAME"
+    )
+  fi
+  env "${compose_env[@]}" docker compose \
     --project-directory "$COMPOSE_DIR" \
     -f "$COMPOSE_ABS" \
     -p "$COMPOSE_PROJECT_NAME" \
@@ -636,7 +655,17 @@ apply_context() {
 }
 
 reconcile_stack_identity() {
-  [[ -n "$COMPOSE_PROJECT_NAME" ]] || COMPOSE_PROJECT_NAME="${STACK_NAME}-${STACK_ENV}"
+  local expected="${STACK_NAME}-${STACK_CONTEXT}"
+  STACK_ENV="$STACK_CONTEXT"
+  if [[ -z "$COMPOSE_PROJECT_NAME" ]]; then
+    COMPOSE_PROJECT_NAME="$expected"
+    return 0
+  fi
+  if [[ "$COMPOSE_PROJECT_NAME" != "$expected" ]]; then
+    printf '%sWARN: COMPOSE_PROJECT_NAME=%s does not match %s context — using %s%s\n' \
+      "$C_YELLOW" "$COMPOSE_PROJECT_NAME" "$STACK_CONTEXT" "$expected" "$C_RESET" >&2
+    COMPOSE_PROJECT_NAME="$expected"
+  fi
 }
 
 dispatch_cli() {

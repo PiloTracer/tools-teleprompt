@@ -1,0 +1,150 @@
+.ds-range {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+}
+
+.ds-range__label {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex: 0 0 auto;
+  font-weight: var(--font-weight-semibold);
+}
+
+.ds-range__value {
+  min-width: 2.25rem;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  text-align: end;
+  flex: 0 0 auto;
+  color: var(--color-text-primary);
+}
+
+/* Custom track + thumb (refined tier — not browser default accent-color only) */
+.ds-range input[type="range"] {
+  --ds-range-track-h: 6px;
+  --ds-range-thumb: 18px;
+  flex: 1 1 3rem;
+  min-width: 2rem;
+  min-height: var(--size-touch-min);
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ds-range input[type="range"]::-webkit-slider-runnable-track {
+  height: var(--ds-range-track-h);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-inset, var(--color-border-default));
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 12%);
+}
+
+.ds-range input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--ds-range-thumb);
+  height: var(--ds-range-thumb);
+  margin-top: calc((var(--ds-range-track-h) - var(--ds-range-thumb)) / 2);
+  border: none;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: var(--elevation-2);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.ds-range input[type="range"]::-moz-range-track {
+  height: var(--ds-range-track-h);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-inset, var(--color-border-default));
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 12%);
+}
+
+.ds-range input[type="range"]::-moz-range-thumb {
+  width: var(--ds-range-thumb);
+  height: var(--ds-range-thumb);
+  border: none;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: var(--elevation-2);
+}
+
+.ds-range input[type="range"]:hover:not(:disabled)::-webkit-slider-thumb {
+  transform: scale(1.06);
+}
+
+.ds-range input[type="range"]:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}
+
+.ds-range input[type="range"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ds-range--compact input[type="range"] {
+  min-height: 2rem;
+  --ds-range-thumb: 16px;
+}
+
+/* Player toolbar: large thumb + 44px touch target without growing layout */
+.ds-range--player {
+  flex: 1 1 5.5rem;
+  min-width: 4.75rem;
+  max-width: 10.5rem;
+  gap: var(--space-1);
+}
+
+.ds-range--player .ds-range__label {
+  font-size: 0.6875rem;
+}
+
+.ds-range--player .ds-range__value {
+  min-width: 1.65rem;
+  font-size: 0.6875rem;
+}
+
+.ds-range--player input[type="range"] {
+  --ds-range-track-h: 4px;
+  --ds-range-thumb: 24px;
+  flex: 1 1 2.75rem;
+  min-width: 2.75rem;
+  min-height: var(--size-touch-min);
+  padding-block: 10px;
+  margin-block: -10px;
+  box-sizing: content-box;
+}
+
+.ds-range--player input[type="range"]::-webkit-slider-thumb {
+  transform-origin: center;
+}
+
+.ds-range--player input[type="range"]:hover:not(:disabled)::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+
+/* Single visible lever in player dock — uses remaining toolbar width */
+.ds-range--player-focus {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+}
+
+.ds-range--player-focus input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 4.5rem;
+  max-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-range input[type="range"]::-webkit-slider-thumb {
+    transition: none;
+  }
+}

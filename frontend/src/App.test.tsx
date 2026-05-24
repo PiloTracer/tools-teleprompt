@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import App from "./App";
 
@@ -21,9 +21,11 @@ describe("App routes", () => {
     expect(screen.getByRole("heading", { name: "Player" })).toBeInTheDocument();
   });
 
-  it("renders settings route", () => {
+  it("renders settings route", async () => {
     renderAt("/settings");
-    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    });
   });
 
   it("renders handoff create route", async () => {

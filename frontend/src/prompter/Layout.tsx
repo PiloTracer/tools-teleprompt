@@ -8,23 +8,45 @@ type LayoutProps = {
   children: ReactNode;
 };
 
+const NAV_ITEMS = [
+  { to: "/", end: true as const, label: en.nav.editor },
+  { to: "/play", end: false as const, label: en.nav.player },
+  { to: "/settings", end: false as const, label: en.nav.settings },
+  { to: "/handoff", end: false as const, label: en.nav.handoff },
+];
+
+function NavLinks() {
+  return (
+    <>
+      {NAV_ITEMS.map((item) => (
+        <NavLink key={item.to} to={item.to} end={item.end}>
+          {item.label}
+        </NavLink>
+      ))}
+    </>
+  );
+}
+
 export function Layout({ children }: LayoutProps) {
   return (
     <div className="tp-layout">
+      <a className="ds-skip-link" href="#main-content">
+        Skip to content
+      </a>
       <header className="tp-header">
         <Link to="/" className="tp-brand">
           {en.appTitle}
         </Link>
-        <nav className="tp-nav" aria-label="Primary">
-          <NavLink to="/" end>
-            {en.nav.editor}
-          </NavLink>
-          <NavLink to="/play">{en.nav.player}</NavLink>
-          <NavLink to="/settings">{en.nav.settings}</NavLink>
-          <NavLink to="/handoff">{en.nav.handoff}</NavLink>
+        <nav className="tp-nav tp-nav--desktop" aria-label="Primary">
+          <NavLinks />
         </nav>
       </header>
-      <div className="tp-content">{children}</div>
+      <div id="main-content" className="tp-content">
+        {children}
+      </div>
+      <nav className="ds-mobile-nav" aria-label="Primary mobile">
+        <NavLinks />
+      </nav>
     </div>
   );
 }

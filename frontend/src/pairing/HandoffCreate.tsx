@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { Button } from "../components/ds/Button";
+import { HandoffResultCard } from "../components/ds/HandoffResultCard";
+import { OtpDisplay } from "../components/ds/OtpDisplay";
+import { QrFrame } from "../components/ds/QrFrame";
 import { en } from "../lib/i18n/en";
 import type { ScriptFormat } from "../markdown/types";
 import { DEFAULT_MAX_SCRIPT_BYTES, validateScriptSize } from "../prompter/limits";
@@ -210,129 +214,135 @@ export function HandoffCreate() {
   const lanPageUrl = lanSession ? lanHandoffPageUrl(lanSession.token, handoffOrigin) : null;
 
   return (
-    <section aria-labelledby="handoff-create-title">
-      <h1 id="handoff-create-title">{en.handoff.createTitle}</h1>
-      <p>{en.handoff.createHint}</p>
-      <p className="tp-handoff-meta" data-testid="handoff-origin-hint">
-        {originLoading
-          ? en.handoff.originLoading
-          : `${en.handoff.originLabel}: ${handoffOrigin}`}
-      </p>
+    <section className="tp-handoff-page" aria-labelledby="handoff-create-title">
+      <header className="tp-handoff-page__header">
+        <h1 id="handoff-create-title" className="tp-handoff-page__title">
+          {en.handoff.createTitle}
+        </h1>
+        <p className="tp-handoff-page__hint">{en.handoff.createHint}</p>
+        <p className="tp-handoff-meta" data-testid="handoff-origin-hint">
+          {originLoading ? (
+            en.handoff.originLoading
+          ) : (
+            <>
+              <span>{en.handoff.originLabel}: </span>
+              <span className="tp-handoff-origin">{handoffOrigin}</span>
+            </>
+          )}
+        </p>
+      </header>
+
       {handoffOriginBlocked && !originLoading ? (
-        <p className="tp-error" role="alert">
+        <p className="ds-alert" data-variant="error" role="alert">
           {en.handoff.originLoopback}
         </p>
       ) : null}
 
       {!source.trim() ? (
-        <p>
-          {en.handoff.noScript}{" "}
-          <Link to="/">{en.handoff.backEditor}</Link>
-        </p>
+        <div className="ds-card tp-handoff-panel">
+          <p>
+            {en.handoff.noScript}{" "}
+            <Link to="/">{en.handoff.backEditor}</Link>
+          </p>
+        </div>
       ) : (
-        <>
+        <div className="ds-card tp-handoff-panel">
           <p className="tp-handoff-meta">
             {en.handoff.scriptReady} ({format})
           </p>
           <p className="tp-handoff-meta" data-testid="handoff-mode-hint">
             {modeHint}
           </p>
-        </>
+
+          {handoffMode === "multi-qr" && !modeLoading ? (
+            <div data-testid="handoff-multi-qr-mode">
+              <MultiQrCreate embedded />
+            </div>
+          ) : null}
+
+          {handoffMode === "single-qr" && !modeLoading ? (
+            <>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => void onPrepareQr()}
+                disabled={!source.trim() || qrGenerating || originLoading || handoffOriginBlocked}
+                data-testid="handoff-qr-button"
+              >
+                {qrGenerating ? en.handoff.generatingQr : en.handoff.createQr}
+              </Button>
+              {qrDataUrl && qrHandoffUrl ? (
+                <HandoffResultCard variant="qr" testId="handoff-qr-mode" url={qrHandoffUrl} urlLabel={en.handoff.qrLinkLabel}>
+                  <QrFrame
+                    src={qrDataUrl}
+                    alt={en.handoff.qrImageAlt}
+                    hint={en.handoff.qrScanHint}
+                    imageTestId="handoff-qr-image"
+                  />
+                </HandoffResultCard>
+              ) : null}
+            </>
+          ) : null}
+
+          {handoffMode === "lan" && !modeLoading ? (
+            <>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => void onCreateLan()}
+                disabled={creating || !source.trim()}
+                data-testid="handoff-lan-button"
+              >
+                {creating ? en.handoff.lanCreating : en.handoff.lanCreateButton}
+              </Button>
+              {lanSession && lanPageUrl ? (
+                <HandoffResultCard
+                  variant="lan"
+                  testId="handoff-lan-mode"
+                  url={lanPageUrl}
+                  urlLabel={en.handoff.lanLinkLabel}
+                >
+                  <p>{en.handoff.lanOpenHint}</p>
+                  <p className="tp-handoff-meta">
+                    {en.handoff.expires} {new Date(lanSession.expires_at).toLocaleString()}
+                  </p>
+                </HandoffResultCard>
+              ) : null}
+            </>
+          ) : null}
+
+          {handoffMode === "relay" && !modeLoading ? (
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => void onCreateRelay()}
+              disabled={creating || !source.trim()}
+              data-testid="handoff-relay-button"
+            >
+              {creating ? en.handoff.creating : en.handoff.createRelay}
+            </Button>
+          ) : null}
+        </div>
       )}
 
-      {handoffMode === "multi-qr" && !modeLoading && source.trim() ? (
-        <div data-testid="handoff-multi-qr-mode">
-          <MultiQrCreate />
-        </div>
-      ) : null}
-
-      {handoffMode === "single-qr" && !modeLoading ? (
-        <>
-          <button
-            type="button"
-            onClick={() => void onPrepareQr()}
-            disabled={!source.trim() || qrGenerating || originLoading || handoffOriginBlocked}
-            data-testid="handoff-qr-button"
-          >
-            {qrGenerating ? en.handoff.generatingQr : en.handoff.createQr}
-          </button>
-          {qrDataUrl && qrHandoffUrl ? (
-            <div className="tp-handoff-result" data-testid="handoff-qr-mode">
-              <p>{en.handoff.qrScanHint}</p>
-              <img
-                src={qrDataUrl}
-                alt={en.handoff.qrImageAlt}
-                width={512}
-                height={512}
-                data-testid="handoff-qr-image"
-              />
-              <p className="tp-handoff-meta">
-                <strong>{en.handoff.qrLinkLabel}</strong>
-                <br />
-                <a href={qrHandoffUrl}>{qrHandoffUrl}</a>
-              </p>
-            </div>
-          ) : null}
-        </>
-      ) : null}
-
-      {handoffMode === "lan" && !modeLoading ? (
-        <>
-          <button
-            type="button"
-            onClick={() => void onCreateLan()}
-            disabled={creating || !source.trim()}
-            data-testid="handoff-lan-button"
-          >
-            {creating ? en.handoff.lanCreating : en.handoff.lanCreateButton}
-          </button>
-          {lanSession && lanPageUrl ? (
-            <div className="tp-handoff-result" data-testid="handoff-lan-mode">
-              <p>{en.handoff.lanOpenHint}</p>
-              <p>
-                <strong>{en.handoff.lanLinkLabel}</strong>
-                <br />
-                <a href={lanPageUrl}>{lanPageUrl}</a>
-              </p>
-              <p className="tp-handoff-meta">
-                {en.handoff.expires} {new Date(lanSession.expires_at).toLocaleString()}
-              </p>
-            </div>
-          ) : null}
-        </>
-      ) : null}
-
-      {handoffMode === "relay" && !modeLoading ? (
-        <button
-          type="button"
-          onClick={() => void onCreateRelay()}
-          disabled={creating || !source.trim()}
-          data-testid="handoff-relay-button"
-        >
-          {creating ? en.handoff.creating : en.handoff.createRelay}
-        </button>
-      ) : null}
-
       {error ? (
-        <p className="tp-error" role="alert">
+        <p className="ds-alert" data-variant="error" role="alert">
           {error}
         </p>
       ) : null}
 
       {session ? (
-        <div className="tp-handoff-result" data-testid="handoff-session">
-          <p>
-            <strong>{en.handoff.claimUrl}</strong>
-            <br />
-            <a href={session.claim_url}>{session.claim_url}</a>
-          </p>
-          <p>
-            <strong>{en.handoff.otpLabel}</strong> {session.otp}
-          </p>
+        <HandoffResultCard
+          variant="relay"
+          testId="handoff-session"
+          url={session.claim_url}
+          urlLabel={en.handoff.claimUrl}
+        >
+          <OtpDisplay otp={session.otp} label={en.handoff.otpLabel} />
           <p className="tp-handoff-meta">
             {en.handoff.expires} {new Date(session.expires_at).toLocaleString()}
           </p>
-        </div>
+        </HandoffResultCard>
       ) : null}
 
       <p>

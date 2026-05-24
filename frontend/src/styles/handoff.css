@@ -1,0 +1,148 @@
+.tp-handoff-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: var(--layout-max-width);
+}
+
+.tp-handoff-page__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tp-handoff-page__title {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.tp-handoff-page__hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.tp-handoff-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.tp-handoff-meta {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.tp-handoff-origin {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  background: var(--surface-inset);
+  box-shadow: var(--elevation-inset);
+  color: var(--color-text-primary);
+  word-break: break-all;
+}
+
+.ds-handoff-step {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+  color: var(--color-text-primary);
+}
+
+.ds-otp-display {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ds-otp-display__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.ds-otp-display__value {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.12em;
+}
+
+.ds-otp-display__digit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.75rem;
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--surface-inset);
+  box-shadow: var(--elevation-inset);
+  color: var(--color-text-primary);
+}
+
+.ds-handoff-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ds-handoff-result__link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.ds-handoff-result__link-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.ds-handoff-result__url {
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  word-break: break-all;
+}
+
+.ds-handoff-result__url a {
+  color: var(--color-accent);
+}
+
+.tp-handoff-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.tp-handoff-nav .ds-button {
+  flex: 1 1 8rem;
+}
+
+.tp-handoff-receive {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--layout-max-width);
+}
+
+.tp-handoff-receive__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+}

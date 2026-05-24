@@ -1,0 +1,26 @@
+.ds-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 12rem;
+  padding: var(--space-3);
+  font-family: var(--font-family-mono, ui-monospace, monospace);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed, 1.45);
+  color: var(--color-text-primary);
+  background: var(--color-bg-inset, var(--color-bg-canvas));
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevation-inset);
+  resize: vertical;
+}
+
+.ds-textarea:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.ds-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

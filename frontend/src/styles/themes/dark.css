@@ -1,0 +1,27 @@
+/**
+ * Dark theme — document root
+ * Activate: document.documentElement.dataset.theme = "dark"
+ */
+
+[data-theme="dark"] {
+  --color-bg-canvas: #0d0d0d;
+  --color-bg-surface: #1a1a1a;
+  --color-bg-elevated: #242424;
+  --color-bg-player: #000000;
+  --color-text-primary: #f0f0f0;
+  --color-text-secondary: #a8a8a8;
+  --color-text-muted: #888888;
+  --color-border-default: #333333;
+  --color-border-strong: #555555;
+  --color-accent: #1d4ed8;
+  --color-accent-hover: #2563eb;
+  --color-accent-contrast: #ffffff;
+  --color-danger: #f87171;
+  --color-focus-ring: #60a5fa;
+}
+
+[data-theme="dark"] .tp-nav a.active,
+[data-theme="dark"] .ds-mobile-nav a.active {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}

@@ -1,0 +1,11 @@
+.ds-copy-button {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ds-copy-button__status {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}

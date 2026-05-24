@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { Button } from "../components/ds/Button";
+import { HandoffResultCard } from "../components/ds/HandoffResultCard";
+import { HandoffStepIndicator } from "../components/ds/HandoffStepIndicator";
+import { QrFrame } from "../components/ds/QrFrame";
 import { en } from "../lib/i18n/en";
 import type { ScriptFormat } from "../markdown/types";
 import { validateScriptSize } from "../prompter/limits";
@@ -13,20 +17,12 @@ import {
 } from "./qrChunkEncode";
 import { QrGenerationError } from "./qrEncode";
 
-const copy = {
-  title: "Multi-QR handoff",
-  hint: "Scan each code in order on your phone. Use Previous / Next to show the next code on this device.",
-  generate: "Generate multi-QR codes",
-  generating: "Generating codes…",
-  failed: "Could not generate multi-QR handoff.",
-  tooLarge: "Script is too large for multi-QR handoff.",
-  scanProgress: (index: number, total: number) => `Scan code ${index} of ${total}`,
-  imageAlt: (index: number, total: number) => `QR code ${index} of ${total}`,
-  prev: "Previous code",
-  next: "Next code",
-} as const;
+export type MultiQrCreateProps = {
+  /** When true, omit page title (parent HandoffCreate owns h1). */
+  embedded?: boolean;
+};
 
-export function MultiQrCreate() {
+export function MultiQrCreate({ embedded = false }: MultiQrCreateProps) {
   const [source, setSource] = useState("");
   const [format, setFormat] = useState<ScriptFormat>("plain");
   const [loading, setLoading] = useState(true);
@@ -71,9 +67,9 @@ export function MultiQrCreate() {
       setChunks(encoded);
     } catch (err) {
       if (err instanceof QrGenerationError) {
-        setError(copy.tooLarge);
+        setError(en.handoff.multiTooLarge);
       } else {
-        setError(copy.failed);
+        setError(en.handoff.multiFailed);
       }
     } finally {
       setGenerating(false);
@@ -100,7 +96,7 @@ export function MultiQrCreate() {
       })
       .catch(() => {
         if (!cancelled) {
-          setError(copy.failed);
+          setError(en.handoff.multiFailed);
           setQrDataUrl(null);
         }
       });
@@ -116,81 +112,94 @@ export function MultiQrCreate() {
 
   const activeChunk = chunks[currentIndex];
   const total = chunks.length;
+  const TitleTag = embedded ? "h2" : "h1";
+  const titleId = embedded ? "multi-qr-create-subtitle" : "multi-qr-create-title";
 
   return (
-    <section aria-labelledby="multi-qr-create-title">
-      <h1 id="multi-qr-create-title">{copy.title}</h1>
-      <p>{copy.hint}</p>
+    <section
+      className="tp-handoff-multi"
+      aria-labelledby={titleId}
+      data-testid={embedded ? "handoff-multi-embedded" : undefined}
+    >
+      <TitleTag id={titleId} className={embedded ? "tp-handoff-page__hint" : "tp-handoff-page__title"}>
+        {en.handoff.multiTitle}
+      </TitleTag>
+      {!embedded ? <p className="tp-handoff-page__hint">{en.handoff.multiHint}</p> : null}
 
-      {!source.trim() ? (
+      {!embedded && !source.trim() ? (
         <p>
           {en.handoff.noScript}{" "}
           <Link to="/">{en.handoff.backEditor}</Link>
         </p>
-      ) : (
+      ) : null}
+
+      {!embedded && source.trim() ? (
         <p className="tp-handoff-meta">
           {en.handoff.scriptReady} ({format})
         </p>
-      )}
+      ) : null}
 
-      <button
+      <Button
         type="button"
+        variant="primary"
         onClick={() => void generateChunks()}
         disabled={!source.trim() || generating}
         data-testid="multi-qr-generate"
       >
-        {generating ? copy.generating : copy.generate}
-      </button>
+        {generating ? en.handoff.multiGenerating : en.handoff.multiGenerate}
+      </Button>
 
       {error ? (
-        <p className="tp-error" role="alert">
+        <p className="ds-alert" data-variant="error" role="alert">
           {error}
         </p>
       ) : null}
 
       {activeChunk && qrDataUrl ? (
-        <div className="tp-handoff-result" data-testid="multi-qr-mode">
-          <p data-testid="multi-qr-progress">
-            {copy.scanProgress(activeChunk.index, activeChunk.total)}
-          </p>
-          <img
-            src={qrDataUrl}
-            alt={copy.imageAlt(activeChunk.index, activeChunk.total)}
-            width={512}
-            height={512}
-            data-testid="multi-qr-image"
+        <HandoffResultCard
+          variant="qr"
+          testId="multi-qr-mode"
+          url={activeChunk.handoffUrl}
+          urlLabel={en.handoff.qrLinkLabel}
+        >
+          <HandoffStepIndicator
+            index={activeChunk.index}
+            total={activeChunk.total}
+            label={en.handoff.multiScanProgress(activeChunk.index, activeChunk.total)}
           />
-          <p className="tp-handoff-meta">
-            <strong>{en.handoff.qrLinkLabel}</strong>
-            <br />
-            <a href={activeChunk.handoffUrl}>{activeChunk.handoffUrl}</a>
-          </p>
+          <QrFrame
+            src={qrDataUrl}
+            alt={en.handoff.multiImageAlt(activeChunk.index, activeChunk.total)}
+            imageTestId="multi-qr-image"
+          />
           <div className="tp-handoff-nav">
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={() => setCurrentIndex((value) => Math.max(0, value - 1))}
               disabled={currentIndex === 0}
               data-testid="multi-qr-prev"
             >
-              {copy.prev}
-            </button>
-            <button
+              {en.handoff.multiPrev}
+            </Button>
+            <Button
               type="button"
-              onClick={() =>
-                setCurrentIndex((value) => Math.min(total - 1, value + 1))
-              }
+              variant="secondary"
+              onClick={() => setCurrentIndex((value) => Math.min(total - 1, value + 1))}
               disabled={currentIndex >= total - 1}
               data-testid="multi-qr-next"
             >
-              {copy.next}
-            </button>
+              {en.handoff.multiNext}
+            </Button>
           </div>
-        </div>
+        </HandoffResultCard>
       ) : null}
 
-      <p>
-        <Link to="/">{en.handoff.backEditor}</Link>
-      </p>
+      {!embedded ? (
+        <p>
+          <Link to="/">{en.handoff.backEditor}</Link>
+        </p>
+      ) : null}
     </section>
   );
 }

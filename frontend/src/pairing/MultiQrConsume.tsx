@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
+import { HandoffStepIndicator } from "../components/ds/HandoffStepIndicator";
 import { en } from "../lib/i18n/en";
 import { validateScriptSize } from "../prompter/limits";
 import { saveScriptFormat, saveScriptSource } from "../prompter/storage";
@@ -9,17 +10,6 @@ import {
   MultiQrDecodeError,
 } from "./qrChunkDecode";
 import { HandoffDecodeError } from "./qrDecode";
-
-const copy = {
-  receiveTitle: "Receive script (multi-QR)",
-  consuming: "Loading multi-QR handoff…",
-  missingFragment: "No multi-QR handoff data found in this link.",
-  invalidFragment: "This multi-QR link is invalid or corrupted.",
-  consumeFailed: "Could not load script from multi-QR handoff.",
-  pendingProgress: (received: number, total: number) =>
-    `Read ${received} of ${total} codes.`,
-  pendingHint: "Scan the remaining codes on this device (order does not matter).",
-} as const;
 
 export function MultiQrConsume() {
   const location = useLocation();
@@ -38,7 +28,7 @@ export function MultiQrConsume() {
         const result = await ingestMultiQrFragment(location.hash);
         if (!result) {
           if (!cancelled) {
-            setError(copy.missingFragment);
+            setError(en.handoff.multiMissingFragment);
             setLoading(false);
           }
           return;
@@ -68,11 +58,11 @@ export function MultiQrConsume() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof MultiQrDecodeError || err instanceof HandoffDecodeError
-              ? copy.invalidFragment
-              : copy.consumeFailed,
-          );
+          if (err instanceof MultiQrDecodeError || err instanceof HandoffDecodeError) {
+            setError(en.handoff.multiInvalidFragment);
+          } else {
+            setError(en.handoff.multiConsumeFailed);
+          }
           setLoading(false);
         }
       }
@@ -86,17 +76,34 @@ export function MultiQrConsume() {
   }, [location.hash, navigate]);
 
   if (loading && !error && !pending) {
-    return <p data-testid="multi-qr-consuming">{copy.consuming}</p>;
+    return (
+      <section className="tp-handoff-receive" aria-labelledby="handoff-multi-receive-title">
+        <h1 id="handoff-multi-receive-title" className="tp-handoff-receive__title">
+          {en.handoff.multiReceiveTitle}
+        </h1>
+        <div className="ds-card">
+          <p className="tp-handoff-meta" aria-busy="true">
+            {en.handoff.multiConsuming}
+          </p>
+        </div>
+      </section>
+    );
   }
 
   if (pending) {
     return (
-      <section aria-labelledby="multi-qr-receive-title">
-        <h1 id="multi-qr-receive-title">{copy.receiveTitle}</h1>
-        <p data-testid="multi-qr-pending">
-          {copy.pendingProgress(pending.received, pending.total)}
-        </p>
-        <p>{copy.pendingHint}</p>
+      <section className="tp-handoff-receive" aria-labelledby="handoff-multi-receive-title">
+        <h1 id="handoff-multi-receive-title" className="tp-handoff-receive__title">
+          {en.handoff.multiReceiveTitle}
+        </h1>
+        <div className="ds-card tp-handoff-panel" data-testid="multi-qr-pending">
+          <HandoffStepIndicator
+            index={pending.received}
+            total={pending.total}
+            label={en.handoff.multiPendingProgress(pending.received, pending.total)}
+          />
+          <p className="tp-handoff-meta">{en.handoff.multiPendingHint}</p>
+        </div>
         <p>
           <Link to="/">{en.handoff.backEditor}</Link>
         </p>
@@ -106,11 +113,15 @@ export function MultiQrConsume() {
 
   if (error) {
     return (
-      <section aria-labelledby="multi-qr-receive-title">
-        <h1 id="multi-qr-receive-title">{copy.receiveTitle}</h1>
-        <p className="tp-error" role="alert">
-          {error}
-        </p>
+      <section className="tp-handoff-receive" aria-labelledby="handoff-multi-receive-title">
+        <h1 id="handoff-multi-receive-title" className="tp-handoff-receive__title">
+          {en.handoff.multiReceiveTitle}
+        </h1>
+        <div className="ds-card">
+          <p className="ds-alert" data-variant="error" role="alert">
+            {error}
+          </p>
+        </div>
         <p>
           <Link to="/">{en.handoff.backEditor}</Link>
         </p>

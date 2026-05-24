@@ -30,7 +30,7 @@
    # or interactive menu: bin/start.sh dev
    ```
 
-   `bin/start.sh` loads `.env.{dev|prd}` for the given context (`dev` default). Missing context file falls back to `.env` then `.env.example` with a warning.
+   `bin/start.sh` loads `.env.{dev|prd}` for the given context (`dev` default). **prd** requires `.env.prd` (no fallback). Variables are passed into API and frontend containers via `env_file`, not only compose interpolation.
 
 4. Verify health:
 

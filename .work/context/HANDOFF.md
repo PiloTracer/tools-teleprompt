@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-22 — player UX: side/bottom clearance sliders, compact toolbar, controls below text in fullscreen only
+**Closed:** 2026-05-23 — UI Design OS S1–S4 shipped; `start.sh prd` env injection; player single-lever dock
 
-**Updated:** 2026-05-22
+**Updated:** 2026-05-23
 
-**Repository state:** v0.1.0 released. M1–M7 complete. Player padding + fullscreen toolbar layout committed this session. **Next:** production deploy; manual phone verify on hotspot.
+**Repository state:** v0.1.0 released. M1–M7 complete. **UI S1–S4 committed** (tokens, ds primitives, handoff hub + receive/multi). **Next:** production deploy with `.env.prd`; UI **S5** (LAN + claim consume).
 
 **Plan-master-ready:** 2026-05-20
 
@@ -36,8 +36,8 @@
 ## Fresh start — next session
 
 1. `@session-control start`
-2. `.work/plans/NEXT.md`
-3. Production deploy (`deploy/README.md`) · hotspot env · optional Lighthouse (W6)
+2. `.work/plans/NEXT.md` · `.work.ui/plans/NEXT_UI.md`
+3. Production deploy (`deploy/README.md` + `.env.prd`) · `@ui-component-build plan - S5`
 
 ---
 
@@ -100,6 +100,8 @@
 | 2026-05-21 | session close commit push | README v0.1.0 release + GitHub release |
 | 2026-05-22 | Player UX polish | side/bottom clearance, scroll tail, compact toolbar, fullscreen-only bottom controls |
 | 2026-05-22 | session close commit push | player layout improvements on `main` |
+| 2026-05-23 | UI Design OS + S4 handoff | `.ai.ui/`, `.work.ui/`, tokens, ds components, S1–S4 screens, Playwright S1–S4, `bin/start.sh` prd env |
+| 2026-05-23 | session close commit push | UI framework + handoff polish + player lever dock on `main` |
 
 ---
 
@@ -114,3 +116,11 @@ See `.work/plans/UNKNOWNS.md` — U9 resolved (M7 LAN + multi-QR). U1/U6/U8 clos
 - **M5-T9:** pairing security paths — done
 - **M6-T6:** markdown-render + ADR 005 — done (MOD-06 M6 review doc)
 - **M7-T9:** LAN + multi-QR handoff — done (MOD-06 M7 review doc)
+
+### UI layer (UI Design OS)
+
+- **Framework:** `.ai.ui/` (sibling to `.ai/`)
+- **UI handoff:** `.work.ui/context/HANDOFF_UI.md`
+- **UI next:** `.work.ui/plans/NEXT_UI.md`
+- **Status:** **S1–S4 complete** 2026-05-23 · **S5 queued** (`handoff-lan`, `handoff-claim`)
+- **Next UI:** `@ui-component-build plan - S5`

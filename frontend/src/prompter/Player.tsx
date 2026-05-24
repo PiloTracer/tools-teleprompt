@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { en } from "../lib/i18n/en";
 import { renderScript } from "../markdown/render";
@@ -97,7 +98,19 @@ export function Player() {
   );
 
   if (!hydrated) {
-    return <p aria-busy="true">{en.play.loading}</p>;
+    return (
+      <div
+        className="tp-player-loading tp-player-loading--skeleton"
+        aria-busy="true"
+        aria-live="polite"
+        aria-label={en.play.loading}
+      >
+        <span className="tp-player-loading__sr">{en.play.loading}</span>
+        <div className="tp-player-loading__bar" aria-hidden />
+        <div className="tp-player-loading__bar tp-player-loading__bar--short" aria-hidden />
+        <div className="tp-player-loading__bar tp-player-loading__bar--medium" aria-hidden />
+      </div>
+    );
   }
 
   const themeClass = settings.theme === "dark" ? "tp-player--dark" : "tp-player--light";
@@ -110,7 +123,12 @@ export function Player() {
       aria-label="Teleprompter player"
     >
       {!hasScript ? (
-        <p className="tp-player-empty">{en.play.empty}</p>
+        <div className="tp-player-empty-state">
+          <p className="tp-player-empty">{en.play.empty}</p>
+          <Link to="/" className="ds-button" data-variant="secondary" data-size="sm">
+            {en.play.emptyCta}
+          </Link>
+        </div>
       ) : (
         <div ref={viewportRef} className="tp-player-viewport" data-testid="player-viewport">
           <div

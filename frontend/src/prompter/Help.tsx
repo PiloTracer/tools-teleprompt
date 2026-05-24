@@ -1,18 +1,62 @@
+import { useEffect, useRef } from "react";
+
 import { en } from "../lib/i18n/en";
 
 type HelpProps = {
   open: boolean;
+  disabled?: boolean;
   onToggle: () => void;
 };
 
-export function Help({ open, onToggle }: HelpProps) {
+export function Help({ open, disabled = false, onToggle }: HelpProps) {
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    panelRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+      event.preventDefault();
+      onToggle();
+      toggleRef.current?.focus();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onToggle]);
+
   return (
     <div className="tp-player-help">
-      <button type="button" aria-expanded={open} onClick={onToggle}>
+      <button
+        ref={toggleRef}
+        type="button"
+        className="ds-button"
+        data-variant="ghost"
+        data-size="sm"
+        disabled={disabled}
+        aria-expanded={open}
+        aria-controls="tp-player-help-panel"
+        aria-label={en.play.helpToggle}
+        onClick={onToggle}
+      >
         {en.play.helpToggle}
       </button>
       {open ? (
-        <div className="tp-player-help-panel" role="region" aria-label={en.play.helpTitle}>
+        <div
+          ref={panelRef}
+          id="tp-player-help-panel"
+          className="tp-player-help-panel"
+          role="region"
+          aria-label={en.play.helpTitle}
+          tabIndex={-1}
+        >
           <h3>{en.play.helpTitle}</h3>
           <ul>
             <li>{en.play.helpSpace}</li>

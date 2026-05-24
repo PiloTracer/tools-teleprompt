@@ -60,16 +60,31 @@ export function QrConsume() {
   }, [location.hash, navigate]);
 
   if (loading && !error) {
-    return <p>{en.handoff.qrConsuming}</p>;
+    return (
+      <section className="tp-handoff-receive" aria-labelledby="handoff-qr-receive-title">
+        <h1 id="handoff-qr-receive-title" className="tp-handoff-receive__title">
+          {en.handoff.qrReceiveTitle}
+        </h1>
+        <div className="ds-card">
+          <p className="tp-handoff-meta" aria-busy="true">
+            {en.handoff.qrConsuming}
+          </p>
+        </div>
+      </section>
+    );
   }
 
   if (error) {
     return (
-      <section aria-labelledby="handoff-qr-receive-title">
-        <h1 id="handoff-qr-receive-title">{en.handoff.qrReceiveTitle}</h1>
-        <p className="tp-error" role="alert">
-          {error}
-        </p>
+      <section className="tp-handoff-receive" aria-labelledby="handoff-qr-receive-title">
+        <h1 id="handoff-qr-receive-title" className="tp-handoff-receive__title">
+          {en.handoff.qrReceiveTitle}
+        </h1>
+        <div className="ds-card">
+          <p className="ds-alert" data-variant="error" role="alert">
+            {error}
+          </p>
+        </div>
         <p>
           <Link to="/">{en.handoff.backEditor}</Link>
         </p>

@@ -1,35 +1,55 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 
+import { Button } from "../components/ds/Button";
 import { en } from "../lib/i18n/en";
 import {
+  BOTTOM_PADDING_MAX,
+  BOTTOM_PADDING_MIN,
   DEFAULT_SETTINGS,
   loadSettings,
   saveSettings,
-  type PrompterSettings,
-  type Theme,
-  BOTTOM_PADDING_MAX,
-  BOTTOM_PADDING_MIN,
   SIDE_PADDING_MAX,
   SIDE_PADDING_MIN,
+  type PrompterSettings,
+  type Theme,
 } from "./storage";
+import { applyDocumentTheme } from "./theme";
+
+const SPEED_MIN = 0.5;
+const SPEED_MAX = 3;
+const SPEED_STEP = 0.1;
 
 export function Settings() {
   const [settings, setSettings] = useState<PrompterSettings>(DEFAULT_SETTINGS);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    void loadSettings().then(setSettings);
+    void loadSettings().then((loaded) => {
+      setSettings(loaded);
+      applyDocumentTheme(loaded.theme);
+      setHydrated(true);
+    });
   }, []);
 
   const update = <K extends keyof PrompterSettings>(key: K, value: PrompterSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
+    setError(null);
   };
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    await saveSettings(settings);
-    setSaved(true);
+    try {
+      await saveSettings(settings);
+      applyDocumentTheme(settings.theme);
+      setSaved(true);
+      setError(null);
+    } catch {
+      setError(en.errors.storage);
+      setSaved(false);
+    }
   };
 
   const onNumberChange =
@@ -38,77 +58,138 @@ export function Settings() {
       update(key, Number(event.target.value));
     };
 
+  if (!hydrated) {
+    return <p className="tp-settings-loading">{en.settings.loading}</p>;
+  }
+
   return (
-    <form className="tp-settings" onSubmit={(e) => void onSubmit(e)}>
-      <h2>{en.settings.title}</h2>
-      <label>
-        {en.settings.speed}
-        <input
-          type="range"
-          min={0.5}
-          max={3}
-          step={0.1}
-          value={settings.speed}
-          onChange={onNumberChange("speed")}
-        />
-        <span>{settings.speed.toFixed(1)}×</span>
-      </label>
-      <label>
-        {en.settings.fontSize}
-        <input
-          type="range"
-          min={14}
-          max={48}
-          step={1}
-          value={settings.fontSize}
-          onChange={onNumberChange("fontSize")}
-        />
-        <span>{settings.fontSize}px</span>
-      </label>
-      <label>
-        {en.settings.sidePadding}
-        <input
-          type="range"
-          min={SIDE_PADDING_MIN}
-          max={SIDE_PADDING_MAX}
-          step={1}
-          value={settings.sidePadding}
-          onChange={onNumberChange("sidePadding")}
-        />
-        <span>{settings.sidePadding}%</span>
-      </label>
-      <label>
-        {en.settings.bottomPadding}
-        <input
-          type="range"
-          min={BOTTOM_PADDING_MIN}
-          max={BOTTOM_PADDING_MAX}
-          step={1}
-          value={settings.bottomPadding}
-          onChange={onNumberChange("bottomPadding")}
-        />
-        <span>{settings.bottomPadding}%</span>
-      </label>
-      <label>
-        {en.settings.theme}
-        <select
-          value={settings.theme}
-          onChange={(e) => update("theme", e.target.value as Theme)}
+    <form className="tp-settings ds-card" onSubmit={(e) => void onSubmit(e)}>
+      <h2 className="tp-settings__title">{en.settings.title}</h2>
+
+      <div className="tp-settings__fields">
+        <label className="tp-settings__range ds-range">
+          <span className="ds-range__label">{en.settings.speed}</span>
+          <input
+            type="range"
+            min={SPEED_MIN}
+            max={SPEED_MAX}
+            step={SPEED_STEP}
+            value={settings.speed}
+            onChange={onNumberChange("speed")}
+            aria-label={en.settings.speed}
+            aria-valuemin={SPEED_MIN}
+            aria-valuemax={SPEED_MAX}
+            aria-valuenow={settings.speed}
+          />
+          <span className="ds-range__value">{settings.speed.toFixed(1)}×</span>
+        </label>
+
+        <label className="tp-settings__range ds-range">
+          <span className="ds-range__label">{en.settings.fontSize}</span>
+          <input
+            type="range"
+            min={14}
+            max={48}
+            step={1}
+            value={settings.fontSize}
+            onChange={onNumberChange("fontSize")}
+            aria-label={en.settings.fontSize}
+            aria-valuemin={14}
+            aria-valuemax={48}
+            aria-valuenow={settings.fontSize}
+          />
+          <span className="ds-range__value">{settings.fontSize}px</span>
+        </label>
+
+        <label className="tp-settings__range ds-range">
+          <span className="ds-range__label">{en.settings.sidePadding}</span>
+          <input
+            type="range"
+            min={SIDE_PADDING_MIN}
+            max={SIDE_PADDING_MAX}
+            step={1}
+            value={settings.sidePadding}
+            onChange={onNumberChange("sidePadding")}
+            aria-label={en.settings.sidePadding}
+            aria-valuemin={SIDE_PADDING_MIN}
+            aria-valuemax={SIDE_PADDING_MAX}
+            aria-valuenow={settings.sidePadding}
+          />
+          <span className="ds-range__value">{settings.sidePadding}%</span>
+        </label>
+
+        <label className="tp-settings__range ds-range">
+          <span className="ds-range__label">{en.settings.bottomPadding}</span>
+          <input
+            type="range"
+            min={BOTTOM_PADDING_MIN}
+            max={BOTTOM_PADDING_MAX}
+            step={1}
+            value={settings.bottomPadding}
+            onChange={onNumberChange("bottomPadding")}
+            aria-label={en.settings.bottomPadding}
+            aria-valuemin={BOTTOM_PADDING_MIN}
+            aria-valuemax={BOTTOM_PADDING_MAX}
+            aria-valuenow={settings.bottomPadding}
+          />
+          <span className="ds-range__value">{settings.bottomPadding}%</span>
+        </label>
+
+        <div
+          className="tp-settings__theme ds-segmented"
+          role="radiogroup"
+          aria-label={en.settings.theme}
         >
-          <option value="light">{en.settings.themeLight}</option>
-          <option value="dark">{en.settings.themeDark}</option>
-        </select>
-      </label>
-      <label className="tp-checkbox">
-        <input
-          type="checkbox"
-          checked={settings.mirror}
-          onChange={(e) => update("mirror", e.target.checked)}
-        />
-        {en.settings.mirror}
-      </label>
-      <button type="submit">Save</button>
-      {saved ? <p role="status">{en.settings.saved}</p> : null}
+          <span className="ds-segmented__group-label">{en.settings.theme}</span>
+          <div className="ds-segmented__track">
+            <label className="ds-segmented__option">
+              <input
+                type="radio"
+                name="settings-theme"
+                value="light"
+                checked={settings.theme === "light"}
+                onChange={() => update("theme", "light" as Theme)}
+              />
+              <span className="ds-segmented__label">{en.settings.themeLight}</span>
+            </label>
+            <label className="ds-segmented__option">
+              <input
+                type="radio"
+                name="settings-theme"
+                value="dark"
+                checked={settings.theme === "dark"}
+                onChange={() => update("theme", "dark" as Theme)}
+              />
+              <span className="ds-segmented__label">{en.settings.themeDark}</span>
+            </label>
+          </div>
+        </div>
+
+        <label className="tp-settings__mirror ds-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.mirror}
+            onChange={(e) => update("mirror", e.target.checked)}
+          />
+          <span className="ds-checkbox__label">{en.settings.mirror}</span>
+        </label>
+      </div>
+
+      <div className="tp-settings__actions">
+        <Button type="submit" variant="primary" size="md" className="tp-settings__save">
+          {en.settings.save}
+        </Button>
+        {saved ? (
+          <p className="ds-alert" data-variant="status" role="status">
+            {en.settings.saved}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="ds-alert" data-variant="error" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
     </form>
   );
 }

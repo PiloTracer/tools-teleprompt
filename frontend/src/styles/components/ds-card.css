@@ -1,0 +1,12 @@
+.ds-card {
+  background: var(--surface-elevated);
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-2);
+  padding: var(--space-4);
+  box-sizing: border-box;
+}
+
+.ds-card--flat {
+  box-shadow: var(--elevation-1);
+}

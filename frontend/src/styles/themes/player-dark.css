@@ -1,0 +1,21 @@
+/**
+ * Player-local dark theme — scoped to `.tp-player--dark`
+ * Values align with foundation 02 / `themes/dark.css` (settings.theme, not document root).
+ */
+
+.tp-player--dark {
+  --color-bg-canvas: #0d0d0d;
+  --color-bg-surface: #1a1a1a;
+  --color-bg-elevated: #242424;
+  --color-bg-player: #000000;
+  --color-text-primary: #f0f0f0;
+  --color-text-secondary: #a8a8a8;
+  --color-text-muted: #888888;
+  --color-border-default: #333333;
+  --color-border-strong: #555555;
+  /* Darker accent for 4.5:1 with white on sm controls (axe WCAG AA) */
+  --color-accent: #1d4ed8;
+  --color-accent-hover: #1e40af;
+  --color-accent-contrast: #ffffff;
+  --color-focus-ring: #60a5fa;
+}

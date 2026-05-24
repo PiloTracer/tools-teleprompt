@@ -16,6 +16,10 @@ import {
   saveSettings,
 } from "../src/prompter/storage";
 
+function selectPlayerLeverTab(name: RegExp) {
+  fireEvent.click(screen.getByRole("tab", { name }));
+}
+
 describe("useScroll (M4-T1)", () => {
   it("computes delta proportional to speed", () => {
     const at1x = scrollDeltaPx(1000, 1);
@@ -183,6 +187,7 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
       expect(screen.getByTestId("player-content")).toBeInTheDocument();
     });
 
+    selectPlayerLeverTab(/^Font$/i);
     fireEvent.change(screen.getByLabelText(/font size/i), { target: { value: "32" } });
     expect(screen.getByTestId("player-content")).toHaveStyle({ fontSize: "32px" });
   });
@@ -202,7 +207,8 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
       expect(screen.getByTestId("player-content")).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByLabelText(/side padding/i), { target: { value: "12" } });
+    selectPlayerLeverTab(/^Sides$/i);
+    fireEvent.change(screen.getByLabelText(/side inset/i), { target: { value: "12" } });
     expect(screen.getByTestId("player-content")).toHaveStyle({
       paddingLeft: "calc(1rem + 12vw)",
       paddingRight: "calc(1rem + 12vw)",
@@ -243,6 +249,7 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
       expect(screen.getByTestId("player-scroll-tail")).toBeInTheDocument();
     });
 
+    selectPlayerLeverTab(/^Bottom$/i);
     fireEvent.change(screen.getByLabelText(/bottom clearance/i), { target: { value: "20" } });
     expect(screen.getByTestId("player-scroll-tail")).toHaveStyle({ height: "100px" });
   });
@@ -258,10 +265,10 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/theme/i)).toBeInTheDocument();
+      expect(screen.getByRole("group", { name: /theme/i })).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByLabelText(/theme/i), { target: { value: "dark" } });
+    fireEvent.click(screen.getByRole("radio", { name: /dark/i }));
     expect(screen.getByLabelText(/teleprompter player/i)).toHaveClass("tp-player--dark");
   });
 
@@ -295,9 +302,10 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/font size/i)).toBeInTheDocument();
+      expect(screen.getByTestId("player-lever-dock")).toBeInTheDocument();
     });
 
+    selectPlayerLeverTab(/^Font$/i);
     fireEvent.change(screen.getByLabelText(/font size/i), { target: { value: "36" } });
 
     await waitFor(() => {
@@ -447,6 +455,15 @@ describe("Keyboard shortcuts (M4-T6, R12)", () => {
     );
     expect(screen.getByRole("region", { name: /keyboard shortcuts/i })).toBeInTheDocument();
     expect(screen.getByText(/space — play/i)).toBeInTheDocument();
+  });
+
+  it("closes help panel on Escape and returns focus to toggle", () => {
+    const onToggle = vi.fn();
+    render(<Help open={true} onToggle={onToggle} />);
+    const toggle = screen.getByRole("button", { name: /keyboard shortcuts/i });
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(toggle).toHaveFocus();
   });
 
   it("ignores shortcuts when typing in an input", async () => {

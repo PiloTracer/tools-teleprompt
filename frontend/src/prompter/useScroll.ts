@@ -1,5 +1,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 
+import { prefersReducedMotion } from "./motion";
+
 /** Baseline scroll rate at 1× speed (pixels per second). */
 export const BASE_SCROLL_PX_PER_SEC = 48;
 
@@ -69,9 +71,26 @@ export function useScroll(
       return;
     }
 
+    const motionQuery =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : null;
+    let reducedMotion = prefersReducedMotion();
+
+    const onMotionPreferenceChange = () => {
+      reducedMotion = motionQuery?.matches ?? false;
+    };
+    motionQuery?.addEventListener("change", onMotionPreferenceChange);
+
     const tick = (time: number) => {
       const el = viewportRef.current;
       if (!el) {
+        return;
+      }
+
+      if (reducedMotion) {
+        lastTimeRef.current = time;
+        rafRef.current = requestAnimationFrame(tick);
         return;
       }
 
@@ -92,6 +111,7 @@ export function useScroll(
     rafRef.current = requestAnimationFrame(tick);
 
     return () => {
+      motionQuery?.removeEventListener("change", onMotionPreferenceChange);
       lastTimeRef.current = null;
       carryRef.current = 0;
       if (rafRef.current !== null) {

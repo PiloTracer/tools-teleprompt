@@ -15,6 +15,8 @@ services:
       context: ../api
       target: dev
     container_name: ${STACK_NAME:-tools-teleprompt}-api-${STACK_ENV:-dev}
+    env_file:
+      - ${TP_ENV_FILE:?Run via bin/start.sh dev|prd so TP_ENV_FILE points at .env.dev or .env.prd}
     environment:
       REDIS_URL: redis://redis:6379/0
       API_DEV_PORT: ${API_DEV_PORT:-8000}
@@ -22,6 +24,7 @@ services:
       API_SESSION_TTL_SECONDS: ${API_SESSION_TTL_SECONDS:-300}
       API_RATE_LIMIT_CREATE: ${API_RATE_LIMIT_CREATE:-10}
       API_RATE_LIMIT_CLAIM: ${API_RATE_LIMIT_CLAIM:-20}
+      API_OTP_HMAC_SECRET: ${API_OTP_HMAC_SECRET:-dev-only-change-me}
       API_PUBLIC_BASE_URL: ${API_PUBLIC_BASE_URL:-http://localhost:9080}
       PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-}
       FRONTEND_HOST_PORT: ${FRONTEND_HOST_PORT:-9173}

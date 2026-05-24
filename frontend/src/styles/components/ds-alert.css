@@ -1,0 +1,19 @@
+.ds-alert {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.ds-alert[data-variant="error"] {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--surface-elevated));
+  box-shadow: var(--elevation-1);
+}
+
+.ds-alert[data-variant="status"] {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-elevated);
+  box-shadow: var(--elevation-1);
+}

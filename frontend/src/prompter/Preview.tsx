@@ -15,31 +15,32 @@ export function Preview({ source, format, onFormatChange }: PreviewProps) {
   const html = useMemo(() => renderScript(source, format), [source, format]);
 
   return (
-    <section className="tp-preview-panel" aria-labelledby="tp-preview-title">
+    <section className="tp-preview-panel ds-card" aria-labelledby="tp-preview-title">
       <h2 id="tp-preview-title">{en.preview.title}</h2>
-      <fieldset className="tp-format-fieldset">
-        <legend className="tp-sr-only">Script format</legend>
-        <label>
-          <input
-            type="radio"
-            name="script-format"
-            value="plain"
-            checked={format === "plain"}
-            onChange={() => onFormatChange("plain")}
-          />
-          {en.preview.formatPlain}
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="script-format"
-            value="markdown"
-            checked={format === "markdown"}
-            onChange={() => onFormatChange("markdown")}
-          />
-          {en.preview.formatMarkdown}
-        </label>
-      </fieldset>
+      <div className="tp-format-control ds-segmented" role="radiogroup" aria-label="Script format">
+        <div className="ds-segmented__track">
+          <label className="ds-segmented__option">
+            <input
+              type="radio"
+              name="script-format"
+              value="plain"
+              checked={format === "plain"}
+              onChange={() => onFormatChange("plain")}
+            />
+            <span className="ds-segmented__label">{en.preview.formatPlain}</span>
+          </label>
+          <label className="ds-segmented__option">
+            <input
+              type="radio"
+              name="script-format"
+              value="markdown"
+              checked={format === "markdown"}
+              onChange={() => onFormatChange("markdown")}
+            />
+            <span className="ds-segmented__label">{en.preview.formatMarkdown}</span>
+          </label>
+        </div>
+      </div>
       <SanitizedHtml html={html} className="tp-preview" />
     </section>
   );

@@ -93,6 +93,18 @@ describe("HomePage editor flow (M3-T2, T3, R11)", () => {
     expect(screen.getByTestId("sanitized-html").textContent).toContain("<script>");
   });
 
+  it("uses catalog upload button with i18n label", async () => {
+    render(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /upload/i })).toBeInTheDocument();
+    });
+  });
+
   it("has no OTP gate on home route (R11)", async () => {
     render(
       <MemoryRouter initialEntries={["/"]}>

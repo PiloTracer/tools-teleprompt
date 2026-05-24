@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 
+import { Button } from "../components/ds/Button";
 import { en } from "../lib/i18n/en";
 import { isAcceptedFileName, validateScriptSize } from "./limits";
 
@@ -52,11 +53,13 @@ export function Editor({ value, onChange, onError }: EditorProps) {
   };
 
   return (
-    <section className="tp-editor" aria-labelledby="tp-editor-label">
+    <section className="tp-editor ds-card" aria-labelledby="tp-editor-label">
       <label id="tp-editor-label" htmlFor="tp-script-input">
         {en.editor.label}
       </label>
-      <p className="tp-hint">{en.editor.hint}</p>
+      <p id="tp-editor-hint" className="tp-hint">
+        {dragOver ? en.editor.dropHint : en.editor.hint}
+      </p>
       <div
         className={dragOver ? "tp-drop-zone tp-drop-zone--active" : "tp-drop-zone"}
         onDragEnter={(e) => {
@@ -69,6 +72,7 @@ export function Editor({ value, onChange, onError }: EditorProps) {
       >
         <textarea
           id="tp-script-input"
+          className="ds-textarea"
           value={value}
           onChange={handleChange}
           rows={12}
@@ -88,9 +92,15 @@ export function Editor({ value, onChange, onError }: EditorProps) {
             e.target.value = "";
           }}
         />
-        <button type="button" className="tp-upload-btn" onClick={() => inputRef.current?.click()}>
-          Upload .txt / .md
-        </button>
+        <Button
+          type="button"
+          variant="secondary"
+          size="md"
+          className="tp-upload-btn"
+          onClick={() => inputRef.current?.click()}
+        >
+          {en.editor.upload}
+        </Button>
       </div>
     </section>
   );
