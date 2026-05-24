@@ -556,22 +556,13 @@ describe("Player adaptive sync", () => {
     );
   });
 
-  it("turns language button red after speech recognizer confirms language", async () => {
+  it("auto-enables speech sync when play is pressed", async () => {
     const speech = await import("../src/prompter/adaptive/useSpeechTracker");
     vi.mocked(speech.isSpeechRecognitionSupported).mockReturnValue(true);
-    vi.mocked(speech.useSpeechTracker).mockReturnValue({
-      supported: true,
-      active: true,
-      readingWordIndex: 5,
-      hasCalibrated: true,
-      recognitionLanguage: "en-US",
-      permissionDenied: false,
-      error: null,
-    });
 
-    await saveScriptSource("Hello world from the teleprompter");
+    await saveScriptSource("Hola mundo desde el teleprompter");
     await saveScriptFormat("plain");
-    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: true });
+    await saveSettings({ ...DEFAULT_SETTINGS });
 
     render(
       <MemoryRouter>
@@ -580,10 +571,21 @@ describe("Player adaptive sync", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("player-sync-lang")).toHaveClass("tp-player-sync-lang--determined");
+      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     });
 
-    expect(screen.getByTestId("player-sync-lang")).toHaveTextContent("EN");
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+    await waitFor(() => {
+      const lastCall = vi.mocked(speech.useSpeechTracker).mock.calls.at(-1);
+      expect(lastCall?.[0]).toMatchObject({ enabled: true, listen: true });
+    });
+
+    const raw = localStorage.getItem("tp:settings");
+    expect(JSON.parse(raw ?? "{}")).toMatchObject({
+      adaptiveEnabled: true,
+      adaptiveAutoSync: true,
+    });
   });
 
   it("toggles speech sync from the language button", async () => {
@@ -609,6 +611,9 @@ describe("Player adaptive sync", () => {
     await waitFor(() => {
       expect(screen.getByTestId("player-sync-lang")).toHaveAttribute("aria-pressed", "true");
     });
+
+    const lastCall = vi.mocked(speech.useSpeechTracker).mock.calls.at(-1);
+    expect(lastCall?.[0]).toMatchObject({ enabled: true, listen: true });
 
     const raw = localStorage.getItem("tp:settings");
     expect(JSON.parse(raw ?? "{}")).toMatchObject({ adaptiveEnabled: true });

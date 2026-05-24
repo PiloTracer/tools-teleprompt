@@ -1,12 +1,12 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-24 (session close — adaptive speech sync committed)
+**Updated:** 2026-05-24 (session close — mic sync engagement fix committed)
 
 ---
 
 ## Recommended next
 
-1. **Manual device verify adaptive sync** — Read sequentially; skip metadata; confirm tracker stays aligned (no 50+ word false jumps). Red underline should not shift text size.
+1. **Manual device verify adaptive sync** — Hard-refresh player; press Play (or ES then Play); allow mic. Expect `sr.start`/`sr.advance` in console (`localStorage tp:debug=1`). Read sequentially; skip metadata; confirm no 50+ word false jumps. Red underline should not shift text size; language button turns red after SR confirms language.
 2. **Manual device verify player layout** — Bottom slider 20–50%; no horizontal scrollbar on long scripts.
 3. Production deploy when owner ready (`deploy/README.md`).
 4. Manual phone test on hotspot IP (LAN + multi-QR).
@@ -131,6 +131,7 @@ M8 complete — see **Done — M8 iteration (archived)** below.
 | Adaptive feature removed (revert to fixed-speed player) | 2026-05-24 |
 | Player bottom clearance (viewport-% grid) + text wrap + speed 0.1–3× | 2026-05-24 |
 | Adaptive speech sync restore (SR word matcher + skip-ahead + underline mark) | 2026-05-24 |
+| Mic sync engagement fix (Play auto-enable + ES toggle syncActive) | 2026-05-24 |
 
 ---
 

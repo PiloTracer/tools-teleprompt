@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import {
-  advanceFromCursor,
+  advanceRepeatedlyFromCursor,
   findInitialLock,
   matchRejectReason,
   shouldAcceptWordMatch,
@@ -15,9 +15,10 @@ import type { ParsedScriptLine } from "./parseScriptLines";
 import { buildMetaOnlyWords } from "./parseScriptLines";
 import { syncLog, syncLogBootOnce, syncLogOnChange, syncLogThrottled, syncWarn } from "./syncDebug";
 
-const WORD_BUFFER_SIZE = 40;
-const MATCH_WINDOW_WORDS = 18;
-const INTERIM_TAIL_WORDS = 4;
+const WORD_BUFFER_SIZE = 44;
+const MATCH_WINDOW_WORDS = 20;
+/** Interim SR words merged into the match window for faster live re-alignment. */
+const INTERIM_TAIL_WORDS = 8;
 const SILENCE_TIMEOUT_MS = 1800;
 const LANG_RETRY_UNMATCHED_THRESHOLD = 8;
 
@@ -109,6 +110,14 @@ export function useSpeechTracker({
     if (!enabled || !listen || !supported || scriptWords.length === 0) {
       if (enabled && listen && scriptWords.length === 0) {
         syncWarn("sr.skip.noScriptWords", { enabled, listen, supported });
+      } else if (enabled && !listen) {
+        syncLogThrottled("sr.skip.notListening", 3000, "sr.skip.notListening", {
+          enabled,
+          listen,
+          scriptWords: scriptWords.length,
+        });
+      } else if (!enabled) {
+        syncLogThrottled("sr.skip.disabled", 3000, "sr.skip.disabled", { listen });
       }
       shouldRunRef.current = false;
       if (silenceTimerRef.current !== null) {
@@ -142,6 +151,7 @@ export function useSpeechTracker({
     shouldRunRef.current = true;
     cursorWordRef.current = 0;
     wordBufferRef.current = [];
+    calibratedRef.current = false;
 
     const detectedLang = detectScriptLanguage(parsedLinesRef.current);
     const langCandidates = buildLangCandidates(detectedLang);
@@ -218,7 +228,7 @@ export function useSpeechTracker({
           const isInitialLock = !calibratedRef.current;
           const matched = isInitialLock
             ? findInitialLock(wordsToMatch, scriptWordsRef.current)
-            : advanceFromCursor(
+            : advanceRepeatedlyFromCursor(
                 wordsToMatch,
                 scriptWordsRef.current,
                 cursor,

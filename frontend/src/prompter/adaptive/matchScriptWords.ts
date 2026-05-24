@@ -22,7 +22,10 @@ export const MIN_SKIP_AHEAD_MATCH = 4;
 export const MIN_SKIP_AHEAD_DISTINCTIVE = 2;
 
 /** Recent SR tail — only these words drive steady advance. */
-export const ADVANCE_TAIL_WORDS = 8;
+export const ADVANCE_TAIL_WORDS = 10;
+
+/** Max sequential word advances per SR tick (catch-up within one utterance). */
+export const MAX_ADVANCE_STEPS_PER_TICK = 6;
 
 /** Min consecutive matches to lock on before calibrated. */
 export const MIN_INITIAL_LOCK_RUN = 4;
@@ -576,6 +579,35 @@ export function advanceFromCursor(
   }
 
   return null;
+}
+
+/**
+ * Advance the cursor repeatedly while each step is accepted — catches up when SR
+ * dumps a multi-word phrase in one result.
+ */
+export function advanceRepeatedlyFromCursor(
+  transcriptWords: string[],
+  scriptWords: string[],
+  cursorWord: number,
+  metaOnlyWords?: Set<string>,
+  maxSteps = MAX_ADVANCE_STEPS_PER_TICK,
+): WordMatchResult | null {
+  let cursor = cursorWord;
+  let last: WordMatchResult | null = null;
+
+  for (let step = 0; step < maxSteps; step += 1) {
+    const matched = advanceFromCursor(transcriptWords, scriptWords, cursor, metaOnlyWords);
+    if (matched === null || !shouldAcceptWordMatch(matched, cursor)) {
+      break;
+    }
+    if (matched.wordIndex <= cursor) {
+      break;
+    }
+    last = matched;
+    cursor = matched.wordIndex;
+  }
+
+  return last;
 }
 
 /** @deprecated Used by tests — delegates to sequential advance. */

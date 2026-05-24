@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   advanceFromCursor,
+  advanceRepeatedlyFromCursor,
   findInitialLock,
   isSkippableScriptToken,
   matchRejectReason,
@@ -135,6 +136,16 @@ describe("advanceFromCursor", () => {
     );
     expect(result?.wordIndex).toBeGreaterThan(21);
     expect(result && shouldAcceptWordMatch(result, 21)).toBe(true);
+  });
+
+  it("advances multiple words in one tick when SR dumps a phrase", () => {
+    const result = advanceRepeatedlyFromCursor(
+      ["como", "trabajamos", "en", "la", "practica", "con", "bob"],
+      SCRIPT,
+      4,
+    );
+    expect(result?.wordIndex).toBeGreaterThan(8);
+    expect(result && shouldAcceptWordMatch(result, 4)).toBe(true);
   });
 
   it("continues through markdown pipe tokens in the script", () => {

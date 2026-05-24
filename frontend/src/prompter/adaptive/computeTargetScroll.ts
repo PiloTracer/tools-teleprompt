@@ -5,10 +5,10 @@ export const READ_CENTER_RATIO = 0.38;
 export const SCROLL_CENTER_TOLERANCE_RATIO = 0.04;
 
 /** Seconds to reach ~63% of target error for scroll position. */
-export const SCROLL_TRACK_RESPONSE_SEC = 0.14;
+export const SCROLL_TRACK_RESPONSE_SEC = 0.09;
 
 /** Max scroll correction speed (px/s). */
-export const SCROLL_TRACK_MAX_PX_PER_SEC = 420;
+export const SCROLL_TRACK_MAX_PX_PER_SEC = 560;
 
 /** Pixels — words on the same visual row within this tolerance. */
 export const READING_LINE_ROW_TOLERANCE_PX = 6;

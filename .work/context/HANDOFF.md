@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-24 — adaptive speech sync restored; skip-ahead matcher + red underline mark
+**Closed:** 2026-05-24 — mic sync engagement fix (Play auto-enables SR; ES toggle no longer clears sync)
 
 **Updated:** 2026-05-24
 
-**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync re-shipped** on `main` (mic SR → word matcher → reading-line underline → scroll track). Matcher: sequential-first advance, gated skip-ahead across metadata, anti false-jump on function words. Reading mark: red underline only (no font/background shift). **FE:** 143/143 vitest pass. **Manual:** real-device mic tuning still owner-verified.
+**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`: mic SR → word matcher → reading-line underline → scroll track. **This session:** fixed sync never engaging — Play auto-enables `adaptiveEnabled`/`adaptiveAutoSync`; removed effect that cleared `syncActive` on ES toggle while paused. Matcher: `advanceRepeatedlyFromCursor` + skip-ahead gates retained. **FE:** 144/144 vitest pass. **Manual:** real-device mic tuning still owner-verified.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -116,6 +116,7 @@
 | 2026-05-24 | Adaptive feature removed | `95f804e` — revert to fixed-speed player |
 | 2026-05-24 (close) | Player bottom clearance + text wrap + speed 0.1–3× | `playerLayout.ts`, `Player.tsx`, `prompter.css`, `useViewportHeight`; vitest 92/92 |
 | 2026-05-24 (close) | Adaptive speech sync restore | `prompter/adaptive/*`, word matcher skip-ahead gates, red underline mark; vitest 143/143 |
+| 2026-05-24 (close) | Mic sync engagement fix | Play auto-enables SR; ES toggle syncActive bug; vitest 144/144 |
 
 ---
 
@@ -128,7 +129,7 @@ See `.work/plans/UNKNOWNS.md` — U9 resolved (M7 LAN + multi-QR). U1/U6/U8 clos
 ## Last verification (2026-05-24 close)
 
 ```
-docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm test -- --run"  → 143/143
+npm test -- --run  → 144/144 (host frontend/)
 ```
 
 **Device manual check:** adaptive mic sync + bottom clearance + horizontal scroll — **not verified** (owner).
