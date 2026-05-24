@@ -16,7 +16,7 @@ services:
       target: dev
     container_name: ${STACK_NAME:-tools-teleprompt}-api-${STACK_ENV:-dev}
     env_file:
-      - ${TP_ENV_FILE:?Run via bin/start.sh dev|prd so TP_ENV_FILE points at .env.dev or .env.prd}
+      - ${TP_ENV_FILE:-../.env.dev}
     environment:
       REDIS_URL: redis://redis:6379/0
       API_DEV_PORT: ${API_DEV_PORT:-8000}
@@ -44,7 +44,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import os, urllib.request; urllib.request.urlopen(f\"http://127.0.0.1:{os.environ['API_DEV_PORT']}/health\")",
+          "import os, json, urllib.request; r = urllib.request.urlopen(f\"http://127.0.0.1:{os.environ['API_DEV_PORT']}/health\"); exit(0 if json.loads(r.read()).get('status') == 'ok' and r.status == 200 else 1)",
         ]
       interval: 10s
       timeout: 5s
@@ -67,7 +67,7 @@ services:
       - ../frontend:/app
       - frontend_node_modules:/app/node_modules
     command: >
-      sh -c "npm install && npm run dev -- --host 0.0.0.0 --port ${FRONTEND_DEV_PORT:-5173}"
+      sh -c "npm install --prefer-offline && npm run dev -- --host 0.0.0.0 --port ${FRONTEND_DEV_PORT:-5173}"
     ports:
       - "${FRONTEND_HOST_PORT:-9173}:${FRONTEND_DEV_PORT:-5173}"
     networks:
@@ -99,6 +99,12 @@ services:
         condition: service_healthy
       frontend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "80"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 3s
 
 networks:
   teleprompt-net:

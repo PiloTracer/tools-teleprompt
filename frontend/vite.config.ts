@@ -18,7 +18,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["icon.svg", "manifest.webmanifest"],
+      includeAssets: ["favicon.svg", "icon.svg", "manifest.webmanifest"],
       manifest: {
         name: "tools-teleprompt",
         short_name: "teleprompt",
