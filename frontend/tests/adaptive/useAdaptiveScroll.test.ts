@@ -53,6 +53,10 @@ describe("resolveAdaptiveScrollRate", () => {
     expect(resolveAdaptiveScrollRate({ ...base, readLineRatio: 0.4 })).toBe(1);
   });
 
+  it("scrolls when read line is above the read zone (R8)", () => {
+    expect(resolveAdaptiveScrollRate({ ...base, readLineRatio: 0.1 })).toBe(1);
+  });
+
   it("pauses spoken scroll when read line reaches top of band", () => {
     expect(
       resolveAdaptiveScrollRate({ ...base, readLineRatio: READ_ZONE_MIN }),

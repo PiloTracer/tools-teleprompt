@@ -95,6 +95,11 @@ export function resolveAdaptiveScrollRate(input: AdaptiveScrollInput): number | 
   if (!vadSpeaking) {
     return 0;
   }
+  // Line above the read zone (too high on screen) — scroll forward until it enters the band.
+  if (readLineRatio < READ_ZONE_MIN) {
+    return 1;
+  }
+  // At the top edge of the band, hold position (line would scroll out upward).
   if (readLineRatio <= READ_ZONE_MIN) {
     return 0;
   }
