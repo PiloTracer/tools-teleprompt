@@ -190,9 +190,9 @@ require_service_running() {
 wait_for_stack_ready() {
   local i max="${START_WAIT_SECONDS:-120}"
   for ((i = 1; i <= max; i += 2)); do
-    if curl -sf --max-time 2 "http://${PUBLIC_HOST}:${CADDY_HOST_PORT}/health" >/dev/null 2>&1 \
+    if curl -sf --max-time 2 "http://localhost:${CADDY_HOST_PORT}/health" >/dev/null 2>&1 \
       && service_is_running redis \
-      && curl -sf --max-time 2 "http://${PUBLIC_HOST}:${CADDY_HOST_PORT}/" >/dev/null 2>&1; then
+      && curl -sf --max-time 2 "http://localhost:${FRONTEND_HOST_PORT}/" >/dev/null 2>&1; then
       return 0
     fi
     sleep 2
@@ -281,13 +281,13 @@ health_summary_line() {
     printf 'Health: stack stopped'
     return 0
   fi
-  if curl -sf --max-time 2 "http://${PUBLIC_HOST}:${CADDY_HOST_PORT}/health" >/dev/null 2>&1; then
+  if curl -sf --max-time 2 "http://localhost:${CADDY_HOST_PORT}/health" >/dev/null 2>&1; then
     api_ok="ok"
   fi
   if service_is_running redis && dc exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; then
     redis_ok="ok"
   fi
-  if curl -sf --max-time 2 "http://${PUBLIC_HOST}:${CADDY_HOST_PORT}/" >/dev/null 2>&1; then
+  if curl -sf --max-time 2 "http://localhost:${FRONTEND_HOST_PORT}/" >/dev/null 2>&1; then
     fe_ok="ok"
   fi
   printf 'Health: API=%s  Redis=%s  Frontend=%s' "$api_ok" "$redis_ok" "$fe_ok"
@@ -372,7 +372,7 @@ cmd_logs_service() {
 cmd_health() {
   require_stack_running || return 1
   printf '%s=== HTTP health ===%s\n' "$C_BOLD" "$C_RESET"
-  curl -sf "http://${PUBLIC_HOST}:${CADDY_HOST_PORT}/health" && printf '\n' || printf 'FAIL: /health\n' >&2
+  curl -sf "http://localhost:${CADDY_HOST_PORT}/health" && printf '\n' || printf 'FAIL: /health\n' >&2
   printf '\n%s=== Redis ===%s\n' "$C_BOLD" "$C_RESET"
   if require_service_running redis; then
     dc exec -T redis redis-cli ping || true

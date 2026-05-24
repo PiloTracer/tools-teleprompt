@@ -5,7 +5,7 @@ import { en } from "../lib/i18n/en";
 import { renderScript } from "../markdown/render";
 import { SanitizedHtml } from "../markdown/SanitizedHtml";
 import type { ScriptFormat } from "../markdown/types";
-import { computeScrollTailPx } from "./playerLayout";
+import { formatViewportGridRows } from "./playerLayout";
 import { PlayerControls } from "./PlayerControls";
 import {
   DEFAULT_SETTINGS,
@@ -17,19 +17,16 @@ import {
 } from "./storage";
 import { useFullscreen } from "./useFullscreen";
 import { useKeyboard } from "./useKeyboard";
-import { useScroll } from "./useScroll";
+import { clampScrollSpeed, SPEED_STEP, useScroll } from "./useScroll";
 import { useViewportHeight } from "./useViewportHeight";
 import { useWakeLock } from "./useWakeLock";
 
-const SPEED_MIN = 0.5;
-const SPEED_MAX = 3;
-const SPEED_STEP = 0.1;
-
 function clampSpeed(speed: number): number {
-  return Math.min(SPEED_MAX, Math.max(SPEED_MIN, Math.round(speed / SPEED_STEP) * SPEED_STEP));
+  return Math.round(clampScrollSpeed(speed) / SPEED_STEP) * SPEED_STEP;
 }
 
 export function Player() {
+  const viewportFrameRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const [source, setSource] = useState("");
   const [format, setFormat] = useState<ScriptFormat>("plain");
@@ -57,8 +54,8 @@ export function Player() {
   const html = useMemo(() => renderScript(source, format), [source, format]);
 
   const hasScript = source.trim().length > 0;
-  const viewportHeight = useViewportHeight(viewportRef, hasScript && hydrated);
-  const scrollTailPx = computeScrollTailPx(viewportHeight, settings.bottomPadding);
+  const viewportHeight = useViewportHeight(viewportFrameRef, hasScript);
+  const viewportGridRows = formatViewportGridRows(viewportHeight, settings.bottomPadding);
 
   useScroll(viewportRef, { isPlaying, speed: settings.speed });
 
@@ -130,23 +127,30 @@ export function Player() {
           </Link>
         </div>
       ) : (
-        <div ref={viewportRef} className="tp-player-viewport" data-testid="player-viewport">
+        <div className="tp-player-scroll-column">
           <div
-            className="tp-player-content"
-            style={{
-              fontSize: `${settings.fontSize}px`,
-              paddingLeft: `calc(1rem + ${settings.sidePadding}vw)`,
-              paddingRight: `calc(1rem + ${settings.sidePadding}vw)`,
-            }}
-            data-testid="player-content"
+            ref={viewportFrameRef}
+            className="tp-player-viewport"
+            data-testid="player-viewport"
+            style={{ gridTemplateRows: viewportGridRows }}
           >
-            <SanitizedHtml html={html} className="tp-player-script" />
             <div
-              className="tp-player-scroll-tail"
-              data-testid="player-scroll-tail"
-              style={{ height: `${scrollTailPx}px` }}
-              aria-hidden
-            />
+              ref={viewportRef}
+              className="tp-player-viewport-scroll"
+              data-testid="player-viewport-scroll"
+            >
+              <div
+                className="tp-player-content"
+                style={{
+                  fontSize: `${settings.fontSize}px`,
+                  paddingLeft: `calc(1rem + ${settings.sidePadding}vw)`,
+                  paddingRight: `calc(1rem + ${settings.sidePadding}vw)`,
+                }}
+                data-testid="player-content"
+              >
+                <SanitizedHtml html={html} className="tp-player-script" />
+              </div>
+            </div>
           </div>
         </div>
       )}

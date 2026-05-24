@@ -10,10 +10,7 @@ import {
   SIDE_PADDING_MIN,
   type PrompterSettings,
 } from "./storage";
-
-const SPEED_MIN = 0.5;
-const SPEED_MAX = 3;
-const SPEED_STEP = 0.1;
+import { SPEED_MAX, SPEED_MIN, SPEED_STEP } from "./useScroll";
 
 type LeverId = "speed" | "fontSize" | "sidePadding" | "bottomPadding";
 

@@ -1,8 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Teleprompter">
   <rect width="32" height="32" rx="7" fill="#1a1a1a"/>
+  <!-- read zone (upper-middle band) -->
   <rect x="4" y="11" width="24" height="9" rx="2" fill="#2563eb" opacity="0.22"/>
+  <!-- script lines scrolling upward -->
   <rect x="6" y="7" width="18" height="1.75" rx="0.875" fill="#ffffff" opacity="0.28"/>
   <rect x="6" y="14.5" width="14" height="2.25" rx="1.125" fill="#ffffff"/>
   <rect x="6" y="21.5" width="16" height="1.75" rx="0.875" fill="#ffffff" opacity="0.28"/>
+  <!-- scroll cue -->
   <path d="M16 4.5 13.2 7.8h5.6L16 4.5z" fill="#2563eb"/>
 </svg>

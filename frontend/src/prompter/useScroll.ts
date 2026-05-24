@@ -5,12 +5,13 @@ import { prefersReducedMotion } from "./motion";
 /** Baseline scroll rate at 1× speed (pixels per second). */
 export const BASE_SCROLL_PX_PER_SEC = 48;
 
-export const SPEED_MIN = 0.5;
+export const SPEED_MIN = 0.1;
 export const SPEED_MAX = 3;
+export const SPEED_STEP = 0.1;
 
 export type UseScrollOptions = {
   isPlaying: boolean;
-  /** Multiplier 0.5–3× from settings. */
+  /** Multiplier 0.1–3× from settings. */
   speed: number;
 };
 
@@ -20,7 +21,7 @@ export function clampScrollSpeed(speed: number): number {
 
 /**
  * Applies one scroll step, retaining fractional pixels in carryPx.
- * Browsers use integer scrollTop; without carry, low speeds (e.g. 0.5×) stall.
+ * Browsers use integer scrollTop; without carry, low speeds (e.g. 0.1×) stall.
  */
 export function applyScrollStep(
   scrollTop: number,

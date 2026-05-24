@@ -14,10 +14,7 @@ import {
   type Theme,
 } from "./storage";
 import { applyDocumentTheme } from "./theme";
-
-const SPEED_MIN = 0.5;
-const SPEED_MAX = 3;
-const SPEED_STEP = 0.1;
+import { SPEED_MAX, SPEED_MIN, SPEED_STEP } from "./useScroll";
 
 export function Settings() {
   const [settings, setSettings] = useState<PrompterSettings>(DEFAULT_SETTINGS);

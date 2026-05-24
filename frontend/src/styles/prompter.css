@@ -762,35 +762,90 @@
   }
 }
 
+.tp-player-scroll-column {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Grid row 2 is a fixed empty band (% of this frame's height). */
 .tp-player-viewport {
   flex: 1;
-  min-height: 10rem;
-  overflow-y: auto;
-  scroll-behavior: auto;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
   border: none;
   border-radius: var(--radius-md);
   background: var(--tp-viewport-bg);
   color: var(--tp-viewport-fg);
   box-shadow: var(--elevation-inset);
+  overflow: hidden;
+}
+
+.tp-player-viewport-scroll {
+  min-height: 0;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-behavior: auto;
 }
 
 .tp-player-content {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
   padding: 1.25rem 1rem 1rem;
   line-height: 1.55;
-}
-
-.tp-player-scroll-tail {
-  flex: none;
-  width: 100%;
-  pointer-events: none;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tp-player-script {
   border: none;
   padding: 0;
   min-height: auto;
+  max-width: 100%;
+  min-width: 0;
   background: transparent;
   color: inherit;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.tp-player-script :where(p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.tp-player-script :where(pre, code, .tp-plain) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.tp-player-script :where(pre, .tp-plain) {
+  margin: 0;
+}
+
+.tp-player-script :where(table) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.tp-player-script :where(img, video, iframe) {
+  max-width: 100%;
+  height: auto;
+}
+
+.tp-player-script :where(a) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tp-player-empty {

@@ -23,7 +23,7 @@ export const en = {
     speed: "Scroll speed",
     fontSize: "Font size",
     sidePadding: "Side inset",
-    bottomPadding: "Bottom clearance (% of screen)",
+    bottomPadding: "Bottom clearance (% of text area)",
     theme: "Theme",
     themeLight: "Light",
     themeDark: "Dark",

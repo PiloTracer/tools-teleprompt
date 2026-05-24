@@ -16,6 +16,10 @@ import {
   saveSettings,
 } from "../src/prompter/storage";
 
+vi.mock("../src/prompter/useViewportHeight", () => ({
+  useViewportHeight: vi.fn(() => 0),
+}));
+
 function selectPlayerLeverTab(name: RegExp) {
   fireEvent.click(screen.getByRole("tab", { name }));
 }
@@ -28,23 +32,23 @@ describe("useScroll (M4-T1)", () => {
     expect(at2x).toBe(BASE_SCROLL_PX_PER_SEC * 2);
   });
 
-  it("clamps speed to 0.5–3×", () => {
-    expect(scrollDeltaPx(1000, 0.1)).toBe(scrollDeltaPx(1000, 0.5));
+  it("clamps speed to 0.1–3×", () => {
+    expect(scrollDeltaPx(1000, 0.05)).toBe(scrollDeltaPx(1000, 0.1));
     expect(scrollDeltaPx(1000, 10)).toBe(scrollDeltaPx(1000, 3));
   });
 
-  it("accumulates fractional scroll at 0.5× (R3)", () => {
-    const withoutCarry = scrollDeltaPx(16.67, 0.5);
+  it("accumulates fractional scroll at 0.1×", () => {
+    const withoutCarry = scrollDeltaPx(16.67, 0.1);
     expect(withoutCarry).toBeLessThan(1);
 
     const stepped = applyScrollStep(0, 0, withoutCarry, 10_000);
     expect(stepped.scrollTop).toBe(0);
     expect(stepped.carryPx).toBeCloseTo(withoutCarry, 5);
 
-    const afterOneSecond = simulateScrollPx(1000, 16.67, 0.5);
+    const afterOneSecond = simulateScrollPx(1000, 16.67, 0.1);
     expect(afterOneSecond).toBeGreaterThan(0);
-    expect(afterOneSecond).toBeGreaterThanOrEqual(20);
-    expect(afterOneSecond).toBeLessThanOrEqual(25);
+    expect(afterOneSecond).toBeGreaterThanOrEqual(4);
+    expect(afterOneSecond).toBeLessThanOrEqual(6);
   });
 
   it("scrolls at 1× over one simulated second", () => {
@@ -110,10 +114,10 @@ describe("Player (M4-T1)", () => {
     expect(screen.getByText("2.5×")).toBeInTheDocument();
   });
 
-  it("plays at minimum speed 0.5× (R3)", async () => {
+  it("plays at minimum speed 0.1×", async () => {
     await saveScriptSource("Slow scroll\n".repeat(80));
     await saveScriptFormat("plain");
-    await saveSettings({ ...DEFAULT_SETTINGS, speed: 0.5 });
+    await saveSettings({ ...DEFAULT_SETTINGS, speed: 0.1 });
 
     render(
       <MemoryRouter>
@@ -125,7 +129,7 @@ describe("Player (M4-T1)", () => {
       expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     });
 
-    const viewport = screen.getByTestId("player-viewport");
+    const viewport = screen.getByTestId("player-viewport-scroll");
     Object.defineProperty(viewport, "clientHeight", { configurable: true, value: 200 });
     Object.defineProperty(viewport, "scrollHeight", { configurable: true, value: 4000 });
     viewport.scrollTop = 0;
@@ -215,25 +219,10 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
     });
   });
 
-  it("adjusts bottom clearance via scroll tail (R3)", async () => {
-    const resizeCallbacks: ResizeObserverCallback[] = [];
-    class ResizeObserverMock {
-      constructor(cb: ResizeObserverCallback) {
-        resizeCallbacks.push(cb);
-      }
-      observe(target: Element) {
-        Object.defineProperty(target, "clientHeight", {
-          configurable: true,
-          value: 500,
-        });
-        for (const cb of resizeCallbacks) {
-          cb([{ target } as ResizeObserverEntry], this);
-        }
-      }
-      unobserve() {}
-      disconnect() {}
-    }
-    vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+  it("adjusts bottom clearance inside viewport frame (R3)", async () => {
+    const layout = await import("../src/prompter/playerLayout");
+    const { useViewportHeight } = await import("../src/prompter/useViewportHeight");
+    vi.mocked(useViewportHeight).mockReturnValue(500);
 
     await saveScriptSource("Bottom inset");
     await saveScriptFormat("plain");
@@ -246,12 +235,17 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("player-scroll-tail")).toBeInTheDocument();
+      expect(screen.getByTestId("player-viewport")).toBeInTheDocument();
     });
 
     selectPlayerLeverTab(/^Bottom$/i);
     fireEvent.change(screen.getByLabelText(/bottom clearance/i), { target: { value: "20" } });
-    expect(screen.getByTestId("player-scroll-tail")).toHaveStyle({ height: "100px" });
+
+    expect(screen.getByTestId("player-viewport")).toHaveStyle({
+      gridTemplateRows: layout.formatViewportGridRows(500, 20),
+    });
+
+    vi.mocked(useViewportHeight).mockReturnValue(0);
   });
 
   it("applies dark theme class from saved settings (R3)", async () => {

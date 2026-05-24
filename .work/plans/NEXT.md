@@ -1,17 +1,25 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-24 (session close — adaptive viewport rules + rounded effective speed)
+**Updated:** 2026-05-24 (session close — adaptive removed; player bottom clearance + text wrap fixed)
 
 ---
 
 ## Recommended next
 
-1. **Hardware test adaptive sync** — hard refresh; Sync + Play; Spanish script; confirm `[adaptive]` shows `rate`, `effectiveSpeed`, and `lineSource` (`viewport` when SR off-screen)
-2. **Remove debug logs** once behaviour confirmed — `useSpeechTracker.ts`, `useVoiceActivity.ts`, `useAdaptiveScroll.ts`
-3. **Production deploy** — `deploy/README.md` (`PUBLIC_ORIGIN`, `API_OTP_HMAC_SECRET`, Caddy client IP)
-4. Manual phone test on hotspot IP (LAN + multi-QR)
-5. Optional: approve and commit `deploy/docker-compose.yml` `TP_ENV_FILE` default (protected — excluded from 2026-05-24 close commit)
-6. Optional: cross-LLM re-review of adaptive M8 stack
+1. **Manual device verify player** — Bottom slider 20–50% shows empty band at bottom of text window; no horizontal scrollbar on long plain/markdown scripts.
+2. **Review protected dirty paths** — `deploy/docker-compose.yml`, `frontend/vite.config.ts` (excluded from default commit scope).
+3. Production deploy when owner ready (`deploy/README.md`).
+4. Manual phone test on hotspot IP (LAN + multi-QR).
+
+---
+
+## Blocked on owner / environment
+
+| Item | Blocker |
+|------|---------|
+| Production deploy | Owner sign-off + env secrets (`API_OTP_HMAC_SECRET`) |
+| Compose/vite config commit | Protected files — explicit owner approval |
+| Player bottom clearance sign-off | Manual device check not yet recorded |
 
 ---
 
@@ -120,6 +128,8 @@ M8 complete — see **Done — M8 iteration (archived)** below.
 | Dark theme editor/preview inset contrast | 2026-05-23 |
 | M8 adaptive teleprompter planned (plan v1.2) | 2026-05-23 |
 | M8 formal complete | 2026-05-23 |
+| Adaptive feature removed (revert to fixed-speed player) | 2026-05-24 |
+| Player bottom clearance (viewport-% grid) + text wrap + speed 0.1–3× | 2026-05-24 |
 
 ---
 
