@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-23 — M8 adaptive teleprompter T1–T7: parser, VAD, read-zone scroll, settings, mic button (iteration in progress)
+**Closed:** 2026-05-23 — M8 adaptive teleprompter complete (T8–T11 committed); M1–M8 done
 
 **Updated:** 2026-05-23
 
-**Repository state:** v0.1.0 released. M1–M7 complete. UI S1–S5 complete. **M8 in progress** — T1–T7 done; T8–T11 pending (editor hints, e2e, MOD-06, milestone verify).
+**Repository state:** v0.1.0 released. M1–M8 complete. UI S1–S5 complete. Master plan v1.2 fully implemented through M8.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -26,7 +26,7 @@
 |----|--------|--------------|
 | W1 | `.cursorrules` REPLACE tokens | **Cleared** M1-T8 (bootstrap line remains) |
 | W2 | UNKNOWNS U1, U6, U8 open | **Cleared** 2026-05-21 (M6-T8 — defaults in registry) |
-| W3 | Cross-model review not executed | **Cleared** M5/M6/M7 (MOD-06 review docs) |
+| W3 | Cross-model review not executed | **Cleared** M5/M6/M7/M8 (MOD-06 review docs) |
 | W4 | Docker compose files not committed | **Cleared** 2026-05-21 (`approve compose`) |
 | W5 | M3 manual mobile viewport check | **Cleared** M4 offline e2e + responsive CSS |
 | W6 | M4 Lighthouse PWA audit | Manual before production deploy |
@@ -47,10 +47,10 @@
 |-------|--------|
 | P0–P6 foundation | done |
 | plan-master-ready | **yes** (2026-05-20) |
-| Master plan | **Approved** v1.1 (`20260521-full-plan.md`) |
+| Master plan | **Approved** v1.2 (`20260521-full-plan.md`) |
 | Implementation-ready | **yes** |
-| M1–M6 | **complete** 2026-05-21 |
-| M7 serverless handoff | **complete** 2026-05-21 |
+| M1–M7 | **complete** 2026-05-21 |
+| M8 adaptive teleprompter | **complete** 2026-05-23 |
 
 ---
 
@@ -105,6 +105,8 @@
 | 2026-05-23 | session close commit push | UI S5, player toolbar, env example alignment, handoff UX on `main` |
 | 2026-05-23 | Dark theme contrast fix | `themes/dark.css`, form controls, contrast + S2 dark a11y e2e; FE 90/90 pass |
 | 2026-05-23 | M8 adaptive teleprompter (T1–T7) | SPECs + plan v1.2; `prompter/adaptive/*`; settings/mic UI; vitest adaptive + player/settings |
+| 2026-05-23 | M8 complete (T8–T11) | Editor markup hints; `adaptiveInvariants.test.ts`; `adaptive-player.spec.ts`; MOD-06 M8 review; FE 142/142 |
+| 2026-05-23 | session close commit | M8 T8–T11 + iteration bookends on `main` |
 
 ---
 
@@ -119,6 +121,7 @@ See `.work/plans/UNKNOWNS.md` — U9 resolved (M7 LAN + multi-QR). U1/U6/U8 clos
 - **M5-T9:** pairing security paths — done
 - **M6-T6:** markdown-render + ADR 005 — done (MOD-06 M6 review doc)
 - **M7-T9:** LAN + multi-QR handoff — done (MOD-06 M7 review doc)
+- **M8-T11:** adaptive teleprompter mic/VAD — done (MOD-06 M8 review doc); optional independent second-model review
 
 ### UI layer (UI Design OS)
 

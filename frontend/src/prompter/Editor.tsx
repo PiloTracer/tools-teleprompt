@@ -60,6 +60,25 @@ export function Editor({ value, onChange, onError }: EditorProps) {
       <p id="tp-editor-hint" className="tp-hint">
         {dragOver ? en.editor.dropHint : en.editor.hint}
       </p>
+      <details className="tp-hint">
+        <summary>{en.editor.metaSummary}</summary>
+        <p>{en.editor.metaIntro}</p>
+        <ul>
+          <li>
+            <code>{en.editor.metaBracket}</code>
+          </li>
+          <li>
+            <code>{en.editor.metaParen}</code>
+          </li>
+          <li>
+            <code>{en.editor.metaComment}</code>
+          </li>
+          <li>
+            <code>{en.editor.metaBlockquote}</code>
+          </li>
+        </ul>
+        <p>{en.editor.metaParenNote}</p>
+      </details>
       <div
         className={dragOver ? "tp-drop-zone tp-drop-zone--active" : "tp-drop-zone"}
         onDragEnter={(e) => {

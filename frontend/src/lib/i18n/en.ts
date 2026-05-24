@@ -11,6 +11,15 @@ export const en = {
     hint: "Paste, type, or drop a .txt or .md file",
     dropHint: "Drop file here",
     upload: "Upload .txt / .md",
+    metaSummary: "Adaptive teleprompter markup (optional)",
+    metaIntro:
+      "Mark whole lines as stage directions or cues. They scroll faster during adaptive sync and are not held on speech pauses.",
+    metaBracket: "[DATACARD] or [CARD: title]",
+    metaParen: "(beat) or (stage direction) — whole line only",
+    metaComment: "/* note */ — whole line",
+    metaBlockquote: "> direction — Markdown blockquote",
+    metaParenNote:
+      "Spoken lines in parentheses? Prefer a blockquote (e.g. > Hello?) instead of (Hello?).",
   },
   preview: {
     title: "Preview",
