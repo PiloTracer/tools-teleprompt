@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Settings } from "../src/prompter/Settings";
 import {
@@ -14,6 +14,16 @@ describe("Settings (S3)", () => {
   beforeEach(() => {
     localStorage.clear();
     delete document.documentElement.dataset.theme;
+    // Expose SpeechRecognition so the auto-sync toggle is rendered.
+    (window as Record<string, unknown>)["SpeechRecognition"] = class MockSR {
+      start = vi.fn();
+      stop = vi.fn();
+    };
+  });
+
+  afterEach(() => {
+    delete (window as Record<string, unknown>)["SpeechRecognition"];
+    vi.restoreAllMocks();
   });
 
   it("renders catalog controls after hydration", async () => {
@@ -98,7 +108,7 @@ describe("Settings (S3)", () => {
     expect(loaded.speed).toBe(1.5);
   });
 
-  it("shows auto-sync and privacy copy only when adaptive is enabled (R19, R24)", async () => {
+  it("shows privacy copy only when auto-sync on play is enabled (R19, R24)", async () => {
     render(
       <MemoryRouter>
         <Settings />
@@ -106,21 +116,33 @@ describe("Settings (S3)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("checkbox", { name: /adaptive teleprompter/i })).toBeInTheDocument();
+      expect(screen.getByRole("checkbox", { name: /auto-sync on play/i })).toBeInTheDocument();
     });
 
-    expect(screen.queryByRole("checkbox", { name: /auto-sync on play/i })).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/audio is processed on this device only/i),
+      screen.queryByText(/speech is recognised on-device/i),
     ).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("checkbox", { name: /adaptive teleprompter/i }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /auto-sync on play/i }));
 
-    expect(screen.getByRole("checkbox", { name: /auto-sync on play/i })).toBeInTheDocument();
-    expect(screen.getByText(/audio is processed on this device only/i)).toBeInTheDocument();
+    expect(screen.getByText(/speech is recognised on-device/i)).toBeInTheDocument();
   });
 
-  it("persists adaptive settings on save", async () => {
+  it("normalizes legacy adaptive-only saves to auto-sync on play", async () => {
+    localStorage.setItem(
+      STORAGE_KEYS.settings,
+      JSON.stringify({
+        ...DEFAULT_SETTINGS,
+        adaptiveEnabled: true,
+        adaptiveAutoSync: false,
+      }),
+    );
+    const loaded = await loadSettings();
+    expect(loaded.adaptiveEnabled).toBe(true);
+    expect(loaded.adaptiveAutoSync).toBe(true);
+  });
+
+  it("persists auto-sync on play (both adaptive flags) on save", async () => {
     render(
       <MemoryRouter>
         <Settings />
@@ -128,10 +150,9 @@ describe("Settings (S3)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("checkbox", { name: /adaptive teleprompter/i })).toBeInTheDocument();
+      expect(screen.getByRole("checkbox", { name: /auto-sync on play/i })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("checkbox", { name: /adaptive teleprompter/i }));
     fireEvent.click(screen.getByRole("checkbox", { name: /auto-sync on play/i }));
     fireEvent.click(screen.getByRole("button", { name: /save settings/i }));
 

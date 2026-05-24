@@ -576,6 +576,27 @@
   opacity: 0.75;
 }
 
+/*
+ * Mic button "language locked" state — switches blue → red once
+ * SpeechRecognition has matched a script line at least once.
+ * Visual cue that adaptive sync is now tracking the reader's voice.
+ */
+.tp-player-mic--calibrated.ds-button[data-variant="primary"] {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}
+
+.tp-player-mic--calibrated.ds-button[data-variant="primary"]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 85%, black);
+  border-color: color-mix(in srgb, var(--color-danger) 85%, black);
+}
+
+.tp-player-mic--calibrated.ds-button[data-variant="primary"][aria-pressed="true"] {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
 .tp-player-mic-hint {
   margin: 0;
   font-size: var(--font-size-sm);

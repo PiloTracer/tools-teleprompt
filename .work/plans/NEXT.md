@@ -1,16 +1,17 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-23 (session close — player scroll fix)
+**Updated:** 2026-05-24 (session close — adaptive viewport rules + rounded effective speed)
 
 ---
 
 ## Recommended next
 
-1. **Verify Player scroll on device** — hard-refresh `/play`, confirm Play scrolls (adaptive on/off); check OS reduce-motion if still stuck
-2. **Production deploy** — `deploy/README.md` (set `PUBLIC_ORIGIN`, `API_OTP_HMAC_SECRET`, confirm Caddy client IP)
-3. Manual phone test on hotspot IP (LAN + multi-QR — scan all codes after refresh)
-4. Optional: independent cross-LLM re-review of M8 (`@code-verify milestone` on a fresh model)
-5. Optional: `@plan-master revise` if new product scope beyond M8
+1. **Hardware test adaptive sync** — hard refresh; Sync + Play; Spanish script; confirm `[adaptive]` shows `rate`, `effectiveSpeed`, and `lineSource` (`viewport` when SR off-screen)
+2. **Remove debug logs** once behaviour confirmed — `useSpeechTracker.ts`, `useVoiceActivity.ts`, `useAdaptiveScroll.ts`
+3. **Production deploy** — `deploy/README.md` (`PUBLIC_ORIGIN`, `API_OTP_HMAC_SECRET`, Caddy client IP)
+4. Manual phone test on hotspot IP (LAN + multi-QR)
+5. Optional: approve and commit `deploy/docker-compose.yml` `TP_ENV_FILE` default (protected — excluded from 2026-05-24 close commit)
+6. Optional: cross-LLM re-review of adaptive M8 stack
 
 ---
 

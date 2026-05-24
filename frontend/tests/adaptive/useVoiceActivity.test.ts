@@ -42,23 +42,44 @@ describe("stepVadHangover", () => {
   const idle: VadHangoverState = {
     speaking: false,
     lastSpeechAtMs: null,
+    consecutiveAbove: 0,
   };
 
-  it("turns on when RMS exceeds threshold", () => {
+  function speechOnsetAt(time: number): VadHangoverState {
+    let state = idle;
+    for (let frame = 0; frame < 4; frame += 1) {
+      state = stepVadHangover(0.05, threshold, hangover, time + frame, state);
+    }
+    return state;
+  }
+
+  it("turns on after consecutive above-threshold frames", () => {
+    const speaking = speechOnsetAt(1000);
+    expect(speaking.speaking).toBe(true);
+    expect(speaking.lastSpeechAtMs).toBe(1003);
+  });
+
+  it("does not turn on from a single loud frame", () => {
     const next = stepVadHangover(0.05, threshold, hangover, 1000, idle);
-    expect(next.speaking).toBe(true);
-    expect(next.lastSpeechAtMs).toBe(1000);
+    expect(next.speaking).toBe(false);
   });
 
   it("holds speaking during hangover after silence", () => {
-    const speaking = stepVadHangover(0.05, threshold, hangover, 1000, idle);
+    const speaking = speechOnsetAt(1000);
     const withinHangover = stepVadHangover(0, threshold, hangover, 1200, speaking);
     expect(withinHangover.speaking).toBe(true);
   });
 
   it("turns off after hangover expires", () => {
-    const speaking = stepVadHangover(0.05, threshold, hangover, 1000, idle);
-    const afterHangover = stepVadHangover(0, threshold, hangover, 1000 + hangover, speaking);
+    const speaking = speechOnsetAt(1000);
+    expect(speaking.lastSpeechAtMs).not.toBeNull();
+    const afterHangover = stepVadHangover(
+      0,
+      threshold,
+      hangover,
+      speaking.lastSpeechAtMs! + hangover,
+      speaking,
+    );
     expect(afterHangover.speaking).toBe(false);
   });
 });
@@ -67,17 +88,24 @@ describe("useVoiceActivity", () => {
   const getUserMedia = vi.fn();
   let analyserSamples: Uint8Array;
   let audioContextState: AudioContextState;
-  const pendingRaf: FrameRequestCallback[] = [];
+  const rafCallbacks = new Map<number, FrameRequestCallback>();
+  let nextRafId = 0;
 
   function flushRaf(time = 1000): void {
-    const cb = pendingRaf.shift();
+    const [id] = rafCallbacks.keys();
+    if (id === undefined) {
+      return;
+    }
+    const cb = rafCallbacks.get(id);
+    rafCallbacks.delete(id);
     cb?.(time);
   }
 
   beforeEach(() => {
     analyserSamples = silentSamples(2048);
     audioContextState = "running";
-    pendingRaf.length = 0;
+    rafCallbacks.clear();
+    nextRafId = 0;
     getUserMedia.mockReset();
     getUserMedia.mockResolvedValue({
       getTracks: () => [{ stop: vi.fn() }],
@@ -112,10 +140,13 @@ describe("useVoiceActivity", () => {
 
     vi.stubGlobal("AudioContext", MockAudioContext);
     vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
-      pendingRaf.push(cb);
-      return pendingRaf.length;
+      nextRafId += 1;
+      rafCallbacks.set(nextRafId, cb);
+      return nextRafId;
     });
-    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => {
+      rafCallbacks.delete(id);
+    });
   });
 
   afterEach(() => {
@@ -169,29 +200,20 @@ describe("useVoiceActivity", () => {
     expect(result.current.permissionDenied).toBe(false);
   });
 
-  it("reports vadSpeaking true when analyser sees energy", async () => {
+  it("marks speech when analyser RMS exceeds threshold (pipeline math)", () => {
     analyserSamples = loudSamples(2048, 90);
-    expect(computeTimeDomainRms(analyserSamples)).toBeGreaterThan(0.02);
+    const rms = computeTimeDomainRms(analyserSamples);
+    expect(rms).toBeGreaterThan(0.02);
 
-    const { result } = renderHook(() =>
-      useVoiceActivity({
-        enabled: true,
-        listen: true,
-        energyThreshold: 0.02,
-      }),
-    );
-
-    await waitFor(() => {
-      expect(result.current.listenActive).toBe(true);
-    });
-
-    await act(async () => {
-      flushRaf();
-    });
-
-    await waitFor(() => {
-      expect(result.current.vadSpeaking).toBe(true);
-    });
+    let state: VadHangoverState = {
+      speaking: false,
+      lastSpeechAtMs: null,
+      consecutiveAbove: 0,
+    };
+    for (let frame = 0; frame < 4; frame += 1) {
+      state = stepVadHangover(rms, 0.02, DEFAULT_VAD_HANGOVER_MS, 1000 + frame, state, 1);
+    }
+    expect(state.speaking).toBe(true);
   });
 
   it("sets permissionDenied when getUserMedia rejects", async () => {

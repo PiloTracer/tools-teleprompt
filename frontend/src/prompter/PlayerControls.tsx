@@ -10,9 +10,8 @@ import {
   SIDE_PADDING_MIN,
   type PrompterSettings,
 } from "./storage";
+import { SPEED_MAX, SPEED_MIN } from "./useScroll";
 
-const SPEED_MIN = 0.5;
-const SPEED_MAX = 3;
 const SPEED_STEP = 0.1;
 
 type LeverId = "speed" | "fontSize" | "sidePadding" | "bottomPadding";
@@ -33,7 +32,20 @@ export type PlayerControlsProps = {
   isFullscreen: boolean;
   isFullscreenSupported: boolean;
   helpOpen: boolean;
+  /**
+   * Effective adaptive state from the parent (settings AND browser support).
+   * The mic button is rendered iff this is true; without it, no
+   * SpeechRecognition-dependent UI shows up regardless of saved settings.
+   */
+  adaptiveActive?: boolean;
   syncActive?: boolean;
+  /**
+   * True once SpeechRecognition has matched a script line at least once
+   * this session — i.e. the system has locked onto the user's spoken
+   * language.  Mic button shifts from blue → red as a visible cue that
+   * adaptive sync is now actively tracking the reader.
+   */
+  trackerCalibrated?: boolean;
   micPermissionDenied?: boolean;
   onSettingsChange: (settings: PrompterSettings) => void;
   onPlayPause: () => void;
@@ -59,7 +71,9 @@ export function PlayerControls({
   isFullscreen,
   isFullscreenSupported,
   helpOpen,
+  adaptiveActive = false,
   syncActive = false,
+  trackerCalibrated = false,
   micPermissionDenied = false,
   onSettingsChange,
   onPlayPause,
@@ -198,12 +212,20 @@ export function PlayerControls({
             {isPlaying ? en.play.pause : en.play.play}
           </button>
 
-          {settings.adaptiveEnabled ? (
+          {adaptiveActive ? (
             <button
               type="button"
-              className={`ds-button tp-player-mic${micPermissionDenied ? " tp-player-mic--denied" : ""}`}
+              className={[
+                "ds-button",
+                "tp-player-mic",
+                syncActive && trackerCalibrated ? "tp-player-mic--calibrated" : "",
+                micPermissionDenied ? "tp-player-mic--denied" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               data-variant={syncActive ? "primary" : "secondary"}
               data-size="sm"
+              data-calibrated={syncActive && trackerCalibrated ? "true" : "false"}
               disabled={disabled}
               aria-label={en.play.micSync}
               aria-pressed={syncActive}
@@ -261,7 +283,7 @@ export function PlayerControls({
           </div>
         </div>
 
-        {settings.adaptiveEnabled && micPermissionDenied ? (
+        {adaptiveActive && micPermissionDenied ? (
           <p
             className="tp-player-mic-hint ds-alert"
             data-variant="status"

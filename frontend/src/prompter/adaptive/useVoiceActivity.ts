@@ -1,10 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 
-/** Debounced silence hangover after last speech frame (adaptive SPEC, default assumption). */
-export const DEFAULT_VAD_HANGOVER_MS = 400;
+/**
+ * Debounced silence hangover after last speech frame.
+ *
+ * 700 ms covers natural intra-sentence pauses (commas, breaths) without
+ * keeping the scroll alive long after the reader actually stopped.  The
+ * previous 1200 ms felt sluggish — the prompter kept advancing for over
+ * a second after silence, which violated Rule 4 in practice.
+ */
+export const DEFAULT_VAD_HANGOVER_MS = 700;
 
 /** RMS energy threshold on normalized time-domain samples (0–1). */
-export const DEFAULT_VAD_ENERGY_THRESHOLD = 0.02;
+export const DEFAULT_VAD_ENERGY_THRESHOLD = 0.022;
+
+/** Consecutive above-threshold frames required before marking speech (reduces room noise). */
+export const DEFAULT_VAD_ONSET_FRAMES = 4;
 
 export type VoiceActivityError = "permission_denied" | "audio_unavailable" | "pipeline_error";
 
@@ -15,6 +25,7 @@ export type UseVoiceActivityOptions = {
   listen: boolean;
   hangoverMs?: number;
   energyThreshold?: number;
+  onsetFrames?: number;
   onError?: (code: VoiceActivityError) => void;
 };
 
@@ -29,6 +40,7 @@ export type UseVoiceActivityResult = {
 export type VadHangoverState = {
   speaking: boolean;
   lastSpeechAtMs: number | null;
+  consecutiveAbove: number;
 };
 
 /** RMS of byte time-domain samples from AnalyserNode (128 = silence). */
@@ -44,25 +56,34 @@ export function computeTimeDomainRms(byteData: Uint8Array): number {
   return Math.sqrt(sumSquares / byteData.length);
 }
 
-/** Apply energy threshold with hangover debounce (adaptive SPEC R7–R8). */
+/** Apply energy threshold with onset + hangover debounce (adaptive SPEC R7–R8). */
 export function stepVadHangover(
   rms: number,
   threshold: number,
   hangoverMs: number,
   nowMs: number,
   prev: VadHangoverState,
+  onsetFrames = DEFAULT_VAD_ONSET_FRAMES,
 ): VadHangoverState {
   if (rms >= threshold) {
-    return { speaking: true, lastSpeechAtMs: nowMs };
+    const consecutiveAbove = prev.consecutiveAbove + 1;
+    if (prev.speaking || consecutiveAbove >= onsetFrames) {
+      return { speaking: true, lastSpeechAtMs: nowMs, consecutiveAbove };
+    }
+    return {
+      speaking: false,
+      lastSpeechAtMs: prev.lastSpeechAtMs,
+      consecutiveAbove,
+    };
   }
   if (
     prev.speaking &&
     prev.lastSpeechAtMs !== null &&
     nowMs - prev.lastSpeechAtMs < hangoverMs
   ) {
-    return prev;
+    return { ...prev, consecutiveAbove: 0 };
   }
-  return { speaking: false, lastSpeechAtMs: prev.lastSpeechAtMs };
+  return { speaking: false, lastSpeechAtMs: prev.lastSpeechAtMs, consecutiveAbove: 0 };
 }
 
 function getAudioContextCtor(): typeof AudioContext | undefined {
@@ -94,6 +115,7 @@ export function useVoiceActivity({
   listen,
   hangoverMs = DEFAULT_VAD_HANGOVER_MS,
   energyThreshold = DEFAULT_VAD_ENERGY_THRESHOLD,
+  onsetFrames = DEFAULT_VAD_ONSET_FRAMES,
   onError,
 }: UseVoiceActivityOptions): UseVoiceActivityResult {
   const supported = isVoiceActivitySupported();
@@ -121,7 +143,11 @@ export function useVoiceActivity({
     let audioContext: AudioContext | null = null;
     let analyser: AnalyserNode | null = null;
     let rafId: number | null = null;
-    let vadState: VadHangoverState = { speaking: false, lastSpeechAtMs: null };
+    let vadState: VadHangoverState = {
+      speaking: false,
+      lastSpeechAtMs: null,
+      consecutiveAbove: 0,
+    };
     const sampleBuffer = new Uint8Array(2048);
 
     const reportError = (code: VoiceActivityError) => {
@@ -147,7 +173,7 @@ export function useVoiceActivity({
       analyser = null;
       void audioContext?.close();
       audioContext = null;
-      vadState = { speaking: false, lastSpeechAtMs: null };
+      vadState = { speaking: false, lastSpeechAtMs: null, consecutiveAbove: 0 };
       setListenActive(false);
       setVadSpeaking(false);
     };
@@ -159,7 +185,14 @@ export function useVoiceActivity({
 
       analyser.getByteTimeDomainData(sampleBuffer);
       const rms = computeTimeDomainRms(sampleBuffer);
-      vadState = stepVadHangover(rms, energyThreshold, hangoverMs, time, vadState);
+      vadState = stepVadHangover(
+        rms,
+        energyThreshold,
+        hangoverMs,
+        time,
+        vadState,
+        onsetFrames,
+      );
       setVadSpeaking(vadState.speaking);
       rafId = requestAnimationFrame(analyze);
     };
@@ -209,7 +242,7 @@ export function useVoiceActivity({
       }
 
       setListenActive(true);
-      vadState = { speaking: false, lastSpeechAtMs: null };
+      vadState = { speaking: false, lastSpeechAtMs: null, consecutiveAbove: 0 };
       setVadSpeaking(false);
       rafId = requestAnimationFrame(analyze);
     };
@@ -220,7 +253,7 @@ export function useVoiceActivity({
       cancelled = true;
       cleanup();
     };
-  }, [enabled, listen, supported, hangoverMs, energyThreshold]);
+  }, [enabled, listen, supported, hangoverMs, energyThreshold, onsetFrames]);
 
   return {
     listenActive,

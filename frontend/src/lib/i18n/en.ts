@@ -37,9 +37,11 @@ export const en = {
     themeLight: "Light",
     themeDark: "Dark",
     mirror: "Mirror text (camera setups)",
-    adaptiveEnabled: "Adaptive teleprompter",
-    adaptiveAutoSync: "Auto-sync on play",
-    adaptivePrivacy: "Audio is processed on this device only; nothing is uploaded.",
+    autoSyncOnPlay: "Auto-sync on play",
+    adaptivePrivacy:
+      "Speech is recognised on-device by your browser (Chrome / Edge). Nothing is uploaded.",
+    autoSyncNotSupported:
+      "Auto-sync requires Chrome or Edge — not supported by this browser.",
     save: "Save settings",
     saved: "Settings saved",
   },

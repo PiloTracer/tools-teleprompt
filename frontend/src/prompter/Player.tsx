@@ -8,9 +8,15 @@ import type { ScriptFormat } from "../markdown/types";
 import { computeScrollTailPx } from "./playerLayout";
 import { PlayerControls } from "./PlayerControls";
 import { useAdaptiveScroll } from "./adaptive/useAdaptiveScroll";
+import {
+  isSpeechRecognitionSupported,
+  useSpeechTracker,
+} from "./adaptive/useSpeechTracker";
 import { useVoiceActivity } from "./adaptive/useVoiceActivity";
+import { parseScriptLines } from "./adaptive/parseScriptLines";
 import {
   DEFAULT_SETTINGS,
+  isAutoSyncOnPlay,
   loadScriptFormat,
   loadScriptSource,
   loadSettings,
@@ -20,14 +26,13 @@ import {
 import { useFullscreen } from "./useFullscreen";
 import { useKeyboard } from "./useKeyboard";
 import { useViewportHeight } from "./useViewportHeight";
+import { clampScrollSpeed } from "./useScroll";
 import { useWakeLock } from "./useWakeLock";
 
-const SPEED_MIN = 0.5;
-const SPEED_MAX = 3;
 const SPEED_STEP = 0.1;
 
 function clampSpeed(speed: number): number {
-  return Math.min(SPEED_MAX, Math.max(SPEED_MIN, Math.round(speed / SPEED_STEP) * SPEED_STEP));
+  return Math.round(clampScrollSpeed(speed) / SPEED_STEP) * SPEED_STEP;
 }
 
 export function Player() {
@@ -37,7 +42,6 @@ export function Player() {
   const [settings, setSettings] = useState<PrompterSettings>(DEFAULT_SETTINGS);
   const [isPlaying, setIsPlaying] = useState(false);
   const [syncActive, setSyncActive] = useState(false);
-  const [silencePauseEnabled, setSilencePauseEnabled] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -63,25 +67,41 @@ export function Player() {
   const viewportHeight = useViewportHeight(viewportRef, hasScript && hydrated);
   const scrollTailPx = computeScrollTailPx(viewportHeight, settings.bottomPadding);
 
-  const adaptiveEnabled = settings.adaptiveEnabled;
-  const adaptiveAutoSync = settings.adaptiveAutoSync;
+  // Hard gate the entire adaptive feature on SpeechRecognition support.
+  // Any browser without SR (Safari, Firefox, in-app browsers, older mobile)
+  // gets the fixed-speed prompter only — no mic prompt, no mic button, no
+  // VAD pipeline.  Saved settings from a different browser do not leak in.
+  const speechSupported = useMemo(() => isSpeechRecognitionSupported(), []);
+  const adaptiveEnabled = settings.adaptiveEnabled && speechSupported;
+  const adaptiveAutoSync = settings.adaptiveAutoSync && speechSupported;
+  const autoSyncOnPlay = isAutoSyncOnPlay(settings) && speechSupported;
+  const micSyncEngaged = adaptiveEnabled && (syncActive || (autoSyncOnPlay && isPlaying));
 
-  const { vadSpeaking, permissionDenied } = useVoiceActivity({
+  const parsedLines = useMemo(() => parseScriptLines(source), [source]);
+
+  // VAD is retained ONLY for mic-permission UX (audible feedback that the
+  // mic stream is alive).  The new 4-rule resolver does not consume VAD;
+  // it relies entirely on SR-reported `readingLineIndex` + DOM-measured
+  // line positions.
+  const { permissionDenied: vadPermissionDenied } = useVoiceActivity({
     enabled: adaptiveEnabled,
-    listen: syncActive,
+    listen: micSyncEngaged,
   });
 
-  useEffect(() => {
-    if (!syncActive) {
-      setSilencePauseEnabled(false);
-    }
-  }, [syncActive]);
+  // Continuous speech-to-script tracker.  Drives Rules 1–3 via the line
+  // index it reports for the current voice match.
+  const {
+    readingLineIndex,
+    hasCalibrated: trackerCalibrated,
+    permissionDenied: srPermissionDenied,
+  } = useSpeechTracker({
+    enabled: adaptiveEnabled,
+    listen: micSyncEngaged,
+    parsedLines,
+  });
 
-  useEffect(() => {
-    if (syncActive && vadSpeaking) {
-      setSilencePauseEnabled(true);
-    }
-  }, [syncActive, vadSpeaking]);
+  // Show the mic-denied hint if either input source was refused.
+  const permissionDenied = vadPermissionDenied || srPermissionDenied;
 
   useAdaptiveScroll({
     viewportRef,
@@ -90,9 +110,8 @@ export function Player() {
     speed: settings.speed,
     fontSizePx: settings.fontSize,
     adaptiveEnabled,
-    syncActive,
-    vadSpeaking,
-    silencePauseEnabled,
+    micSyncEngaged,
+    readingLineIndex,
   });
 
   useEffect(() => {
@@ -100,6 +119,12 @@ export function Player() {
       setSyncActive(true);
     }
   }, [adaptiveEnabled, adaptiveAutoSync, isPlaying]);
+
+  useEffect(() => {
+    if (!isPlaying && autoSyncOnPlay) {
+      setSyncActive(false);
+    }
+  }, [isPlaying, autoSyncOnPlay]);
 
   useEffect(() => {
     if (!adaptiveEnabled) {
@@ -133,7 +158,15 @@ export function Player() {
 
   useKeyboard({
     enabled: hasScript && hydrated,
-    onPlayPause: () => setIsPlaying((prev) => !prev),
+    onPlayPause: () => {
+      setIsPlaying((prev) => {
+        const next = !prev;
+        if (next && adaptiveEnabled && adaptiveAutoSync) {
+          setSyncActive(true);
+        }
+        return next;
+      });
+    },
     onSpeedUp: () => adjustSpeed(SPEED_STEP),
     onSpeedDown: () => adjustSpeed(-SPEED_STEP),
     onToggleFullscreen: () => void toggleFullscreen(),
@@ -206,10 +239,20 @@ export function Player() {
         isFullscreen={isFullscreen}
         isFullscreenSupported={isSupported}
         helpOpen={helpOpen}
+        adaptiveActive={adaptiveEnabled}
         syncActive={syncActive}
+        trackerCalibrated={trackerCalibrated}
         micPermissionDenied={permissionDenied}
         onSettingsChange={onSettingsChange}
-        onPlayPause={() => setIsPlaying((prev) => !prev)}
+        onPlayPause={() => {
+          setIsPlaying((prev) => {
+            const next = !prev;
+            if (next && adaptiveEnabled && adaptiveAutoSync) {
+              setSyncActive(true);
+            }
+            return next;
+          });
+        }}
         onSpeedChange={onSpeedChange}
         onToggleFullscreen={() => void toggleFullscreen()}
         onHelpToggle={() => setHelpOpen((prev) => !prev)}
