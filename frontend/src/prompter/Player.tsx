@@ -37,6 +37,7 @@ export function Player() {
   const [settings, setSettings] = useState<PrompterSettings>(DEFAULT_SETTINGS);
   const [isPlaying, setIsPlaying] = useState(false);
   const [syncActive, setSyncActive] = useState(false);
+  const [silencePauseEnabled, setSilencePauseEnabled] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -70,6 +71,18 @@ export function Player() {
     listen: syncActive,
   });
 
+  useEffect(() => {
+    if (!syncActive) {
+      setSilencePauseEnabled(false);
+    }
+  }, [syncActive]);
+
+  useEffect(() => {
+    if (syncActive && vadSpeaking) {
+      setSilencePauseEnabled(true);
+    }
+  }, [syncActive, vadSpeaking]);
+
   useAdaptiveScroll({
     viewportRef,
     source,
@@ -79,6 +92,7 @@ export function Player() {
     adaptiveEnabled,
     syncActive,
     vadSpeaking,
+    silencePauseEnabled,
   });
 
   useEffect(() => {

@@ -1,15 +1,16 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-23 (session close — M8 committed)
+**Updated:** 2026-05-23 (session close — player scroll fix)
 
 ---
 
 ## Recommended next
 
-1. **Production deploy** — `deploy/README.md` (set `PUBLIC_ORIGIN`, `API_OTP_HMAC_SECRET`, confirm Caddy client IP)
-2. Manual phone test on hotspot IP (LAN + multi-QR — scan all codes after refresh)
-3. Optional: independent cross-LLM re-review of M8 (`@code-verify milestone` on a fresh model)
-4. Optional: `@plan-master revise` if new product scope beyond M8
+1. **Verify Player scroll on device** — hard-refresh `/play`, confirm Play scrolls (adaptive on/off); check OS reduce-motion if still stuck
+2. **Production deploy** — `deploy/README.md` (set `PUBLIC_ORIGIN`, `API_OTP_HMAC_SECRET`, confirm Caddy client IP)
+3. Manual phone test on hotspot IP (LAN + multi-QR — scan all codes after refresh)
+4. Optional: independent cross-LLM re-review of M8 (`@code-verify milestone` on a fresh model)
+5. Optional: `@plan-master revise` if new product scope beyond M8
 
 ---
 

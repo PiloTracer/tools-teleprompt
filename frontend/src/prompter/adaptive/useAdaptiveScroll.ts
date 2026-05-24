@@ -22,6 +22,8 @@ export type AdaptiveScrollInput = {
   inMeta: boolean;
   vadSpeaking: boolean;
   readLineRatio: number;
+  /** When false, silence uses baseline scroll until first VAD speech this sync session. */
+  silencePauseEnabled: boolean;
 };
 
 /** Build cumulative line-top offsets for a uniform line-height layout. */
@@ -83,7 +85,7 @@ export function isInReadZone(ratio: number): boolean {
  * Returns `null` when fixed baseline scroll should apply (adaptive off / sync off).
  */
 export function resolveAdaptiveScrollRate(input: AdaptiveScrollInput): number | null {
-  const { adaptiveEnabled, syncActive, reducedMotion, inMeta, vadSpeaking, readLineRatio } =
+  const { adaptiveEnabled, syncActive, reducedMotion, inMeta, vadSpeaking, readLineRatio, silencePauseEnabled } =
     input;
 
   if (!adaptiveEnabled || !syncActive || reducedMotion) {
@@ -93,7 +95,7 @@ export function resolveAdaptiveScrollRate(input: AdaptiveScrollInput): number | 
     return META_SCROLL_MULTIPLIER;
   }
   if (!vadSpeaking) {
-    return 0;
+    return silencePauseEnabled ? 0 : null;
   }
   // Line above the read zone (too high on screen) — scroll forward until it enters the band.
   if (readLineRatio < READ_ZONE_MIN) {
@@ -115,6 +117,7 @@ export type UseAdaptiveScrollOptions = {
   adaptiveEnabled: boolean;
   syncActive: boolean;
   vadSpeaking: boolean;
+  silencePauseEnabled: boolean;
 };
 
 /**
@@ -129,6 +132,7 @@ export function useAdaptiveScroll({
   adaptiveEnabled,
   syncActive,
   vadSpeaking,
+  silencePauseEnabled,
 }: UseAdaptiveScrollOptions): void {
   const parsedLines = useMemo(() => parseScriptLines(source), [source]);
   const lineKinds = useMemo(
@@ -164,6 +168,7 @@ export function useAdaptiveScroll({
         inMeta,
         vadSpeaking,
         readLineRatio,
+        silencePauseEnabled,
       });
       return rate;
     },
@@ -171,6 +176,7 @@ export function useAdaptiveScroll({
       adaptiveEnabled,
       syncActive,
       vadSpeaking,
+      silencePauseEnabled,
       lineKinds,
       lineHeightPx,
       lineOffsets,
@@ -197,6 +203,7 @@ export function simulateAdaptiveScrollPx(options: {
   syncActive: boolean;
   adaptiveEnabled: boolean;
   lineKinds: LineKind[];
+  silencePauseEnabled?: boolean;
 }): number {
   const {
     totalMs,
@@ -210,6 +217,7 @@ export function simulateAdaptiveScrollPx(options: {
     syncActive,
     adaptiveEnabled,
     lineKinds,
+    silencePauseEnabled = false,
   } = options;
 
   const lineOffsets = buildLineOffsets(lineCount, lineHeightPx);
@@ -239,6 +247,7 @@ export function simulateAdaptiveScrollPx(options: {
       inMeta,
       vadSpeaking,
       readLineRatio,
+      silencePauseEnabled,
     });
     const multiplier = rate ?? 1;
     const deltaPx =

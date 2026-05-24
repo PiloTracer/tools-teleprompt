@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-23 — M8 adaptive teleprompter complete (T8–T11 committed); M1–M8 done
+**Closed:** 2026-05-23 — Player play/scroll regression fixed (adaptive silence gate, RAF stability, play-page layout)
 
 **Updated:** 2026-05-23
 
-**Repository state:** v0.1.0 released. M1–M8 complete. UI S1–S5 complete. Master plan v1.2 fully implemented through M8.
+**Repository state:** v0.1.0 released. M1–M8 complete. UI S1–S5 complete. Player auto-scroll verified in container tests (147/147).
 
 **Plan-master-ready:** 2026-05-20
 
@@ -107,6 +107,7 @@
 | 2026-05-23 | M8 adaptive teleprompter (T1–T7) | SPECs + plan v1.2; `prompter/adaptive/*`; settings/mic UI; vitest adaptive + player/settings |
 | 2026-05-23 | M8 complete (T8–T11) | Editor markup hints; `adaptiveInvariants.test.ts`; `adaptive-player.spec.ts`; MOD-06 M8 review; FE 142/142 |
 | 2026-05-23 | session close commit | M8 T8–T11 + iteration bookends on `main` |
+| 2026-05-23 | Player scroll fix | `useScroll`, `useAdaptiveScroll`, `Player.tsx`, `prompter.css`; vitest 147/147 |
 
 ---
 

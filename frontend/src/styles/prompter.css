@@ -302,11 +302,27 @@
   }
 }
 
+/* Bound play route height so `.tp-player-viewport` scrolls internally (not the document). */
+.tp-layout:has(.tp-play-page) {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.tp-layout:has(.tp-play-page) .tp-content {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .tp-play-page {
   display: flex;
   flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
   width: 100%;
-  min-height: calc(100dvh - 7rem);
 }
 
 .tp-play-page__title {
@@ -864,10 +880,6 @@
 }
 
 @media (max-width: 767px) {
-  .tp-play-page {
-    min-height: calc(100dvh - var(--size-touch-min) - var(--space-8));
-  }
-
   .tp-layout:has(.tp-play-page) .tp-header {
     padding: var(--space-2) var(--space-3);
     gap: var(--space-2) var(--space-3);
@@ -885,10 +897,6 @@
   .tp-layout:has(.tp-play-page) .tp-content {
     padding: 0.35rem 0.5rem 0.5rem;
     max-width: none;
-  }
-
-  .tp-play-page {
-    min-height: calc(100dvh - 5.5rem);
   }
 
   .tp-play-page__title {
@@ -939,10 +947,6 @@
 
   .tp-layout:has(.tp-play-page) .tp-content {
     padding: 0.25rem;
-  }
-
-  .tp-play-page {
-    min-height: 100dvh;
   }
 
   .tp-player-toolbar {

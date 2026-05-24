@@ -70,6 +70,11 @@ export function useScroll(
   const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
   const carryRef = useRef(0);
+  const resolveRateRef = useRef(resolveRate);
+  const speedRef = useRef(speed);
+
+  resolveRateRef.current = resolveRate;
+  speedRef.current = speed;
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -108,10 +113,10 @@ export function useScroll(
 
       if (lastTimeRef.current !== null) {
         const deltaSec = (time - lastTimeRef.current) / 1000;
-        const clampedSpeed = clampScrollSpeed(speed);
+        const clampedSpeed = clampScrollSpeed(speedRef.current);
         const maxScroll = el.scrollHeight - el.clientHeight;
         const rate =
-          resolveRate?.({
+          resolveRateRef.current?.({
             scrollTop: el.scrollTop,
             viewportHeight: el.clientHeight,
             maxScroll,
@@ -141,7 +146,7 @@ export function useScroll(
         rafRef.current = null;
       }
     };
-  }, [viewportRef, isPlaying, speed, resolveRate]);
+  }, [viewportRef, isPlaying]);
 }
 
 /** Exported for unit tests — scroll delta for one frame at given speed. */

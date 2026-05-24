@@ -33,6 +33,7 @@ describe("resolveAdaptiveScrollRate", () => {
     inMeta: false,
     vadSpeaking: true,
     readLineRatio: READ_ZONE_CENTER,
+    silencePauseEnabled: true,
   };
 
   it("returns null when adaptive is off (R9 fixed speed)", () => {
@@ -43,10 +44,21 @@ describe("resolveAdaptiveScrollRate", () => {
     expect(resolveAdaptiveScrollRate({ ...base, syncActive: false })).toBeNull();
   });
 
-  it("pauses spoken lines on silence (R8)", () => {
+  it("pauses spoken lines on silence after speech detected (R8)", () => {
     expect(
       resolveAdaptiveScrollRate({ ...base, vadSpeaking: false, readLineRatio: 0.4 }),
     ).toBe(0);
+  });
+
+  it("uses baseline scroll on silence before first speech (R8 play UX)", () => {
+    expect(
+      resolveAdaptiveScrollRate({
+        ...base,
+        vadSpeaking: false,
+        readLineRatio: 0.4,
+        silencePauseEnabled: false,
+      }),
+    ).toBeNull();
   });
 
   it("scrolls spoken lines at baseline while VAD on and in band (R8)", () => {
@@ -130,9 +142,28 @@ describe("simulateAdaptiveScrollPx", () => {
       vadSpeaking: false,
       syncActive: true,
       adaptiveEnabled: true,
+      silencePauseEnabled: true,
       lineKinds: Array.from({ length: 20 }, () => "spoken" as const),
     });
     expect(delta).toBe(0);
+  });
+
+  it("scrolls on silence before first speech while sync active", () => {
+    const delta = simulateAdaptiveScrollPx({
+      totalMs: 1000,
+      frameMs: 16.67,
+      speed: 1,
+      lineCount: 20,
+      lineHeightPx: LINE_HEIGHT,
+      initialScrollTop: scrollTopForLineAtCenter(2),
+      viewportHeight: VIEWPORT,
+      vadSpeaking: false,
+      syncActive: true,
+      adaptiveEnabled: true,
+      silencePauseEnabled: false,
+      lineKinds: Array.from({ length: 20 }, () => "spoken" as const),
+    });
+    expect(delta).toBeGreaterThan(0);
   });
 
   it("uses fixed baseline when sync inactive (R8c)", () => {

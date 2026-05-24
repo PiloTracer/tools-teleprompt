@@ -143,6 +143,74 @@ describe("Player (M4-T1)", () => {
       { timeout: 3000, interval: 50 },
     );
   });
+
+  it("scrolls on play with adaptive auto-sync before mic speech (R22)", async () => {
+    await saveScriptSource("Auto sync baseline scroll\n".repeat(80));
+    await saveScriptFormat("plain");
+    await saveSettings({
+      ...DEFAULT_SETTINGS,
+      adaptiveEnabled: true,
+      adaptiveAutoSync: true,
+    });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    });
+
+    const viewport = screen.getByTestId("player-viewport");
+    Object.defineProperty(viewport, "clientHeight", { configurable: true, value: 200 });
+    Object.defineProperty(viewport, "scrollHeight", { configurable: true, value: 4000 });
+    viewport.scrollTop = 0;
+
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+    await waitFor(
+      () => {
+        expect(viewport.scrollTop).toBeGreaterThan(0);
+      },
+      { timeout: 3000, interval: 50 },
+    );
+  });
+
+  it("scrolls on play with adaptive enabled and sync off (R8c)", async () => {
+    await saveScriptSource("Adaptive baseline scroll\n".repeat(80));
+    await saveScriptFormat("plain");
+    await saveSettings({
+      ...DEFAULT_SETTINGS,
+      adaptiveEnabled: true,
+      adaptiveAutoSync: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    });
+
+    const viewport = screen.getByTestId("player-viewport");
+    Object.defineProperty(viewport, "clientHeight", { configurable: true, value: 200 });
+    Object.defineProperty(viewport, "scrollHeight", { configurable: true, value: 4000 });
+    viewport.scrollTop = 0;
+
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+    await waitFor(
+      () => {
+        expect(viewport.scrollTop).toBeGreaterThan(0);
+      },
+      { timeout: 3000, interval: 50 },
+    );
+  });
 });
 
 describe("PlayerControls (M4-T2, R3–R4)", () => {
