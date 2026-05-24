@@ -30,6 +30,11 @@ export type PlayerControlsProps = {
   isFullscreen: boolean;
   isFullscreenSupported: boolean;
   helpOpen: boolean;
+  speechSupported?: boolean;
+  syncFeatureEnabled?: boolean;
+  recognitionLanguage?: string;
+  languageDetermined?: boolean;
+  onToggleSpeechSync?: () => void;
   onSettingsChange: (settings: PrompterSettings) => void;
   onPlayPause: () => void;
   onSpeedChange: (speed: number) => void;
@@ -53,6 +58,11 @@ export function PlayerControls({
   isFullscreen,
   isFullscreenSupported,
   helpOpen,
+  speechSupported = false,
+  syncFeatureEnabled = false,
+  recognitionLanguage = "EN",
+  languageDetermined = false,
+  onToggleSpeechSync,
   onSettingsChange,
   onPlayPause,
   onSpeedChange,
@@ -188,6 +198,31 @@ export function PlayerControls({
           >
             {isPlaying ? en.play.pause : en.play.play}
           </button>
+
+          {speechSupported ? (
+            <button
+              type="button"
+              className={`ds-button tp-player-sync-lang${languageDetermined ? " tp-player-sync-lang--determined" : ""}`.trim()}
+              data-variant={languageDetermined ? undefined : syncFeatureEnabled ? "primary" : "secondary"}
+              data-size="sm"
+              disabled={disabled}
+              aria-pressed={syncFeatureEnabled}
+              aria-label={
+                syncFeatureEnabled
+                  ? en.play.syncLangOn(recognitionLanguage)
+                  : en.play.syncLangOff(recognitionLanguage)
+              }
+              title={
+                syncFeatureEnabled
+                  ? en.play.syncLangOn(recognitionLanguage)
+                  : en.play.syncLangOff(recognitionLanguage)
+              }
+              onClick={onToggleSpeechSync}
+              data-testid="player-sync-lang"
+            >
+              {recognitionLanguage}
+            </button>
+          ) : null}
 
           <div className="tp-player-lever-strip" data-testid="player-lever-dock">
             <div

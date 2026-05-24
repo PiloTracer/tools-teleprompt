@@ -15,9 +15,26 @@ export type PrompterSettings = {
   sidePadding: number;
   /** Clearance below text as % of viewport height (scroll tail for overhead camera). */
   bottomPadding: number;
+  /** Enable speech-sync teleprompter (mic + word tracking). */
+  adaptiveEnabled: boolean;
+  /** Start mic sync automatically when Play is pressed. */
+  adaptiveAutoSync: boolean;
   theme: Theme;
   mirror: boolean;
 };
+
+/** Single user-facing auto-sync flag (both storage fields must match). */
+export function isAutoSyncOnPlay(settings: PrompterSettings): boolean {
+  return settings.adaptiveEnabled && settings.adaptiveAutoSync;
+}
+
+/** Normalize legacy/partial saves to the paired toggle model. */
+export function normalizeAdaptiveFlags(
+  parsed: Partial<PrompterSettings>,
+): Pick<PrompterSettings, "adaptiveEnabled" | "adaptiveAutoSync"> {
+  const on = Boolean(parsed.adaptiveAutoSync) || Boolean(parsed.adaptiveEnabled);
+  return { adaptiveEnabled: on, adaptiveAutoSync: on };
+}
 
 export const SIDE_PADDING_MIN = 0;
 export const SIDE_PADDING_MAX = 30;
@@ -30,6 +47,8 @@ export const DEFAULT_SETTINGS: PrompterSettings = {
   fontSize: 24,
   sidePadding: 0,
   bottomPadding: 0,
+  adaptiveEnabled: false,
+  adaptiveAutoSync: false,
   theme: "light",
   mirror: false,
 };
@@ -149,6 +168,7 @@ export async function loadSettings(): Promise<PrompterSettings> {
   }
   try {
     const parsed = JSON.parse(raw) as Partial<PrompterSettings>;
+    const adaptive = normalizeAdaptiveFlags(parsed);
     return {
       speed: typeof parsed.speed === "number" ? parsed.speed : DEFAULT_SETTINGS.speed,
       fontSize:
@@ -161,6 +181,8 @@ export async function loadSettings(): Promise<PrompterSettings> {
         typeof parsed.bottomPadding === "number"
           ? Math.min(BOTTOM_PADDING_MAX, Math.max(BOTTOM_PADDING_MIN, parsed.bottomPadding))
           : DEFAULT_SETTINGS.bottomPadding,
+      adaptiveEnabled: adaptive.adaptiveEnabled,
+      adaptiveAutoSync: adaptive.adaptiveAutoSync,
       theme: parsed.theme === "dark" ? "dark" : "light",
       mirror: Boolean(parsed.mirror),
     };

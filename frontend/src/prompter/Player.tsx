@@ -1,6 +1,22 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
+import {
+  annotateScriptWords,
+  clearScriptWordAnnotations,
+} from "./adaptive/annotateScriptWords";
+import {
+  detectScriptLanguage,
+  formatRecognitionLanguageLabel,
+} from "./adaptive/detectScriptLanguage";
+import { parseScriptLines } from "./adaptive/parseScriptLines";
+import {
+  isSpeechRecognitionSupported,
+  useSpeechTracker,
+} from "./adaptive/useSpeechTracker";
+import { useSyncScroll } from "./adaptive/useSyncScroll";
+import { useReadingLineMark } from "./adaptive/useReadingLineMark";
+import { syncLog, syncLogBootOnce, syncLogOnChange } from "./adaptive/syncDebug";
 import { en } from "../lib/i18n/en";
 import { renderScript } from "../markdown/render";
 import { SanitizedHtml } from "../markdown/SanitizedHtml";
@@ -9,6 +25,7 @@ import { formatViewportGridRows } from "./playerLayout";
 import { PlayerControls } from "./PlayerControls";
 import {
   DEFAULT_SETTINGS,
+  isAutoSyncOnPlay,
   loadScriptFormat,
   loadScriptSource,
   loadSettings,
@@ -17,7 +34,7 @@ import {
 } from "./storage";
 import { useFullscreen } from "./useFullscreen";
 import { useKeyboard } from "./useKeyboard";
-import { clampScrollSpeed, SPEED_STEP, useScroll } from "./useScroll";
+import { clampScrollSpeed, SPEED_STEP } from "./useScroll";
 import { useViewportHeight } from "./useViewportHeight";
 import { useWakeLock } from "./useWakeLock";
 
@@ -28,10 +45,15 @@ function clampSpeed(speed: number): number {
 export function Player() {
   const viewportFrameRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const scriptRootRef = useRef<HTMLDivElement>(null);
+  const scriptWordsRef = useRef<string[]>([]);
+
   const [source, setSource] = useState("");
   const [format, setFormat] = useState<ScriptFormat>("plain");
   const [settings, setSettings] = useState<PrompterSettings>(DEFAULT_SETTINGS);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [syncActive, setSyncActive] = useState(false);
+  const [scriptWordsVersion, setScriptWordsVersion] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -52,17 +74,137 @@ export function Player() {
   }, []);
 
   const html = useMemo(() => renderScript(source, format), [source, format]);
+  const parsedLines = useMemo(() => parseScriptLines(source), [source]);
 
   const hasScript = source.trim().length > 0;
   const viewportHeight = useViewportHeight(viewportFrameRef, hasScript);
   const viewportGridRows = formatViewportGridRows(viewportHeight, settings.bottomPadding);
 
-  useScroll(viewportRef, { isPlaying, speed: settings.speed });
+  const speechSupported = useMemo(() => isSpeechRecognitionSupported(), []);
+  const adaptiveEnabled = settings.adaptiveEnabled && speechSupported;
+  const autoSyncOnPlay = isAutoSyncOnPlay(settings) && speechSupported;
+  const micSyncEngaged = adaptiveEnabled && (syncActive || (autoSyncOnPlay && isPlaying));
+
+  useEffect(() => {
+    syncLogBootOnce();
+  }, []);
+
+  const scriptWords = useMemo(() => {
+    void scriptWordsVersion;
+    return scriptWordsRef.current;
+  }, [scriptWordsVersion]);
+
+  useLayoutEffect(() => {
+    const root = scriptRootRef.current;
+    if (!root || !hasScript) {
+      scriptWordsRef.current = [];
+      return;
+    }
+
+    clearScriptWordAnnotations(root);
+    scriptWordsRef.current = annotateScriptWords(root);
+    syncLog("player.annotateWords", { count: scriptWordsRef.current.length });
+    setScriptWordsVersion((version) => version + 1);
+  }, [html, hasScript, settings.fontSize, settings.sidePadding]);
+
+  const {
+    readingWordIndex,
+    recognitionLanguage: activeRecognitionLanguage,
+    permissionDenied: srPermissionDenied,
+  } = useSpeechTracker({
+    enabled: adaptiveEnabled,
+    listen: micSyncEngaged,
+    scriptWords,
+    parsedLines,
+  });
+
+  useReadingLineMark({
+    scriptRootRef,
+    readingWordIndex,
+    engaged: micSyncEngaged && isPlaying,
+    scriptWordsVersion,
+  });
+
+  useSyncScroll({
+    viewportRef,
+    scriptRootRef,
+    isPlaying,
+    speed: settings.speed,
+    syncEngaged: micSyncEngaged,
+  });
+
+  useEffect(() => {
+    if (adaptiveEnabled && settings.adaptiveAutoSync && isPlaying) {
+      setSyncActive(true);
+    }
+  }, [adaptiveEnabled, settings.adaptiveAutoSync, isPlaying]);
+
+  useEffect(() => {
+    if (!isPlaying && autoSyncOnPlay) {
+      setSyncActive(false);
+    }
+  }, [isPlaying, autoSyncOnPlay]);
+
+  useEffect(() => {
+    if (!adaptiveEnabled) {
+      setSyncActive(false);
+    }
+  }, [adaptiveEnabled]);
+
+  const detectedLanguage = useMemo(
+    () => formatRecognitionLanguageLabel(detectScriptLanguage(parsedLines)),
+    [parsedLines],
+  );
+
+  const displayRecognitionLanguage =
+    activeRecognitionLanguage !== null && activeRecognitionLanguage.trim().length > 0
+      ? formatRecognitionLanguageLabel(activeRecognitionLanguage)
+      : detectedLanguage;
+
+  const languageDetermined =
+    activeRecognitionLanguage !== null && activeRecognitionLanguage.trim().length > 0;
+
+  useEffect(() => {
+    syncLogOnChange("player.adaptiveEnabled", settings.adaptiveEnabled, "player.adaptiveEnabled");
+    syncLogOnChange("player.syncActive", syncActive, "player.syncActive");
+    syncLogOnChange("player.micSyncEngaged", micSyncEngaged, "player.micSyncEngaged", {
+      adaptiveEnabled,
+      autoSyncOnPlay,
+      isPlaying,
+    });
+    syncLogOnChange(
+      "player.recognitionLanguage",
+      displayRecognitionLanguage,
+      "player.recognitionLanguage",
+    );
+    syncLogOnChange("player.readingWordIndex", readingWordIndex, "player.readingWordIndex");
+  }, [
+    adaptiveEnabled,
+    autoSyncOnPlay,
+    displayRecognitionLanguage,
+    isPlaying,
+    micSyncEngaged,
+    readingWordIndex,
+    settings.adaptiveEnabled,
+    syncActive,
+  ]);
 
   const onSettingsChange = useCallback((next: PrompterSettings) => {
     setSettings(next);
     void saveSettings(next);
   }, []);
+
+  const onToggleSpeechSync = useCallback(() => {
+    const nextEnabled = !settings.adaptiveEnabled;
+    syncLog("player.toggleSpeechSync", { nextEnabled, wasEnabled: settings.adaptiveEnabled });
+    const next: PrompterSettings = {
+      ...settings,
+      adaptiveEnabled: nextEnabled,
+      adaptiveAutoSync: nextEnabled ? settings.adaptiveAutoSync || true : false,
+    };
+    onSettingsChange(next);
+    setSyncActive(nextEnabled && (isPlaying || next.adaptiveAutoSync));
+  }, [isPlaying, onSettingsChange, settings]);
 
   const onSpeedChange = useCallback((speed: number) => {
     setSettings((prev) => {
@@ -79,9 +221,19 @@ export function Player() {
     [onSpeedChange, settings.speed],
   );
 
+  const onPlayPause = useCallback(() => {
+    setIsPlaying((prev) => {
+      const next = !prev;
+      if (next && adaptiveEnabled && settings.adaptiveAutoSync) {
+        setSyncActive(true);
+      }
+      return next;
+    });
+  }, [adaptiveEnabled, settings.adaptiveAutoSync]);
+
   useKeyboard({
     enabled: hasScript && hydrated,
-    onPlayPause: () => setIsPlaying((prev) => !prev),
+    onPlayPause,
     onSpeedUp: () => adjustSpeed(SPEED_STEP),
     onSpeedDown: () => adjustSpeed(-SPEED_STEP),
     onToggleFullscreen: () => void toggleFullscreen(),
@@ -148,10 +300,24 @@ export function Player() {
                 }}
                 data-testid="player-content"
               >
-                <SanitizedHtml html={html} className="tp-player-script" />
+                <SanitizedHtml
+                  ref={scriptRootRef}
+                  html={html}
+                  className="tp-player-script"
+                />
               </div>
             </div>
           </div>
+          {srPermissionDenied ? (
+            <p className="tp-player-sync-hint" role="status">
+              {en.play.micPermissionDenied}
+            </p>
+          ) : null}
+          {settings.adaptiveEnabled && !speechSupported ? (
+            <p className="tp-player-sync-hint" role="status">
+              {en.play.micNotSupported}
+            </p>
+          ) : null}
         </div>
       )}
       <PlayerControls
@@ -161,8 +327,13 @@ export function Player() {
         isFullscreen={isFullscreen}
         isFullscreenSupported={isSupported}
         helpOpen={helpOpen}
+        speechSupported={speechSupported}
+        syncFeatureEnabled={settings.adaptiveEnabled}
+        recognitionLanguage={displayRecognitionLanguage}
+        languageDetermined={languageDetermined}
+        onToggleSpeechSync={onToggleSpeechSync}
         onSettingsChange={onSettingsChange}
-        onPlayPause={() => setIsPlaying((prev) => !prev)}
+        onPlayPause={onPlayPause}
         onSpeedChange={onSpeedChange}
         onToggleFullscreen={() => void toggleFullscreen()}
         onHelpToggle={() => setHelpOpen((prev) => !prev)}

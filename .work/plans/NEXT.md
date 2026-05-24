@@ -1,13 +1,13 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-24 (session close — no new safe commits; protected paths still dirty)
+**Updated:** 2026-05-24 (session close — adaptive speech sync committed)
 
 ---
 
 ## Recommended next
 
-1. **Manual device verify player** — Bottom slider 20–50% shows empty band at bottom of text window; no horizontal scrollbar on long plain/markdown scripts.
-2. **Review protected dirty paths** — `deploy/docker-compose.yml`, `frontend/vite.config.ts` (excluded from default commit scope).
+1. **Manual device verify adaptive sync** — Read sequentially; skip metadata; confirm tracker stays aligned (no 50+ word false jumps). Red underline should not shift text size.
+2. **Manual device verify player layout** — Bottom slider 20–50%; no horizontal scrollbar on long scripts.
 3. Production deploy when owner ready (`deploy/README.md`).
 4. Manual phone test on hotspot IP (LAN + multi-QR).
 
@@ -18,7 +18,7 @@
 | Item | Blocker |
 |------|---------|
 | Production deploy | Owner sign-off + env secrets (`API_OTP_HMAC_SECRET`) |
-| Compose/vite config commit | Protected files — explicit owner approval |
+| Adaptive mic sync sign-off | Manual device check not yet recorded |
 | Player bottom clearance sign-off | Manual device check not yet recorded |
 
 ---
@@ -130,6 +130,7 @@ M8 complete — see **Done — M8 iteration (archived)** below.
 | M8 formal complete | 2026-05-23 |
 | Adaptive feature removed (revert to fixed-speed player) | 2026-05-24 |
 | Player bottom clearance (viewport-% grid) + text wrap + speed 0.1–3× | 2026-05-24 |
+| Adaptive speech sync restore (SR word matcher + skip-ahead + underline mark) | 2026-05-24 |
 
 ---
 

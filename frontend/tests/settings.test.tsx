@@ -24,7 +24,8 @@ describe("Settings (S3)", () => {
 
     expect(screen.getByRole("button", { name: /save settings/i })).toHaveClass("ds-button");
     expect(screen.getByRole("radiogroup", { name: /theme/i })).toBeInTheDocument();
-    expect(screen.getAllByRole("slider").length).toBe(4);
+    expect(screen.getByRole("checkbox", { name: /mirror text/i })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /speech sync/i })).toBeInTheDocument();
   });
 
   it("persists settings and applies document theme on save", async () => {
@@ -57,6 +58,8 @@ describe("Settings (S3)", () => {
       fontSize: 22,
       sidePadding: 0,
       bottomPadding: 0,
+      adaptiveEnabled: false,
+      adaptiveAutoSync: false,
       theme: "dark",
       mirror: false,
     });

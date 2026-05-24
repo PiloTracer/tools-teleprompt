@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-24 — player fixes shipped (`d955307`); protected compose/vite paths still local-only
+**Closed:** 2026-05-24 — adaptive speech sync restored; skip-ahead matcher + red underline mark
 
 **Updated:** 2026-05-24
 
-**Repository state:** v0.1.0. M1–M8 complete. Adaptive **removed** (`95f804e`). Player bottom clearance + text wrap + speed 0.1–3× on `main` (`d955307`, pushed). **Uncommitted (protected):** `deploy/docker-compose.yml`, `frontend/vite.config.ts`. **Untracked:** `frontend/pnpm-lock.yaml`.
+**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync re-shipped** on `main` (mic SR → word matcher → reading-line underline → scroll track). Matcher: sequential-first advance, gated skip-ahead across metadata, anti false-jump on function words. Reading mark: red underline only (no font/background shift). **FE:** 143/143 vitest pass. **Manual:** real-device mic tuning still owner-verified.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -36,8 +36,8 @@
 ## Fresh start — next session
 
 1. `@session-control start`
-2. **Manual verify player on device:** Bottom slider 20–50% → empty band at bottom of text window (not ~10px sliver). No horizontal scrollbar on long plain/markdown lines.
-3. Approve commit of protected files if desired: `deploy/docker-compose.yml`, `frontend/vite.config.ts`.
+2. **Manual verify adaptive sync on device:** read sequentially, skip metadata blocks, confirm no spurious 50+ word jumps; red underline stays on current line without layout shift.
+3. **Manual verify player layout:** Bottom slider 20–50% → empty band at bottom; no horizontal scrollbar on long lines.
 4. Production deploy when owner ready (`deploy/README.md`).
 
 ---
@@ -51,7 +51,7 @@
 | Master plan | **Approved** v1.2 (`20260521-full-plan.md`) |
 | Implementation-ready | **yes** |
 | M1–M7 | **complete** 2026-05-21 |
-| M8 adaptive teleprompter | **removed** 2026-05-24 (`95f804e`); SPECs archived in tree |
+| M8 adaptive teleprompter | **re-shipped** 2026-05-24 — speech sync + skip-ahead matcher (after interim removal `95f804e`) |
 
 ---
 
@@ -65,7 +65,7 @@
 | 4 | Optional: Lighthouse PWA audit (W6) |
 | 5 | Manual phone test on hotspot IP (LAN + multi-QR) — re-scan all multi-QR codes after deploy |
 | 6 | Manual device check: bottom clearance + no horizontal scroll on play route |
-| 7 | Review uncommitted protected paths: `deploy/docker-compose.yml`, `frontend/vite.config.ts` |
+| 7 | Manual device check: adaptive mic sync (sequential read + metadata skip) |
 
 ---
 
@@ -115,6 +115,7 @@
 | 2026-05-24 (close) | Adaptive rules 1–4 + viewport + rounded speed | committed `c459f06` |
 | 2026-05-24 | Adaptive feature removed | `95f804e` — revert to fixed-speed player |
 | 2026-05-24 (close) | Player bottom clearance + text wrap + speed 0.1–3× | `playerLayout.ts`, `Player.tsx`, `prompter.css`, `useViewportHeight`; vitest 92/92 |
+| 2026-05-24 (close) | Adaptive speech sync restore | `prompter/adaptive/*`, word matcher skip-ahead gates, red underline mark; vitest 143/143 |
 
 ---
 
@@ -127,10 +128,10 @@ See `.work/plans/UNKNOWNS.md` — U9 resolved (M7 LAN + multi-QR). U1/U6/U8 clos
 ## Last verification (2026-05-24 close)
 
 ```
-docker compose -f deploy/docker-compose.yml run --rm frontend sh -c "cd /app && npm test"  → 92/92
+docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm test -- --run"  → 143/143
 ```
 
-**Device manual check:** bottom clearance + horizontal scroll — **not verified** (owner).
+**Device manual check:** adaptive mic sync + bottom clearance + horizontal scroll — **not verified** (owner).
 
 ---
 
@@ -139,7 +140,7 @@ docker compose -f deploy/docker-compose.yml run --rm frontend sh -c "cd /app && 
 - **M5-T9:** pairing security paths — done
 - **M6-T6:** markdown-render + ADR 005 — done (MOD-06 M6 review doc)
 - **M7-T9:** LAN + multi-QR handoff — done (MOD-06 M7 review doc)
-- **M8-T11:** adaptive teleprompter — **feature removed** 2026-05-24; MOD-06 doc remains historical
+- **M8-T11:** adaptive teleprompter — **re-shipped** 2026-05-24 (speech sync); interim removal `95f804e` superseded
 
 ### UI layer (UI Design OS)
 

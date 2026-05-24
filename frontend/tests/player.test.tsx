@@ -20,6 +20,19 @@ vi.mock("../src/prompter/useViewportHeight", () => ({
   useViewportHeight: vi.fn(() => 0),
 }));
 
+vi.mock("../src/prompter/adaptive/useSpeechTracker", () => ({
+  isSpeechRecognitionSupported: vi.fn(() => false),
+  useSpeechTracker: vi.fn(() => ({
+    supported: false,
+    active: false,
+    readingWordIndex: null,
+    hasCalibrated: false,
+    recognitionLanguage: null,
+    permissionDenied: false,
+    error: null,
+  })),
+}));
+
 function selectPlayerLeverTab(name: RegExp) {
   fireEvent.click(screen.getByRole("tab", { name }));
 }
@@ -511,6 +524,115 @@ describe("useKeyboard hook", () => {
     expect(onSpeedUp).toHaveBeenCalledTimes(1);
     expect(onSpeedDown).toHaveBeenCalledTimes(1);
     expect(onToggleFullscreen).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Player adaptive sync", () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    await clearPrompterStorage();
+  });
+
+  it("shows language sync button when speech recognition is supported", async () => {
+    const speech = await import("../src/prompter/adaptive/useSpeechTracker");
+    vi.mocked(speech.isSpeechRecognitionSupported).mockReturnValue(true);
+
+    await saveScriptSource("Hola mundo desde el teleprompter");
+    await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("player-sync-lang")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("player-sync-lang")).not.toHaveClass(
+      "tp-player-sync-lang--determined",
+    );
+  });
+
+  it("turns language button red after speech recognizer confirms language", async () => {
+    const speech = await import("../src/prompter/adaptive/useSpeechTracker");
+    vi.mocked(speech.isSpeechRecognitionSupported).mockReturnValue(true);
+    vi.mocked(speech.useSpeechTracker).mockReturnValue({
+      supported: true,
+      active: true,
+      readingWordIndex: 5,
+      hasCalibrated: true,
+      recognitionLanguage: "en-US",
+      permissionDenied: false,
+      error: null,
+    });
+
+    await saveScriptSource("Hello world from the teleprompter");
+    await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: true });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("player-sync-lang")).toHaveClass("tp-player-sync-lang--determined");
+    });
+
+    expect(screen.getByTestId("player-sync-lang")).toHaveTextContent("EN");
+  });
+
+  it("toggles speech sync from the language button", async () => {
+    const speech = await import("../src/prompter/adaptive/useSpeechTracker");
+    vi.mocked(speech.isSpeechRecognitionSupported).mockReturnValue(true);
+
+    await saveScriptSource("Hola mundo desde el teleprompter");
+    await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("player-sync-lang")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("player-sync-lang"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("player-sync-lang")).toHaveAttribute("aria-pressed", "true");
+    });
+
+    const raw = localStorage.getItem("tp:settings");
+    expect(JSON.parse(raw ?? "{}")).toMatchObject({ adaptiveEnabled: true });
+  });
+
+  it("does not show language button when speech recognition is unsupported", async () => {
+    const speech = await import("../src/prompter/adaptive/useSpeechTracker");
+    vi.mocked(speech.isSpeechRecognitionSupported).mockReturnValue(false);
+
+    await saveScriptSource("Fixed scroll");
+    await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId("player-sync-lang")).not.toBeInTheDocument();
   });
 });
 
