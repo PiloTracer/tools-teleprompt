@@ -1,26 +1,119 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-23 (dark theme contrast fix committed; session close)
+**Updated:** 2026-05-23 (session close — M8 T1–T7 committed)
 
 ---
 
 ## Recommended next
 
-1. **Production deploy** — `deploy/README.md` (set `PUBLIC_ORIGIN`, `API_OTP_HMAC_SECRET`, confirm Caddy client IP)
-2. Manual phone test on hotspot IP (LAN + multi-QR — scan all codes after refresh)
-3. Optional: Lighthouse PWA audit (W6) · `@plan-master revise` for v2.1 (WebRTC)
+1. **`@code-implementation continue`** — M8-T8 editor markup hint copy
+2. **Production deploy** (parallel) — `deploy/README.md` (set `PUBLIC_ORIGIN`, `API_OTP_HMAC_SECRET`, confirm Caddy client IP)
+3. Manual phone test on hotspot IP (LAN + multi-QR — scan all codes after refresh)
 
 ---
 
-## Current iteration
+## Current iteration — M8: Adaptive teleprompter (mic VAD + read zone)
 
-M7 complete — see **Done — M7 iteration (archived)** below.
+**Milestone ref:** M8 · `.work/plans/full/20260521-full-plan.md` § M8  
+**Status:** in-progress  
+**Started:** 2026-05-23
+
+**Target SPECs:**
+
+- `.work/features/adaptive-teleprompter/20260523-SPEC.md` (Approved)
+- `.work/features/adaptive-teleprompter/20260523-SPEC-amendment-01-simplify-read-zone.md` (Approved)
+- `.work/features/markdown-render/20260523-SPEC-amendment-01-adaptive-meta-blockquote.md` (Approved)
+- `.work/features/prompter-ui/20260523-SPEC-amendment-02-adaptive.md` (Approved, M8-T1)
+
+### In scope
+
+- Browser mic + Web Audio VAD (device-local; no cloud STT)
+- Read zone scroll (35–48% band, center ~42%); baseline speed while speaking; pause on silence
+- Meta line parser + 2× skim; markdown `tp-meta` blockquotes
+- Settings: `adaptiveEnabled`, `adaptiveAutoSync` (both default off)
+- Player mic button on primary toolbar; sync toggle
+- Editor hints for markup syntax
+- vitest + Playwright (mocked mic); MOD-06 review (M8-T11)
+
+### Out of scope (explicit)
+
+- Cloud STT, Web Speech API, npm speech/ML libraries
+- Word-level / transcript alignment
+- API, Redis, or backend changes
+- Moving the speed slider during adaptive sync (R16)
+- Visual read-zone debug overlay (product v1)
+
+### Tasks
+
+| ID | Description | Files | FR/NFR | Status | Notes |
+|----|-------------|-------|--------|--------|-------|
+| M8-T1 | prompter-ui SPEC amendment: adaptive settings + player mic | `.work/features/prompter-ui/20260523-SPEC-amendment-02-adaptive.md` | FR-13 | done 2026-05-23 | S · docs only · SC1: scope clean; no code paths |
+| M8-T2 | Script line parser + meta classification | `frontend/src/prompter/adaptive/parseScriptLines.ts`, `frontend/src/prompter/adaptive/types.ts`, `frontend/tests/adaptive/parseScriptLines.test.ts` | FR-13 | done 2026-05-23 | M · SC1: regex edge cases covered in vitest |
+| M8-T3 | markdown-render: `tp-meta` blockquote + `isMetaSourceLine` | `frontend/src/markdown/render.ts`, `frontend/src/markdown/sanitize.ts`, `frontend/tests/markdown.test.tsx` | FR-13, NFR-03 | done 2026-05-23 | M · SC1: XSS corpus re-run pass |
+| M8-T4 | Web Audio VAD hook | `frontend/src/prompter/adaptive/useVoiceActivity.ts`, `frontend/tests/adaptive/useVoiceActivity.test.ts` | FR-13, NFR-12, R13 | done 2026-05-23 | M · SC1: hangover + I2 getUserMedia gate tested |
+| M8-T5 | Adaptive scroll + read zone; integrate player | `frontend/src/prompter/adaptive/useAdaptiveScroll.ts`, `frontend/src/prompter/Player.tsx`, `frontend/src/prompter/useScroll.ts`, `frontend/tests/adaptive/useAdaptiveScroll.test.ts` | FR-13, G7 | done 2026-05-23 | L · SC1: read zone band + VAD pause + 2× meta tested |
+| M8-T6 | Settings toggles + persist | `frontend/src/prompter/Settings.tsx`, `frontend/src/prompter/storage.ts`, `frontend/src/lib/i18n/en.ts`, `frontend/tests/settings.test.tsx` | FR-13 | done 2026-05-23 | M · SC1: R18–R19 defaults; R24 privacy copy |
+| M8-T7 | Player mic button + permission UX | `frontend/src/prompter/PlayerControls.tsx`, `frontend/src/styles/prompter.css`, `frontend/tests/player.test.tsx` | FR-13, NFR-07, R13 | done 2026-05-23 | M · SC1: also wired Player.tsx + en.ts for sync toggle |
+| M8-T8 | Editor markup hint copy | `frontend/src/prompter/Editor.tsx`, `frontend/src/lib/i18n/en.ts` | FR-13 | pending | S |
+| M8-T9 | vitest adaptive suite (parser, VAD, read zone, meta 2×, I1–I2) | `frontend/tests/adaptive/*.test.ts` | FR-13 | pending | M · consolidate/fill gaps from T2–T5 |
+| M8-T10 | Playwright adaptive e2e (mocked mic) | `frontend/tests/e2e/adaptive-player.spec.ts` | FR-13, NFR-07 | pending | M |
+| M8-T11 | MOD-06 review + `@code-verify milestone` | `.work/context/20260523-MOD-06-M8.md`, `.work/plans/NEXT.md` | NFR-12, MOD-06 | pending | S |
+
+### Acceptance criteria
+
+- [ ] Adaptive off → zero `getUserMedia`; player unchanged (SPEC I2, R2)
+- [ ] Sync active + VAD on → baseline scroll; read line stays in 35–48% viewport band (amendment 01 R8, R8b)
+- [ ] Silence (debounced) → scroll pauses while playing (R8)
+- [ ] Sync off / mic off → fixed baseline speed (R5, R9)
+- [ ] Meta lines at 2×; spoken lines not skipped (amendment R14–R15)
+- [ ] Settings + mic UI per R1, R1b, R4–R6b; speed slider does not move (R16)
+- [x] Blockquote renders `class="tp-meta"` (markdown-render amendment R9)
+- [ ] FR-13 / AC-13 satisfied; `@code-verify milestone` pass
+
+### Validation steps
+
+- [ ] `docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm test"`
+- [ ] `docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm run lint"`
+- [ ] `docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm run typecheck"`
+- [ ] `docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npx playwright test adaptive-player"` (mocked mic)
+- [ ] `@code-verify milestone` (M8-T11)
+
+### Owner blockers
+
+- none
+
+### Concept / NFR registry (this iteration)
+
+| Concept id | Applies | Status | Evidence / trigger |
+|------------|---------|--------|-------------------|
+| MOD-01 | yes | pending | New `prompter/adaptive/` module; no pairing-api deps |
+| MOD-02 | no | n/a | No network hop (VAD local-only) |
+| MOD-03 | no | n/a | No billable vendor |
+| MOD-04 | no | n/a | Client-only; no new on-call surface |
+| MOD-05 | yes | pending | Modular monolith in frontend |
+| MOD-06 | yes | pending | M8-T11 before **complete** |
+
+### Cross-LLM verification
+
+- Triggered: no (run at M8-T11 with mic privacy + scroll controller focus)
+
+### Done this iteration
+
+| Task | Completed | Notes |
+|------|-----------|-------|
+| M8-T1 | 2026-05-23 | prompter-ui amendment 02 Approved |
+| M8-T2 | 2026-05-23 | parseScriptLines + vitest (12 tests) |
+| M8-T3 | 2026-05-23 | tp-meta blockquote + isMetaSourceLine re-export |
+| M8-T4 | 2026-05-23 | useVoiceActivity + vitest (11 tests) |
+| M8-T5 | 2026-05-23 | useAdaptiveScroll + Player/VAD wiring; 15 tests |
+| M8-T6 | 2026-05-23 | adaptive settings toggles + storage merge |
+| M8-T7 | 2026-05-23 | mic button + permission hint; player.test 30 pass |
 
 ---
 
 ## Previous iteration
 
-M6 complete — see **Done — M6 iteration (archived)** below.
+M7 complete — see **Done — M7 iteration (archived)** below.
 
 ---
 
@@ -56,6 +149,7 @@ M6 complete — see **Done — M6 iteration (archived)** below.
 | M7 formal complete | 2026-05-21 |
 | MOD-06 (M7) | 2026-05-21 |
 | Dark theme editor/preview inset contrast | 2026-05-23 |
+| M8 adaptive teleprompter planned (plan v1.2) | 2026-05-23 |
 
 ---
 

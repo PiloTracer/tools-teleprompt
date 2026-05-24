@@ -1,7 +1,7 @@
 # Traceability matrix — tools-teleprompt full plan
 
 **Plan:** `.work/plans/full/20260521-full-plan.md`  
-**Created:** 2026-05-21
+**Created:** 2026-05-21 · **Revised:** 2026-05-23 (M8)
 
 ---
 
@@ -25,6 +25,8 @@
 | G6 | NFR-05 | 003 | — | M1-T4, M6-T7 | compose up | AC-9 |
 | G6 | NFR-06 | 003 | pairing-api | M1-T3, M5-T1 | health check | AC-9 |
 | G6 | NFR-10 | — | pairing-api | M5-T6 | metrics smoke | AC-8 |
+| G7 | FR-13 | 004 | adaptive-teleprompter | M8-T2, M8-T5, M8-T7 | M8-T9, M8-T10 | AC-13 |
+| G7 | NFR-12 | 004 | adaptive-teleprompter | M8-T4 | M8-T9 | AC-13 |
 
 ---
 
@@ -42,8 +44,11 @@
 | FR-08 | M3-T6, M5-T2 | pending |
 | FR-09 | M4-T4, M4-T5 | pending |
 | FR-10 | M3-T7, M4-T2 | pending |
+| FR-11 | M7-T2, M7-T3 | pending |
+| FR-12 | M7-T4, M7-T5 | pending |
+| FR-13 | M8-T2, M8-T5, M8-T6, M8-T7 | pending |
 
-**Coverage:** 10/10 FR traced (100%).
+**Coverage:** 13/13 FR traced (100%).
 
 ---
 

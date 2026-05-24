@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 import { Player } from "../src/prompter/Player";
 import { Help } from "../src/prompter/Help";
@@ -517,6 +517,155 @@ describe("useKeyboard hook", () => {
     expect(onSpeedUp).toHaveBeenCalledTimes(1);
     expect(onSpeedDown).toHaveBeenCalledTimes(1);
     expect(onToggleFullscreen).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Player adaptive mic (M8-T7, R20–R23, I5)", () => {
+  const getUserMedia = vi.fn();
+
+  beforeEach(async () => {
+    localStorage.clear();
+    await clearPrompterStorage();
+    getUserMedia.mockReset();
+    getUserMedia.mockResolvedValue({
+      getTracks: () => [{ stop: vi.fn() }],
+    });
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: { getUserMedia },
+    });
+
+    class MockAnalyserNode {
+      fftSize = 2048;
+
+      getByteTimeDomainData(arr: Uint8Array): void {
+        arr.fill(128);
+      }
+    }
+
+    class MockAudioContext {
+      state: AudioContextState = "running";
+
+      createMediaStreamSource = vi.fn(() => ({ connect: vi.fn() }));
+
+      createAnalyser = vi.fn(() => new MockAnalyserNode());
+
+      resume = vi.fn(async () => {
+        this.state = "running";
+      });
+
+      close = vi.fn(async () => undefined);
+    }
+
+    vi.stubGlobal("AudioContext", MockAudioContext);
+    vi.stubGlobal("requestAnimationFrame", () => 1);
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("hides mic button when adaptive is off (R20, I5)", async () => {
+    await saveScriptSource("Line one");
+    await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: false });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId("player-mic-sync")).not.toBeInTheDocument();
+    expect(getUserMedia).not.toHaveBeenCalled();
+  });
+
+  it("shows mic button when adaptive is enabled (R20)", async () => {
+    await saveScriptSource("Line one");
+    await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: true });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("player-mic-sync")).toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: /microphone sync/i })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("toggles sync active on mic tap (R21)", async () => {
+    await saveScriptSource("Line one");
+    await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: true });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    const mic = await screen.findByTestId("player-mic-sync");
+    fireEvent.click(mic);
+
+    await waitFor(() => {
+      expect(mic).toHaveAttribute("aria-pressed", "true");
+    });
+    expect(getUserMedia).toHaveBeenCalledWith({ audio: true });
+
+    fireEvent.click(mic);
+    expect(mic).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("shows permission hint when mic access denied (R23)", async () => {
+    getUserMedia.mockRejectedValue(new DOMException("denied", "NotAllowedError"));
+    await saveScriptSource("Line one");
+    await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: true });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByTestId("player-mic-sync"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("player-mic-denied-hint")).toHaveTextContent(
+        /microphone access was denied/i,
+      );
+    });
+  });
+
+  it("does not call getUserMedia when adaptive off even if sync were toggled", async () => {
+    await saveScriptSource("Line one");
+    await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: false });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    expect(getUserMedia).not.toHaveBeenCalled();
   });
 });
 

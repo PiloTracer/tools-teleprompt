@@ -6,6 +6,8 @@ import { asSafeHtml, type SafeHtml, type ScriptFormat } from "./types";
 
 const markdownParser = new MarkdownIt({ html: false, linkify: true });
 
+markdownParser.renderer.rules.blockquote_open = () => '<blockquote class="tp-meta">\n';
+
 export function renderScript(source: string, format: ScriptFormat): SafeHtml {
   if (!source) {
     return asSafeHtml("");

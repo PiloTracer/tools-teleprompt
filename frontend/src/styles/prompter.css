@@ -543,6 +543,29 @@
   min-width: 4.5rem;
 }
 
+.tp-player-mic {
+  flex: 0 0 auto;
+  min-width: var(--size-touch-min);
+  min-height: var(--size-touch-min);
+  padding: var(--space-1);
+}
+
+.tp-player-mic__icon {
+  display: block;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.tp-player-mic--denied {
+  opacity: 0.75;
+}
+
+.tp-player-mic-hint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-snug);
+}
+
 .tp-player-lever-strip {
   display: flex;
   align-items: stretch;

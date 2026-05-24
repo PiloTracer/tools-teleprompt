@@ -17,6 +17,7 @@ Status: **Open** | **Mitigated** | **Accepted** | **Closed**
 | R9 | QR fragment exceeds URL/QR capacity | technical | M | M | Auto-fallback to relay; U8 threshold | Open | eng |
 | R10 | Stale service worker serves broken offline shell | technical | L | M | SW update strategy; PWA update UX in SPEC | Open | eng |
 | R11 | Compose misconfiguration exposes Redis publicly | security | L | H | Internal network only; proposal §2 | Mitigated | eng |
+| R13 | Mic denied or false VAD pauses scroll unexpectedly | privacy / UX | M | M | Default off; fallback fixed speed; debounce; clear UX (M8) | Open | eng |
 
 ## Review log
 
@@ -25,3 +26,4 @@ Status: **Open** | **Mitigated** | **Accepted** | **Closed**
 | 2026-05-20 | plan-foundation P0 | Initial product risks |
 | 2026-05-20 | plan-foundation P5 | R11 compose exposure; deploy/rollback in proposal |
 | 2026-05-21 | plan-master greenfield | Mapped R4–R10 to M2/M4/M5/M6 tasks |
+| 2026-05-23 | plan-master revise M8 | R13 mic/VAD UX |

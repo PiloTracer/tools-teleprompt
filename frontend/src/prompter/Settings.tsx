@@ -173,6 +173,31 @@ export function Settings() {
           />
           <span className="ds-checkbox__label">{en.settings.mirror}</span>
         </label>
+
+        <label className="tp-settings__mirror ds-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.adaptiveEnabled}
+            onChange={(e) => update("adaptiveEnabled", e.target.checked)}
+          />
+          <span className="ds-checkbox__label">{en.settings.adaptiveEnabled}</span>
+        </label>
+
+        {settings.adaptiveEnabled ? (
+          <>
+            <label className="tp-settings__mirror ds-checkbox">
+              <input
+                type="checkbox"
+                checked={settings.adaptiveAutoSync}
+                onChange={(e) => update("adaptiveAutoSync", e.target.checked)}
+              />
+              <span className="ds-checkbox__label">{en.settings.adaptiveAutoSync}</span>
+            </label>
+            <p className="ds-alert" data-variant="status" role="note">
+              {en.settings.adaptivePrivacy}
+            </p>
+          </>
+        ) : null}
       </div>
 
       <div className="tp-settings__actions">

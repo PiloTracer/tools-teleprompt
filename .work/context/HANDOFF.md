@@ -2,17 +2,17 @@
 
 ## Session status
 
-**Closed:** 2026-05-23 — dark-theme editor/preview inset contrast fixed; form controls hardened; contrast + S2 a11y tests
+**Closed:** 2026-05-23 — M8 adaptive teleprompter T1–T7: parser, VAD, read-zone scroll, settings, mic button (iteration in progress)
 
 **Updated:** 2026-05-23
 
-**Repository state:** v0.1.0 released. M1–M7 complete. **UI S1–S5 complete** (2026-05-23). **Next:** production deploy with `.env.prd`.
+**Repository state:** v0.1.0 released. M1–M7 complete. UI S1–S5 complete. **M8 in progress** — T1–T7 done; T8–T11 pending (editor hints, e2e, MOD-06, milestone verify).
 
 **Plan-master-ready:** 2026-05-20
 
 **Foundation-complete:** yes
 
-**Implementation-ready:** yes (master plan Approved 2026-05-21)
+**Implementation-ready:** yes (master plan Approved v1.2 — M8)
 
 **Recommended pick-up file:** `.work/plans/NEXT.md`
 
@@ -104,6 +104,7 @@
 | 2026-05-23 | session close commit push | UI framework + handoff polish + player lever dock on `main` |
 | 2026-05-23 | session close commit push | UI S5, player toolbar, env example alignment, handoff UX on `main` |
 | 2026-05-23 | Dark theme contrast fix | `themes/dark.css`, form controls, contrast + S2 dark a11y e2e; FE 90/90 pass |
+| 2026-05-23 | M8 adaptive teleprompter (T1–T7) | SPECs + plan v1.2; `prompter/adaptive/*`; settings/mic UI; vitest adaptive + player/settings |
 
 ---
 

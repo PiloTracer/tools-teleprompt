@@ -17,6 +17,10 @@ export type PrompterSettings = {
   bottomPadding: number;
   theme: Theme;
   mirror: boolean;
+  /** Adaptive teleprompter master toggle (default off). */
+  adaptiveEnabled: boolean;
+  /** Start mic sync when Play is pressed (default off). */
+  adaptiveAutoSync: boolean;
 };
 
 export const SIDE_PADDING_MIN = 0;
@@ -32,6 +36,8 @@ export const DEFAULT_SETTINGS: PrompterSettings = {
   bottomPadding: 0,
   theme: "light",
   mirror: false,
+  adaptiveEnabled: false,
+  adaptiveAutoSync: false,
 };
 
 const IDB_NAME = "tools-teleprompt";
@@ -163,6 +169,8 @@ export async function loadSettings(): Promise<PrompterSettings> {
           : DEFAULT_SETTINGS.bottomPadding,
       theme: parsed.theme === "dark" ? "dark" : "light",
       mirror: Boolean(parsed.mirror),
+      adaptiveEnabled: Boolean(parsed.adaptiveEnabled),
+      adaptiveAutoSync: Boolean(parsed.adaptiveAutoSync),
     };
   } catch {
     return { ...DEFAULT_SETTINGS };

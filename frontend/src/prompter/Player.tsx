@@ -7,6 +7,8 @@ import { SanitizedHtml } from "../markdown/SanitizedHtml";
 import type { ScriptFormat } from "../markdown/types";
 import { computeScrollTailPx } from "./playerLayout";
 import { PlayerControls } from "./PlayerControls";
+import { useAdaptiveScroll } from "./adaptive/useAdaptiveScroll";
+import { useVoiceActivity } from "./adaptive/useVoiceActivity";
 import {
   DEFAULT_SETTINGS,
   loadScriptFormat,
@@ -17,7 +19,6 @@ import {
 } from "./storage";
 import { useFullscreen } from "./useFullscreen";
 import { useKeyboard } from "./useKeyboard";
-import { useScroll } from "./useScroll";
 import { useViewportHeight } from "./useViewportHeight";
 import { useWakeLock } from "./useWakeLock";
 
@@ -35,6 +36,7 @@ export function Player() {
   const [format, setFormat] = useState<ScriptFormat>("plain");
   const [settings, setSettings] = useState<PrompterSettings>(DEFAULT_SETTINGS);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [syncActive, setSyncActive] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -60,7 +62,40 @@ export function Player() {
   const viewportHeight = useViewportHeight(viewportRef, hasScript && hydrated);
   const scrollTailPx = computeScrollTailPx(viewportHeight, settings.bottomPadding);
 
-  useScroll(viewportRef, { isPlaying, speed: settings.speed });
+  const adaptiveEnabled = settings.adaptiveEnabled;
+  const adaptiveAutoSync = settings.adaptiveAutoSync;
+
+  const { vadSpeaking, permissionDenied } = useVoiceActivity({
+    enabled: adaptiveEnabled,
+    listen: syncActive,
+  });
+
+  useAdaptiveScroll({
+    viewportRef,
+    source,
+    isPlaying,
+    speed: settings.speed,
+    fontSizePx: settings.fontSize,
+    adaptiveEnabled,
+    syncActive,
+    vadSpeaking,
+  });
+
+  useEffect(() => {
+    if (adaptiveEnabled && adaptiveAutoSync && isPlaying) {
+      setSyncActive(true);
+    }
+  }, [adaptiveEnabled, adaptiveAutoSync, isPlaying]);
+
+  useEffect(() => {
+    if (!adaptiveEnabled) {
+      setSyncActive(false);
+    }
+  }, [adaptiveEnabled]);
+
+  const onSyncToggle = useCallback(() => {
+    setSyncActive((prev) => !prev);
+  }, []);
 
   const onSettingsChange = useCallback((next: PrompterSettings) => {
     setSettings(next);
@@ -157,11 +192,14 @@ export function Player() {
         isFullscreen={isFullscreen}
         isFullscreenSupported={isSupported}
         helpOpen={helpOpen}
+        syncActive={syncActive}
+        micPermissionDenied={permissionDenied}
         onSettingsChange={onSettingsChange}
         onPlayPause={() => setIsPlaying((prev) => !prev)}
         onSpeedChange={onSpeedChange}
         onToggleFullscreen={() => void toggleFullscreen()}
         onHelpToggle={() => setHelpOpen((prev) => !prev)}
+        onSyncToggle={onSyncToggle}
       />
     </section>
   );

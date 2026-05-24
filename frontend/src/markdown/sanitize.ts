@@ -2,6 +2,8 @@ import DOMPurify from "dompurify";
 
 import { asSafeHtml, type SafeHtml } from "./types";
 
+export { isMetaSourceLine } from "../prompter/adaptive/parseScriptLines";
+
 const ALLOWED_TAGS = [
   "p",
   "br",

@@ -12,6 +12,18 @@ export type UseScrollOptions = {
   isPlaying: boolean;
   /** Multiplier 0.5–3× from settings. */
   speed: number;
+  /**
+   * Optional per-frame rate multiplier for adaptive sync.
+   * `null` or omitted → 1× baseline. `0` → pause scroll for this frame.
+   */
+  resolveRate?: (ctx: ScrollFrameContext) => number | null;
+};
+
+export type ScrollFrameContext = {
+  scrollTop: number;
+  viewportHeight: number;
+  maxScroll: number;
+  reducedMotion: boolean;
 };
 
 export function clampScrollSpeed(speed: number): number {
@@ -53,7 +65,7 @@ export function applyScrollStep(
  */
 export function useScroll(
   viewportRef: RefObject<HTMLElement | null>,
-  { isPlaying, speed }: UseScrollOptions,
+  { isPlaying, speed, resolveRate }: UseScrollOptions,
 ): void {
   const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
@@ -97,8 +109,18 @@ export function useScroll(
       if (lastTimeRef.current !== null) {
         const deltaSec = (time - lastTimeRef.current) / 1000;
         const clampedSpeed = clampScrollSpeed(speed);
-        const deltaPx = BASE_SCROLL_PX_PER_SEC * clampedSpeed * deltaSec;
         const maxScroll = el.scrollHeight - el.clientHeight;
+        const rate =
+          resolveRate?.({
+            scrollTop: el.scrollTop,
+            viewportHeight: el.clientHeight,
+            maxScroll,
+            reducedMotion,
+          }) ?? 1;
+        const deltaPx =
+          rate > 0
+            ? BASE_SCROLL_PX_PER_SEC * clampedSpeed * deltaSec * rate
+            : 0;
         const result = applyScrollStep(el.scrollTop, carryRef.current, deltaPx, maxScroll);
         carryRef.current = result.carryPx;
         el.scrollTop = result.scrollTop;
@@ -119,7 +141,7 @@ export function useScroll(
         rafRef.current = null;
       }
     };
-  }, [viewportRef, isPlaying, speed]);
+  }, [viewportRef, isPlaying, speed, resolveRate]);
 }
 
 /** Exported for unit tests — scroll delta for one frame at given speed. */
