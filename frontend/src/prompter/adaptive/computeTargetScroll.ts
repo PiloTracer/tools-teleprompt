@@ -118,10 +118,13 @@ export function applySmoothScrollTowardTarget(
 export function applyProportionalScrollStep(
   currentScrollTop: number,
   targetScrollTop: number,
-  _deadZonePx = 0,
+  deadZonePx = 0,
   gain = 0.15,
 ): number {
   const error = targetScrollTop - currentScrollTop;
+  if (Math.abs(error) <= deadZonePx) {
+    return currentScrollTop;
+  }
   return currentScrollTop + error * gain;
 }
 

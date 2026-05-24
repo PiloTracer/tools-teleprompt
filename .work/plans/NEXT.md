@@ -1,6 +1,6 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-24 (session close — mic device routing + SR track start committed)
+**Updated:** 2026-05-24 (session close — verification hardening + log hygiene committed)
 
 ---
 

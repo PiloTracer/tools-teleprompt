@@ -13,7 +13,6 @@ import {
   shouldAcceptWordMatch,
   type WordMatchResult,
   wordsMatchLenient,
-  wordsMatchStrict,
 } from "../../src/prompter/adaptive/matchScriptWords";
 
 function matchResult(partial: Partial<WordMatchResult> & Pick<WordMatchResult, "wordIndex">): WordMatchResult {

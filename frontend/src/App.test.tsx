@@ -11,14 +11,14 @@ function renderAt(path: string) {
 }
 
 describe("App routes", () => {
-  it("renders the app title on home route", () => {
+  it("renders the app title on home route", async () => {
     renderAt("/");
-    expect(screen.getByRole("link", { name: "tools-teleprompt" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "tools-teleprompt" })).toBeInTheDocument();
   });
 
-  it("renders play route", () => {
+  it("renders play route", async () => {
     renderAt("/play");
-    expect(screen.getByRole("heading", { name: "Player" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Player" })).toBeInTheDocument();
   });
 
   it("renders settings route", async () => {

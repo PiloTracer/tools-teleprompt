@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-24 — mic device routing + speech sync settings (SR track start, mic selector)
+**Closed:** 2026-05-24 — verification hardening complete (lint/typecheck/tests green, quieter test logs)
 
 **Updated:** 2026-05-24
 
-**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`: mic SR → word matcher → reading-line underline → scroll track. **This session:** merged speech-sync settings; mic device selector with id+label persistence; Play does **not** auto-enable sync (ES/Settings engage); `recognition.start(audioTrack)` routes SR through selected mic (Chrome 135+); `micDevice.ts` + `speechRecognitionStart.ts`; es-ES lang candidates; restart delay + debug hooks. **FE:** 157/157 vitest pass (host). **Manual:** real-device heyday mic + SR still owner-verified.
+**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`: mic SR → word matcher → reading-line underline → scroll track. **This session:** verification hardening + cleanup on current branch state: removed lint blockers, stabilized route assertions, applied deprecated dead-zone behavior, and gated `tp-sync` debug logs in test mode for clean CI signal. **FE checks in container:** lint pass, typecheck pass, vitest 157/157 pass. **Manual:** real-device heyday mic + SR still owner-verified.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -118,6 +118,7 @@
 | 2026-05-24 (close) | Adaptive speech sync restore | `prompter/adaptive/*`, word matcher skip-ahead gates, red underline mark; vitest 143/143 |
 | 2026-05-24 (close) | Mic sync engagement fix | Play auto-enables SR; ES toggle syncActive bug; vitest 144/144 |
 | 2026-05-24 (close) | Mic device routing + SR track start | mic selector, label remap, `start(audioTrack)`; Play no auto-sync; vitest 157/157 |
+| 2026-05-24 (close) | Verification hardening + log hygiene | fixed FE lint blockers; App route async assertions; test-mode `tp-sync` debug gating; FE lint/typecheck/tests green in container |
 
 ---
 
@@ -130,8 +131,9 @@ See `.work/plans/UNKNOWNS.md` — U9 resolved (M7 LAN + multi-QR). U1/U6/U8 clos
 ## Last verification (2026-05-24 close)
 
 ```
-npm test -- --run     → 157/157 (host frontend/)
-npm run typecheck     → exit 0 (host frontend/)
+npm run lint          → exit 0 (frontend container)
+npm run typecheck     → exit 0 (frontend container)
+npm test -- --run     → 157/157 (frontend container)
 ```
 
 **Device manual check:** adaptive mic sync (heyday + `sr.startInstance mode:track`) + bottom clearance + horizontal scroll — **not verified** (owner).

@@ -1,4 +1,4 @@
-/** Enable with `localStorage.setItem('tp:debug', '1')` or disable with `'0'`. On by default in dev. */
+/** Enable with `localStorage.setItem('tp:debug', '1')` or disable with `'0'`. */
 export function isSyncDebugEnabled(): boolean {
   try {
     const flag = localStorage.getItem("tp:debug");
@@ -10,6 +10,10 @@ export function isSyncDebugEnabled(): boolean {
     }
   } catch {
     /* ignore */
+  }
+  // Keep test output deterministic and quiet unless explicitly opted in.
+  if (import.meta.env.MODE === "test") {
+    return false;
   }
   return import.meta.env.DEV;
 }
