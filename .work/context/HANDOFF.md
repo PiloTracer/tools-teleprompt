@@ -2,7 +2,7 @@
 
 ## Session status
 
-**Closed:** 2026-05-23 — UI S5 shipped; player toolbar compaction; env template alignment; handoff nav cleanup
+**Closed:** 2026-05-23 — dark-theme editor/preview inset contrast fixed; form controls hardened; contrast + S2 a11y tests
 
 **Updated:** 2026-05-23
 
@@ -103,6 +103,7 @@
 | 2026-05-23 | UI Design OS + S4 handoff | `.ai.ui/`, `.work.ui/`, tokens, ds components, S1–S4 screens, Playwright S1–S4, `bin/start.sh` prd env |
 | 2026-05-23 | session close commit push | UI framework + handoff polish + player lever dock on `main` |
 | 2026-05-23 | session close commit push | UI S5, player toolbar, env example alignment, handoff UX on `main` |
+| 2026-05-23 | Dark theme contrast fix | `themes/dark.css`, form controls, contrast + S2 dark a11y e2e; FE 90/90 pass |
 
 ---
 

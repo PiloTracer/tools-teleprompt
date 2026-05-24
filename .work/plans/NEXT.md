@@ -1,6 +1,6 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-23 (UI S5 committed; session close)
+**Updated:** 2026-05-23 (dark theme contrast fix committed; session close)
 
 ---
 
@@ -55,6 +55,7 @@ M6 complete — see **Done — M6 iteration (archived)** below.
 | M7 serverless handoff approved (LAN + multi-QR) | 2026-05-21 |
 | M7 formal complete | 2026-05-21 |
 | MOD-06 (M7) | 2026-05-21 |
+| Dark theme editor/preview inset contrast | 2026-05-23 |
 
 ---
 

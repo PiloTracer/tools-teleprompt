@@ -8,7 +8,8 @@
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed, 1.45);
   color: var(--color-text-primary);
-  background: var(--color-bg-inset, var(--color-bg-canvas));
+  caret-color: var(--color-text-primary);
+  background-color: var(--color-bg-inset, var(--color-bg-canvas));
   border: none;
   border-radius: var(--radius-md);
   box-shadow: var(--elevation-inset);

@@ -78,6 +78,38 @@ test.describe("S2 home editor accessibility milestone", () => {
     }
   });
 
+  test("axe wcag2aa on / with dark document theme has no critical or serious violations @s2-a11y", async ({
+    page,
+    context,
+  }) => {
+    await context.addInitScript(() => {
+      localStorage.setItem(
+        "tp:settings",
+        JSON.stringify({
+          theme: "dark",
+          fontFamily: "system-ui",
+          fontSize: 48,
+          lineHeight: 1.5,
+          scrollSpeed: 50,
+          sideInset: 0,
+          bottomInset: 0,
+        }),
+      );
+    });
+
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+
+    const blocking = await runAxe(page);
+    if (blocking.length > 0) {
+      const summary = blocking
+        .map((v) => `${v.id} (${v.impact}): ${v.description}`)
+        .join("\n");
+      expect(blocking, summary).toEqual([]);
+    }
+  });
+
   test("mobile upload and format controls meet touch target height @s2-a11y", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");

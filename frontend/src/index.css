@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   font-family: var(--font-family-sans);
   line-height: var(--line-height-normal);
 }

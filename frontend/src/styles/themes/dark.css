@@ -1,12 +1,17 @@
 /**
  * Dark theme — document root
  * Activate: document.documentElement.dataset.theme = "dark"
+ *
+ * Keep surface/inset tokens aligned with `themes/player-dark.css`.
  */
 
 [data-theme="dark"] {
+  color-scheme: dark;
+
   --color-bg-canvas: #0d0d0d;
   --color-bg-surface: #1a1a1a;
   --color-bg-elevated: #242424;
+  --color-bg-inset: #141414;
   --color-bg-player: #000000;
   --color-text-primary: #f0f0f0;
   --color-text-secondary: #a8a8a8;
@@ -18,10 +23,19 @@
   --color-accent-contrast: #ffffff;
   --color-danger: #f87171;
   --color-focus-ring: #60a5fa;
+
+  --surface-base: var(--color-bg-canvas);
+  --surface-elevated: var(--color-bg-elevated);
+  --surface-inset: var(--color-bg-inset);
+  --elevation-inset: inset 0 1px 2px rgb(0 0 0 / 45%);
 }
 
 [data-theme="dark"] .tp-nav a.active,
 [data-theme="dark"] .ds-mobile-nav a.active {
   background: var(--color-accent);
   color: var(--color-accent-contrast);
+}
+
+[data-theme="dark"] .ds-segmented__label {
+  box-shadow: inset -1px 0 0 rgb(255 255 255 / 8%);
 }

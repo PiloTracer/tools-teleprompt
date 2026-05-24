@@ -93,9 +93,49 @@ describe("S1 token contrast (UIS-04)", () => {
   });
 });
 
+const EDITOR_DARK: ContrastPair[] = [
+  {
+    name: "editor script on dark inset textarea",
+    foreground: "#f0f0f0",
+    background: "#141414",
+    minRatio: 4.5,
+  },
+  {
+    name: "editor preview on dark inset",
+    foreground: "#f0f0f0",
+    background: "#141414",
+    minRatio: 4.5,
+  },
+  {
+    name: "editor label on dark surface card",
+    foreground: "#f0f0f0",
+    background: "#242424",
+    minRatio: 4.5,
+  },
+  {
+    name: "editor hint on dark surface card",
+    foreground: "#a8a8a8",
+    background: "#242424",
+    minRatio: 4.5,
+  },
+  {
+    name: "format label on dark inset track",
+    foreground: "#a8a8a8",
+    background: "#141414",
+    minRatio: 4.5,
+  },
+];
+
 describe("S2 editor contrast (UIS-04)", () => {
-  it("meets WCAG AA for home editor token pairs", () => {
+  it("meets WCAG AA for home editor token pairs (light)", () => {
     const results = assertContrastPairs(EDITOR_LIGHT);
+    for (const row of results) {
+      expect(row.pass, `${row.name}: ${row.ratio}:1 (need ${row.minRatio}:1)`).toBe(true);
+    }
+  });
+
+  it("meets WCAG AA for home editor token pairs (dark)", () => {
+    const results = assertContrastPairs(EDITOR_DARK);
     for (const row of results) {
       expect(row.pass, `${row.name}: ${row.ratio}:1 (need ${row.minRatio}:1)`).toBe(true);
     }

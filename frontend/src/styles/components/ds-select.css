@@ -18,7 +18,7 @@
   font-size: var(--font-size-sm);
   border-radius: var(--radius-md);
   border: none;
-  background: var(--color-bg-surface);
+  background-color: var(--color-bg-surface);
   box-shadow: var(--elevation-1);
   color: var(--color-text-primary);
   cursor: pointer;
