@@ -17,15 +17,19 @@ export type PrompterSettings = {
   bottomPadding: number;
   /** Enable speech-sync teleprompter (mic + word tracking). */
   adaptiveEnabled: boolean;
-  /** Start mic sync automatically when Play is pressed. */
+  /** @deprecated Paired with adaptiveEnabled; kept for storage compatibility. */
   adaptiveAutoSync: boolean;
+  /** Preferred mic deviceId; empty string = browser default input. */
+  micDeviceId: string;
+  /** Human label paired with micDeviceId for stable re-selection across sessions. */
+  micDeviceLabel: string;
   theme: Theme;
   mirror: boolean;
 };
 
-/** Single user-facing auto-sync flag (both storage fields must match). */
+/** Single user-facing speech-sync flag (both storage fields stay paired). */
 export function isAutoSyncOnPlay(settings: PrompterSettings): boolean {
-  return settings.adaptiveEnabled && settings.adaptiveAutoSync;
+  return settings.adaptiveEnabled;
 }
 
 /** Normalize legacy/partial saves to the paired toggle model. */
@@ -34,6 +38,14 @@ export function normalizeAdaptiveFlags(
 ): Pick<PrompterSettings, "adaptiveEnabled" | "adaptiveAutoSync"> {
   const on = Boolean(parsed.adaptiveAutoSync) || Boolean(parsed.adaptiveEnabled);
   return { adaptiveEnabled: on, adaptiveAutoSync: on };
+}
+
+/** Keep adaptive flags paired when persisting. */
+export function pairAdaptiveFlags(settings: PrompterSettings): PrompterSettings {
+  return {
+    ...settings,
+    adaptiveAutoSync: settings.adaptiveEnabled,
+  };
 }
 
 export const SIDE_PADDING_MIN = 0;
@@ -49,6 +61,8 @@ export const DEFAULT_SETTINGS: PrompterSettings = {
   bottomPadding: 0,
   adaptiveEnabled: false,
   adaptiveAutoSync: false,
+  micDeviceId: "",
+  micDeviceLabel: "",
   theme: "light",
   mirror: false,
 };
@@ -183,6 +197,9 @@ export async function loadSettings(): Promise<PrompterSettings> {
           : DEFAULT_SETTINGS.bottomPadding,
       adaptiveEnabled: adaptive.adaptiveEnabled,
       adaptiveAutoSync: adaptive.adaptiveAutoSync,
+      micDeviceId: typeof parsed.micDeviceId === "string" ? parsed.micDeviceId : "",
+      micDeviceLabel:
+        typeof parsed.micDeviceLabel === "string" ? parsed.micDeviceLabel : "",
       theme: parsed.theme === "dark" ? "dark" : "light",
       mirror: Boolean(parsed.mirror),
     };
@@ -192,7 +209,7 @@ export async function loadSettings(): Promise<PrompterSettings> {
 }
 
 export async function saveSettings(settings: PrompterSettings): Promise<void> {
-  const payload = JSON.stringify(settings);
+  const payload = JSON.stringify(pairAdaptiveFlags(settings));
   if (writeLocal(STORAGE_KEYS.settings, payload)) {
     return;
   }

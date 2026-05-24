@@ -46,6 +46,6 @@ describe("detectScriptLanguage", () => {
 
 describe("buildRecognitionLangCandidates", () => {
   it("returns regional variants for Spanish", () => {
-    expect(buildRecognitionLangCandidates("es")).toEqual(["es", "es-ES"]);
+    expect(buildRecognitionLangCandidates("es")).toEqual(["es-ES", "es"]);
   });
 });

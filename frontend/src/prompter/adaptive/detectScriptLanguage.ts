@@ -72,7 +72,7 @@ export function buildRecognitionLangCandidates(primary: string): string[] {
   const regional =
     base === "es" ? "es-ES" : base === "en" ? "en-US" : primary;
   const candidates: string[] = [];
-  for (const lang of [primary, regional, base]) {
+  for (const lang of [regional, primary, base]) {
     if (lang && !candidates.includes(lang)) {
       candidates.push(lang);
     }

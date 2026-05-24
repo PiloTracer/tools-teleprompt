@@ -7,6 +7,7 @@ import {
   BOTTOM_PADDING_MIN,
   DEFAULT_SETTINGS,
   loadSettings,
+  pairAdaptiveFlags,
   saveSettings,
   SIDE_PADDING_MAX,
   SIDE_PADDING_MIN,
@@ -15,6 +16,7 @@ import {
 } from "./storage";
 import { applyDocumentTheme } from "./theme";
 import { SPEED_MAX, SPEED_MIN, SPEED_STEP } from "./useScroll";
+import { useMicDeviceOptions } from "./useMicDeviceOptions";
 
 export function Settings() {
   const [settings, setSettings] = useState<PrompterSettings>(DEFAULT_SETTINGS);
@@ -30,9 +32,32 @@ export function Settings() {
     });
   }, []);
 
+  const { devices: micDevices, loading: micDevicesLoading } = useMicDeviceOptions(
+    settings.adaptiveEnabled,
+    settings.micDeviceId,
+    settings.micDeviceLabel,
+  );
+
   const update = <K extends keyof PrompterSettings>(key: K, value: PrompterSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
+    setError(null);
+  };
+
+  const onMicDeviceChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const deviceId = event.target.value;
+    const deviceLabel =
+      micDevices.find((device) => device.deviceId === deviceId)?.label ?? "";
+    setSettings((prev) => {
+      const next = pairAdaptiveFlags({
+        ...prev,
+        micDeviceId: deviceId,
+        micDeviceLabel: deviceLabel,
+      });
+      void saveSettings(next);
+      return next;
+    });
+    setSaved(true);
     setError(null);
   };
 
@@ -175,29 +200,32 @@ export function Settings() {
           <input
             type="checkbox"
             checked={settings.adaptiveEnabled}
-            onChange={(e) => {
-              const enabled = e.target.checked;
-              setSettings((prev) => ({
-                ...prev,
-                adaptiveEnabled: enabled,
-                adaptiveAutoSync: enabled ? prev.adaptiveAutoSync : false,
-              }));
-              setSaved(false);
-              setError(null);
-            }}
+            onChange={(e) => update("adaptiveEnabled", e.target.checked)}
           />
           <span className="ds-checkbox__label">{en.settings.adaptiveEnabled}</span>
         </label>
 
         {settings.adaptiveEnabled ? (
-          <label className="tp-settings__mirror ds-checkbox">
-            <input
-              type="checkbox"
-              checked={settings.adaptiveAutoSync}
-              onChange={(e) => update("adaptiveAutoSync", e.target.checked)}
-            />
-            <span className="ds-checkbox__label">{en.settings.adaptiveAutoSync}</span>
+          <label className="tp-settings__mic ds-select">
+            <span className="ds-select__label">{en.settings.micDevice}</span>
+            <select
+              value={settings.micDeviceId}
+              onChange={onMicDeviceChange}
+              disabled={micDevicesLoading}
+              aria-label={en.settings.micDevice}
+            >
+              <option value="">{en.settings.micDeviceDefault}</option>
+              {micDevices.map((device) => (
+                <option key={device.deviceId} value={device.deviceId}>
+                  {device.label}
+                </option>
+              ))}
+            </select>
           </label>
+        ) : null}
+
+        {settings.adaptiveEnabled && !micDevicesLoading && micDevices.length === 0 ? (
+          <p className="tp-settings__mic-hint">{en.settings.micDeviceUnavailable}</p>
         ) : null}
 
         {settings.adaptiveEnabled ? (

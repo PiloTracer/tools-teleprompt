@@ -556,7 +556,7 @@ describe("Player adaptive sync", () => {
     );
   });
 
-  it("auto-enables speech sync when play is pressed", async () => {
+  it("does not enable speech sync when play is pressed", async () => {
     const speech = await import("../src/prompter/adaptive/useSpeechTracker");
     vi.mocked(speech.isSpeechRecognitionSupported).mockReturnValue(true);
 
@@ -577,18 +577,20 @@ describe("Player adaptive sync", () => {
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
 
     await waitFor(() => {
-      const lastCall = vi.mocked(speech.useSpeechTracker).mock.calls.at(-1);
-      expect(lastCall?.[0]).toMatchObject({ enabled: true, listen: true });
+      expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
     });
+
+    const lastCall = vi.mocked(speech.useSpeechTracker).mock.calls.at(-1);
+    expect(lastCall?.[0]).toMatchObject({ enabled: false, listen: false });
 
     const raw = localStorage.getItem("tp:settings");
     expect(JSON.parse(raw ?? "{}")).toMatchObject({
-      adaptiveEnabled: true,
-      adaptiveAutoSync: true,
+      adaptiveEnabled: false,
+      adaptiveAutoSync: false,
     });
   });
 
-  it("toggles speech sync from the language button", async () => {
+  it("engages speech sync only from the language button", async () => {
     const speech = await import("../src/prompter/adaptive/useSpeechTracker");
     vi.mocked(speech.isSpeechRecognitionSupported).mockReturnValue(true);
 
@@ -617,6 +619,35 @@ describe("Player adaptive sync", () => {
 
     const raw = localStorage.getItem("tp:settings");
     expect(JSON.parse(raw ?? "{}")).toMatchObject({ adaptiveEnabled: true });
+  });
+
+  it("does not listen when speech sync is enabled in settings until ES is pressed", async () => {
+    const speech = await import("../src/prompter/adaptive/useSpeechTracker");
+    vi.mocked(speech.isSpeechRecognitionSupported).mockReturnValue(true);
+
+    await saveScriptSource("Hola mundo desde el teleprompter");
+    await saveScriptFormat("plain");
+    await saveSettings({ ...DEFAULT_SETTINGS, adaptiveEnabled: true, adaptiveAutoSync: true });
+
+    render(
+      <MemoryRouter>
+        <Player />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+    });
+
+    const lastCall = vi.mocked(speech.useSpeechTracker).mock.calls.at(-1);
+    expect(lastCall?.[0]).toMatchObject({ enabled: true, listen: false });
+    expect(screen.getByTestId("player-sync-lang")).toHaveAttribute("aria-pressed", "false");
   });
 
   it("does not show language button when speech recognition is unsupported", async () => {

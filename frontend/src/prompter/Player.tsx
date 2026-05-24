@@ -83,8 +83,7 @@ export function Player() {
   const speechSupported = useMemo(() => isSpeechRecognitionSupported(), []);
   const adaptiveEnabled = settings.adaptiveEnabled && speechSupported;
   const autoSyncOnPlay = isAutoSyncOnPlay(settings) && speechSupported;
-  const micSyncEngaged =
-    adaptiveEnabled && (syncActive || (isPlaying && settings.adaptiveAutoSync));
+  const micSyncEngaged = adaptiveEnabled && syncActive;
 
   useEffect(() => {
     syncLogBootOnce();
@@ -108,6 +107,21 @@ export function Player() {
     setScriptWordsVersion((version) => version + 1);
   }, [html, hasScript, settings.fontSize, settings.sidePadding]);
 
+  const onMicDeviceRemapped = useCallback((deviceId: string, deviceLabel: string) => {
+    setSettings((prev) => {
+      if (prev.micDeviceId === deviceId && prev.micDeviceLabel === deviceLabel) {
+        return prev;
+      }
+      const next: PrompterSettings = {
+        ...prev,
+        micDeviceId: deviceId,
+        micDeviceLabel: deviceLabel,
+      };
+      void saveSettings(next);
+      return next;
+    });
+  }, []);
+
   const {
     readingWordIndex,
     recognitionLanguage: activeRecognitionLanguage,
@@ -117,6 +131,9 @@ export function Player() {
     listen: micSyncEngaged,
     scriptWords,
     parsedLines,
+    micDeviceId: settings.micDeviceId,
+    micDeviceLabel: settings.micDeviceLabel,
+    onMicDeviceRemapped,
   });
 
   useReadingLineMark({
@@ -133,12 +150,6 @@ export function Player() {
     speed: settings.speed,
     syncEngaged: micSyncEngaged,
   });
-
-  useEffect(() => {
-    if (adaptiveEnabled && settings.adaptiveAutoSync && isPlaying) {
-      setSyncActive(true);
-    }
-  }, [adaptiveEnabled, settings.adaptiveAutoSync, isPlaying]);
 
   useEffect(() => {
     if (!adaptiveEnabled) {
@@ -190,16 +201,22 @@ export function Player() {
   }, []);
 
   const onToggleSpeechSync = useCallback(() => {
-    const nextEnabled = !settings.adaptiveEnabled;
-    syncLog("player.toggleSpeechSync", { nextEnabled, wasEnabled: settings.adaptiveEnabled });
-    const next: PrompterSettings = {
-      ...settings,
-      adaptiveEnabled: nextEnabled,
-      adaptiveAutoSync: nextEnabled ? settings.adaptiveAutoSync || true : false,
-    };
-    onSettingsChange(next);
-    setSyncActive(nextEnabled && (isPlaying || next.adaptiveAutoSync));
-  }, [isPlaying, onSettingsChange, settings]);
+    if (syncActive) {
+      syncLog("player.toggleSpeechSync", { nextListen: false, wasListen: true });
+      setSyncActive(false);
+      return;
+    }
+    syncLog("player.toggleSpeechSync", { nextListen: true, wasListen: false });
+    if (!settings.adaptiveEnabled) {
+      const next: PrompterSettings = {
+        ...settings,
+        adaptiveEnabled: true,
+        adaptiveAutoSync: true,
+      };
+      onSettingsChange(next);
+    }
+    setSyncActive(true);
+  }, [onSettingsChange, settings, syncActive]);
 
   const onSpeedChange = useCallback((speed: number) => {
     setSettings((prev) => {
@@ -217,23 +234,8 @@ export function Player() {
   );
 
   const onPlayPause = useCallback(() => {
-    if (!isPlaying && speechSupported) {
-      setSettings((prev) => {
-        if (prev.adaptiveEnabled && prev.adaptiveAutoSync) {
-          return prev;
-        }
-        const next: PrompterSettings = {
-          ...prev,
-          adaptiveEnabled: true,
-          adaptiveAutoSync: true,
-        };
-        void saveSettings(next);
-        return next;
-      });
-      setSyncActive(true);
-    }
     setIsPlaying((prev) => !prev);
-  }, [isPlaying, speechSupported]);
+  }, []);
 
   useKeyboard({
     enabled: hasScript && hydrated,
@@ -332,7 +334,7 @@ export function Player() {
         isFullscreenSupported={isSupported}
         helpOpen={helpOpen}
         speechSupported={speechSupported}
-        syncFeatureEnabled={settings.adaptiveEnabled}
+        syncFeatureEnabled={syncActive}
         recognitionLanguage={displayRecognitionLanguage}
         languageDetermined={languageDetermined}
         onToggleSpeechSync={onToggleSpeechSync}

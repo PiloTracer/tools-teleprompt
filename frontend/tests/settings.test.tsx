@@ -26,6 +26,7 @@ describe("Settings (S3)", () => {
     expect(screen.getByRole("radiogroup", { name: /theme/i })).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /mirror text/i })).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /speech sync/i })).toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: /auto-sync/i })).not.toBeInTheDocument();
   });
 
   it("persists settings and applies document theme on save", async () => {
@@ -60,6 +61,8 @@ describe("Settings (S3)", () => {
       bottomPadding: 0,
       adaptiveEnabled: false,
       adaptiveAutoSync: false,
+      micDeviceId: "",
+      micDeviceLabel: "",
       theme: "dark",
       mirror: false,
     });

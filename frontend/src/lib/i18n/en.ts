@@ -29,7 +29,10 @@ export const en = {
     themeDark: "Dark",
     mirror: "Mirror text (camera setups)",
     adaptiveEnabled: "Speech sync (microphone)",
-    adaptiveAutoSync: "Auto-sync on play",
+    micDevice: "Microphone",
+    micDeviceDefault: "Default (system)",
+    micDeviceLoading: "Detecting microphones…",
+    micDeviceUnavailable: "Allow microphone access to choose a device",
     adaptivePrivacy:
       "Speech sync uses your microphone and browser speech recognition. Audio is processed on your device; transcripts are handled by your browser vendor.",
     save: "Save settings",

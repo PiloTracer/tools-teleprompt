@@ -13,7 +13,14 @@ import {
 } from "./detectScriptLanguage";
 import type { ParsedScriptLine } from "./parseScriptLines";
 import { buildMetaOnlyWords } from "./parseScriptLines";
+import {
+  openMicSession,
+  releaseMicStream,
+  resolveMicForSpeech,
+  sampleMicLevel,
+} from "./micDevice";
 import { syncLog, syncLogBootOnce, syncLogOnChange, syncLogThrottled, syncWarn } from "./syncDebug";
+import { startSpeechRecognition } from "./speechRecognitionStart";
 
 const WORD_BUFFER_SIZE = 44;
 const MATCH_WINDOW_WORDS = 20;
@@ -21,6 +28,7 @@ const MATCH_WINDOW_WORDS = 20;
 const INTERIM_TAIL_WORDS = 8;
 const SILENCE_TIMEOUT_MS = 1800;
 const LANG_RETRY_UNMATCHED_THRESHOLD = 8;
+const SR_RESTART_DELAY_MS = 280;
 
 function buildLangCandidates(primary: string): string[] {
   return buildRecognitionLangCandidates(primary);
@@ -37,6 +45,9 @@ export type UseSpeechTrackerOptions = {
   listen: boolean;
   scriptWords: string[];
   parsedLines: ParsedScriptLine[];
+  micDeviceId?: string;
+  micDeviceLabel?: string;
+  onMicDeviceRemapped?: (deviceId: string, deviceLabel: string) => void;
 };
 
 export type UseSpeechTrackerResult = {
@@ -76,6 +87,9 @@ export function useSpeechTracker({
   listen,
   scriptWords,
   parsedLines,
+  micDeviceId = "",
+  micDeviceLabel = "",
+  onMicDeviceRemapped,
 }: UseSpeechTrackerOptions): UseSpeechTrackerResult {
   const supported = isSpeechRecognitionSupported();
 
@@ -95,9 +109,15 @@ export function useSpeechTracker({
   const scriptWordsRef = useRef(scriptWords);
   const parsedLinesRef = useRef(parsedLines);
   const metaOnlyWordsRef = useRef<Set<string>>(new Set());
+  const micDeviceIdRef = useRef(micDeviceId);
+  const micDeviceLabelRef = useRef(micDeviceLabel);
+  const onMicDeviceRemappedRef = useRef(onMicDeviceRemapped);
   scriptWordsRef.current = scriptWords;
   parsedLinesRef.current = parsedLines;
   metaOnlyWordsRef.current = buildMetaOnlyWords(parsedLines);
+  micDeviceIdRef.current = micDeviceId;
+  micDeviceLabelRef.current = micDeviceLabel;
+  onMicDeviceRemappedRef.current = onMicDeviceRemapped;
 
   useEffect(() => {
     syncLogBootOnce();
@@ -148,6 +168,9 @@ export function useSpeechTracker({
     }
 
     let cancelled = false;
+    let micStream: MediaStream | null = null;
+    let activeMicDeviceId = "";
+    let restartTimer: ReturnType<typeof setTimeout> | null = null;
     shouldRunRef.current = true;
     cursorWordRef.current = 0;
     wordBufferRef.current = [];
@@ -166,6 +189,51 @@ export function useSpeechTracker({
     let retryWithNextLang = false;
     setRecognitionLanguage(null);
     setHasCalibrated(false);
+
+    const getMicTrack = (): MediaStreamTrack | null => {
+      const track = micStream?.getAudioTracks()[0] ?? null;
+      if (track?.readyState === "live" && track.kind === "audio") {
+        return track;
+      }
+      return null;
+    };
+
+    const startRecognitionInstance = (rec: SpeechRecognition, reason: string): boolean => {
+      if (cancelled || !shouldRunRef.current) {
+        return false;
+      }
+      let track = getMicTrack();
+      let started = startSpeechRecognition(rec, track);
+      if (!started.ok && started.trackStartFailed) {
+        syncWarn("sr.mic.trackStartUnsupported", {
+          hint: "Update Chrome or set selected mic as system default",
+          deviceId: activeMicDeviceId,
+          error: String(started.error),
+        });
+        releaseMicStream(micStream);
+        micStream = null;
+        track = null;
+        started = startSpeechRecognition(rec, null);
+      }
+      if (started.ok) {
+        syncLog("sr.startInstance", {
+          reason,
+          lang: rec.lang,
+          mode: started.mode,
+          deviceId: activeMicDeviceId || "default",
+          trackState: track?.readyState ?? "none",
+        });
+        return true;
+      }
+      syncWarn("sr.startFailed", {
+        error: String(started.error),
+        reason,
+        lang: rec.lang,
+        trackStartFailed: started.trackStartFailed,
+      });
+      setError("pipeline_error");
+      return false;
+    };
 
     const startRecognition = (): SpeechRecognition => {
       const rec = new Ctor();
@@ -196,6 +264,14 @@ export function useSpeechTracker({
         setError(null);
       };
 
+      rec.onaudiostart = () => {
+        syncLogThrottled("sr.audioStart", 2000, "sr.audioStart", { lang: rec.lang });
+      };
+
+      rec.onspeechstart = () => {
+        syncLogThrottled("sr.speechStart", 2000, "sr.speechStart", { lang: rec.lang });
+      };
+
       rec.onresult = (event: SpeechRecognitionEvent) => {
         if (cancelled) {
           return;
@@ -211,6 +287,14 @@ export function useSpeechTracker({
           } else {
             interimText += result[0].transcript + " ";
           }
+        }
+
+        if (finalText.trim() || interimText.trim()) {
+          syncLogThrottled("sr.heard", 400, "sr.heard", {
+            final: finalText.trim().slice(-80),
+            interim: interimText.trim().slice(-80),
+            lang: rec.lang,
+          });
         }
 
         if (finalText.trim()) {
@@ -311,7 +395,9 @@ export function useSpeechTracker({
           return;
         }
         syncWarn("sr.error", { error: event.error, message: event.message, lang: rec.lang });
-        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        if (event.error === "no-speech") {
+          /* Benign — onend restarts after priming mic again. */
+        } else if (event.error === "not-allowed" || event.error === "service-not-allowed") {
           permissionDeniedRef.current = true;
           setPermissionDenied(true);
           setError("permission_denied");
@@ -332,37 +418,117 @@ export function useSpeechTracker({
           return;
         }
 
-        if (retryWithNextLang) {
-          retryWithNextLang = false;
-          currentRecognition = startRecognition();
-          return;
+        if (restartTimer !== null) {
+          clearTimeout(restartTimer);
         }
+        restartTimer = setTimeout(() => {
+          restartTimer = null;
+          if (cancelled || !shouldRunRef.current || permissionDeniedRef.current) {
+            return;
+          }
 
-        try {
-          rec.start();
-        } catch {
-          /* transient restart */
-        }
+          if (retryWithNextLang) {
+            retryWithNextLang = false;
+            currentRecognition = startRecognition();
+            startRecognitionInstance(currentRecognition, "langRetry");
+            return;
+          }
+
+          startRecognitionInstance(rec, "restart");
+        }, SR_RESTART_DELAY_MS);
       };
-
-      try {
-        rec.start();
-      } catch (err) {
-        if (!cancelled) {
-          syncWarn("sr.startFailed", { error: String(err) });
-          setError("pipeline_error");
-        }
-      }
 
       return rec;
     };
 
-    let currentRecognition = startRecognition();
+    let currentRecognition: SpeechRecognition | null = null;
+
+    void (async () => {
+      const resolved = await resolveMicForSpeech(
+        micDeviceIdRef.current,
+        micDeviceLabelRef.current,
+      );
+      activeMicDeviceId = resolved.deviceId;
+      syncLog("sr.mic.resolve", {
+        requestedDeviceId: micDeviceIdRef.current || "default",
+        requestedLabel: micDeviceLabelRef.current || "",
+        resolvedDeviceId: resolved.deviceId || "default",
+        resolvedLabel: resolved.deviceLabel || "",
+        remapped: resolved.remapped,
+        unavailable: resolved.unavailable,
+      });
+      if (resolved.remapped && resolved.deviceId) {
+        onMicDeviceRemappedRef.current?.(resolved.deviceId, resolved.deviceLabel);
+      } else if (
+        resolved.deviceLabel &&
+        resolved.deviceId &&
+        micDeviceLabelRef.current !== resolved.deviceLabel
+      ) {
+        onMicDeviceRemappedRef.current?.(resolved.deviceId, resolved.deviceLabel);
+      }
+      if (resolved.unavailable) {
+        syncWarn("sr.mic.unavailable", {
+          deviceId: micDeviceIdRef.current,
+          label: micDeviceLabelRef.current,
+        });
+      }
+      if (cancelled) {
+        return;
+      }
+
+      if (activeMicDeviceId) {
+        try {
+          const session = await openMicSession(activeMicDeviceId);
+          micStream = session.stream;
+          syncLog("sr.mic.hold", {
+            deviceIdUsed: session.deviceIdUsed,
+            tracks: micStream?.getAudioTracks().length ?? 0,
+          });
+          if (micStream) {
+            const level = await sampleMicLevel(micStream);
+            syncLog("sr.mic.level", {
+              rms: Number(level.toFixed(4)),
+              deviceId: session.deviceIdUsed,
+            });
+            if (level < 0.001) {
+              syncWarn("sr.mic.silent", {
+                hint: "Mic stream open but no input signal detected",
+                deviceId: session.deviceIdUsed,
+              });
+            }
+          }
+        } catch (err) {
+          permissionDeniedRef.current = true;
+          setPermissionDenied(true);
+          setError("permission_denied");
+          syncWarn("sr.mic.denied", {
+            error: String(err),
+            deviceId: activeMicDeviceId,
+          });
+          return;
+        }
+      } else {
+        syncLog("sr.mic.default", { note: "SR uses browser default input" });
+      }
+
+      if (cancelled) {
+        releaseMicStream(micStream);
+        micStream = null;
+        return;
+      }
+
+      currentRecognition = startRecognition();
+      startRecognitionInstance(currentRecognition, "initial");
+    })();
 
     return () => {
       syncLog("sr.stop");
       cancelled = true;
       shouldRunRef.current = false;
+      if (restartTimer !== null) {
+        clearTimeout(restartTimer);
+        restartTimer = null;
+      }
       calibratedRef.current = false;
       cursorWordRef.current = 0;
       if (silenceTimerRef.current !== null) {
@@ -373,13 +539,17 @@ export function useSpeechTracker({
       setReadingWordIndex(null);
       setHasCalibrated(false);
       setRecognitionLanguage(null);
-      try {
-        currentRecognition.stop();
-      } catch {
-        /* ignore */
+      releaseMicStream(micStream);
+      micStream = null;
+      if (currentRecognition) {
+        try {
+          currentRecognition.stop();
+        } catch {
+          /* ignore */
+        }
       }
     };
-  }, [enabled, listen, supported, scriptWords.length]);
+  }, [enabled, listen, supported, scriptWords.length, micDeviceId, micDeviceLabel]);
 
   return {
     supported,
