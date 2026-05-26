@@ -1,14 +1,14 @@
-/** Viewport-relative reading line (0 = top, 1 = bottom). Upper-middle, not geometric center. */
-export const READ_CENTER_RATIO = 0.38;
+/** Viewport-relative reading line (0 = top, 1 = bottom). */
+export const READ_CENTER_RATIO = 0.5;
 
 /** Stop micro-adjustments when the read line is within this band of the target ratio. */
 export const SCROLL_CENTER_TOLERANCE_RATIO = 0.04;
 
 /** Seconds to reach ~63% of target error for scroll position. */
-export const SCROLL_TRACK_RESPONSE_SEC = 0.09;
+export const SCROLL_TRACK_RESPONSE_SEC = 0.2;
 
 /** Max scroll correction speed (px/s). */
-export const SCROLL_TRACK_MAX_PX_PER_SEC = 560;
+export const SCROLL_TRACK_MAX_PX_PER_SEC = 320;
 
 /** Pixels — words on the same visual row within this tolerance. */
 export const READING_LINE_ROW_TOLERANCE_PX = 6;

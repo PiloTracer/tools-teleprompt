@@ -1,16 +1,15 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-25 (session close — UIS-07 UX polish + Caddyfile mic fix committed)
+**Updated:** 2026-05-25 (session close — mobile speech sync fixes committed)
 
 ---
 
 ## Recommended next
 
-1. **Investigate speech sync freeze on mobile Chrome (open bug)** — SR grants mic permission (Caddyfile fixed), recognises initial lines, then freezes. Enable debug: `localStorage.setItem('tp:debug','1')`, hard-refresh, reproduce. Check console for `sr.error` / `sr.end` events after the first restart cycle. Most likely cause: mobile Chrome's SR session silently terminating after a `no-speech` error without the restart loop recovering correctly on mobile. Fix in `useSpeechTracker.ts`.
-2. **Manual device verify adaptive sync** — sequential read; no spurious 50+ word jumps; red underline tracks current line.
-3. **Manual device verify player layout** — Bottom slider 20–50%; no horizontal scrollbar on long scripts.
-4. Production deploy when owner ready (`deploy/README.md`).
-5. Manual phone test on hotspot IP (LAN + multi-QR).
+1. **Manual device verify adaptive sync on mobile Chrome** — SR continues after pauses; scroll resumes after ~2s silence; active line centers smoothly; no spurious 50+ word jumps. Debug: `localStorage.setItem('tp:debug','1')`.
+2. **Manual device verify player layout** — Bottom slider 20–50%; no horizontal scrollbar on long scripts.
+3. Production deploy when owner ready (`deploy/README.md`).
+4. Manual phone test on hotspot IP (LAN + multi-QR).
 
 ---
 
@@ -134,6 +133,7 @@ M8 complete — see **Done — M8 iteration (archived)** below.
 | Adaptive speech sync restore (SR word matcher + skip-ahead + underline mark) | 2026-05-24 |
 | Mic sync engagement fix (Play auto-enable + ES toggle syncActive) | 2026-05-24 |
 | Mic device routing + SR track start (mic selector, label remap, Play no auto-sync) | 2026-05-24 |
+| Mobile speech sync fixes (SR restart, center scroll, silence resume) | 2026-05-25 |
 
 ---
 

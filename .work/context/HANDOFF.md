@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-25 — UIS-07 UX polish committed; Caddyfile mic permission fix; speech sync freeze on mobile discovered (open bug)
+**Closed:** 2026-05-25 — mobile speech sync: SR restart fix, smoother center scroll, silence resume auto-scroll
 
 **Updated:** 2026-05-25
 
-**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`. **This session:** UIS-07 UX polish (Toggle DS, Settings refactor, QR encode hardening) + Caddyfile `microphone=(self)` fix enabling mic prompt on mobile Chrome. FE checks last green 2026-05-24 (157/157). **Open bug:** speech sync starts on mobile then freezes mid-script (see Open owner actions #8).
+**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`. **This session:** fixed mobile SR restart (fresh instance after `onend`), centered active line with gentler scroll tracking, and resumed baseline auto-scroll after ~2.2s speech silence. FE checks green 2026-05-25 (165/165). **Mobile device sign-off still pending** (Open owner actions #7–#8).
 
 **Plan-master-ready:** 2026-05-20
 
@@ -36,10 +36,9 @@
 ## Fresh start — next session
 
 1. `@session-control start`
-2. **Investigate speech sync freeze on mobile Chrome** (open bug): SR starts, recognises first lines, then stops advancing — scroll freezes mid-script. See § Open owner actions #8.
-3. **Manual verify adaptive sync on device:** sequential read; no spurious 50+ word jumps; red underline tracks current line.
-4. **Manual verify player layout:** Bottom slider 20–50% → empty band at bottom; no horizontal scrollbar.
-5. Production deploy when owner ready (`deploy/README.md`).
+2. **Manual verify adaptive sync on mobile Chrome:** SR continues after pauses; scroll resumes after ~2s silence; active line centers smoothly; no spurious 50+ word jumps.
+3. **Manual verify player layout:** Bottom slider 20–50% → empty band at bottom; no horizontal scrollbar.
+4. Production deploy when owner ready (`deploy/README.md`).
 
 ---
 
@@ -67,7 +66,7 @@
 | 5 | Manual phone test on hotspot IP (LAN + multi-QR) — re-scan all multi-QR codes after deploy |
 | 6 | Manual device check: bottom clearance + no horizontal scroll on play route |
 | 7 | Manual device check: adaptive mic sync (sequential read + metadata skip) |
-| 8 | **Bug:** speech sync starts on mobile Chrome (mic permission granted after Caddyfile fix), recognises initial lines, then freezes — no further SR events / scroll stops. Investigate `sr.error` / `sr.end` in console (`localStorage.setItem('tp:debug','1')`); likely SR session silently ending after first restart cycle on mobile. |
+| 8 | **Mobile sign-off:** verify SR restart fix + silence resume scroll on device. Debug: `localStorage.setItem('tp:debug','1')`; expect `sr.end` → `sr.startInstance reason:"restart"` and lever scroll after ~2s pause. | **Code fix shipped** 2026-05-25 — manual verify pending |
 
 ---
 
@@ -121,6 +120,7 @@
 | 2026-05-24 (close) | Mic sync engagement fix | Play auto-enables SR; ES toggle syncActive bug; vitest 144/144 |
 | 2026-05-24 (close) | Mic device routing + SR track start | mic selector, label remap, `start(audioTrack)`; Play no auto-sync; vitest 157/157 |
 | 2026-05-24 (close) | Verification hardening + log hygiene | fixed FE lint blockers; App route async assertions; test-mode `tp-sync` debug gating; FE lint/typecheck/tests green in container |
+| 2026-05-25 | Mobile speech sync fixes | SR fresh restart on `onend`; center scroll tuning; silence releases mark → lever scroll; vitest 165/165 |
 
 ---
 
@@ -130,15 +130,15 @@ See `.work/plans/UNKNOWNS.md` — U9 resolved (M7 LAN + multi-QR). U1/U6/U8 clos
 
 ---
 
-## Last verification (2026-05-24 close)
+## Last verification (2026-05-25 close)
 
 ```
 npm run lint          → exit 0 (frontend container)
 npm run typecheck     → exit 0 (frontend container)
-npm test -- --run     → 157/157 (frontend container)
+npm test -- --run     → 165/165 (frontend container)
 ```
 
-**Device manual check:** adaptive mic sync (heyday + `sr.startInstance mode:track`) + bottom clearance + horizontal scroll — **not verified** (owner).
+**Device manual check:** adaptive mic sync (SR restart, silence resume, center scroll) + bottom clearance + horizontal scroll — **not verified** (owner).
 
 ---
 

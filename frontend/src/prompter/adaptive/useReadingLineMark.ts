@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type RefObject } from "react";
+import { useLayoutEffect, type RefObject } from "react";
 
 import { clearReadingLineMark, markReadingLine } from "./readingLineMark";
 import { syncLog, syncLogOnChange } from "./syncDebug";
@@ -16,7 +16,7 @@ export type UseReadingLineMarkOptions = {
 /**
  * Underlines the current reading line in red in the DOM.
  * Scroll follows this mark — not raw speech indices.
- * Holds the last mark through brief silence gaps.
+ * Clears the mark during silence so baseline scrolling can bring the next paragraph into view.
  */
 export function useReadingLineMark({
   scriptRootRef,
@@ -24,12 +24,6 @@ export function useReadingLineMark({
   engaged,
   scriptWordsVersion,
 }: UseReadingLineMarkOptions): void {
-  const heldWordIndexRef = useRef<number | null>(null);
-
-  if (readingWordIndex !== null) {
-    heldWordIndexRef.current = readingWordIndex;
-  }
-
   useLayoutEffect(() => {
     syncLogOnChange("mark.readingWordIndex", readingWordIndex, "readingWordIndex changed");
   }, [readingWordIndex]);
@@ -41,21 +35,20 @@ export function useReadingLineMark({
     }
 
     if (!engaged) {
-      heldWordIndexRef.current = null;
       clearReadingLineMark(root);
       syncLog("mark.clear", { reason: "disengaged" });
       return;
     }
 
-    const wordIndex = heldWordIndexRef.current;
-    if (wordIndex === null) {
+    if (readingWordIndex === null) {
       clearReadingLineMark(root);
+      syncLog("mark.clear", { reason: "silence" });
       return;
     }
 
-    const anchor = markReadingLine(root, wordIndex);
+    const anchor = markReadingLine(root, readingWordIndex);
     syncLog("mark.line", {
-      wordIndex,
+      wordIndex: readingWordIndex,
       found: Boolean(anchor),
       word: anchor?.textContent,
     });

@@ -26,7 +26,7 @@ const WORD_BUFFER_SIZE = 44;
 const MATCH_WINDOW_WORDS = 20;
 /** Interim SR words merged into the match window for faster live re-alignment. */
 const INTERIM_TAIL_WORDS = 8;
-const SILENCE_TIMEOUT_MS = 1800;
+export const SILENCE_TIMEOUT_MS = 2200;
 const LANG_RETRY_UNMATCHED_THRESHOLD = 8;
 const SR_RESTART_DELAY_MS = 280;
 
@@ -248,7 +248,7 @@ export function useSpeechTracker({
           clearTimeout(silenceTimerRef.current);
         }
         silenceTimerRef.current = setTimeout(() => {
-          if (!cancelled && !calibratedRef.current) {
+          if (!cancelled) {
             syncLog("sr.silence", { timeoutMs: SILENCE_TIMEOUT_MS });
             setReadingWordIndex(null);
           }
@@ -427,14 +427,14 @@ export function useSpeechTracker({
             return;
           }
 
+          currentRecognition = startRecognition();
           if (retryWithNextLang) {
             retryWithNextLang = false;
-            currentRecognition = startRecognition();
             startRecognitionInstance(currentRecognition, "langRetry");
             return;
           }
 
-          startRecognitionInstance(rec, "restart");
+          startRecognitionInstance(currentRecognition, "restart");
         }, SR_RESTART_DELAY_MS);
       };
 

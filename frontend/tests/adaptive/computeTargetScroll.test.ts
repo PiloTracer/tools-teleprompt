@@ -42,7 +42,7 @@ describe("computeTargetScrollTop", () => {
       }),
     } as unknown as HTMLElement;
 
-    expect(computeTargetScrollTop(word, viewport)).toBe(408);
+    expect(computeTargetScrollTop(word, viewport)).toBe(360);
   });
 });
 
@@ -74,7 +74,7 @@ describe("getReadingLineWordElements", () => {
 });
 
 describe("computeReadingLineTargetScrollTop", () => {
-  it("places the read line at the upper-middle band", () => {
+  it("places the read line at the vertical middle", () => {
     const viewport = {
       getBoundingClientRect: () => ({
         top: 0,
@@ -111,7 +111,7 @@ describe("computeReadingLineTargetScrollTop", () => {
       }),
     });
 
-    expect(computeReadingLineTargetScrollTop(word, viewport, root)).toBe(358);
+    expect(computeReadingLineTargetScrollTop(word, viewport, root)).toBe(310);
   });
 });
 
@@ -133,8 +133,8 @@ describe("isReadingLineCentered", () => {
 
     const word = {
       getBoundingClientRect: () => ({
-        top: 142,
-        bottom: 162,
+        top: 190,
+        bottom: 210,
         left: 0,
         right: 0,
         width: 0,
@@ -146,7 +146,7 @@ describe("isReadingLineCentered", () => {
     } as unknown as HTMLElement;
 
     expect(isReadingLineCentered(word, viewport)).toBe(true);
-    expect(READ_CENTER_RATIO).toBe(0.38);
+    expect(READ_CENTER_RATIO).toBe(0.5);
   });
 });
 
