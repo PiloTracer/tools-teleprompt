@@ -64,6 +64,19 @@ test.describe("S2 home editor visual milestone", () => {
 
     await expect(page.locator(".ds-mobile-nav")).toBeVisible();
 
+    const mobileNav = page.locator(".ds-mobile-nav");
+    await expect(mobileNav.getByRole("link", { name: "Editor" })).toBeVisible();
+    await expect(mobileNav.getByRole("link", { name: "Player" })).toBeVisible();
+    await expect(mobileNav.getByRole("link", { name: "Settings" })).toBeVisible();
+    await expect(mobileNav.getByRole("link", { name: "Handoff" })).toBeVisible();
+
+    const links = mobileNav.getByRole("link");
+    await expect(links).toHaveCount(4);
+    for (const link of await links.all()) {
+      const fits = await link.evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
+      expect(fits, `nav label clipped: ${await link.textContent()}`).toBe(true);
+    }
+
     await page.screenshot({
       path: "../tmp/playwright-results/s2-editor-mobile.png",
       fullPage: true,

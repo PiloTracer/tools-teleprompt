@@ -10,7 +10,7 @@ export type WordMatchResult = {
 };
 
 /** Max script words the cursor may advance in one SR event (sequential reading). */
-export const MAX_FORWARD_WORD_JUMP = 12;
+export const MAX_FORWARD_WORD_JUMP = 18;
 
 /** How far ahead to search when the user skips metadata or non-spoken lines. */
 export const SKIP_AHEAD_SEARCH_LIMIT = 100;
@@ -22,13 +22,13 @@ export const MIN_SKIP_AHEAD_MATCH = 4;
 export const MIN_SKIP_AHEAD_DISTINCTIVE = 2;
 
 /** Recent SR tail — only these words drive steady advance. */
-export const ADVANCE_TAIL_WORDS = 10;
+export const ADVANCE_TAIL_WORDS = 12;
 
 /** Max sequential word advances per SR tick (catch-up within one utterance). */
-export const MAX_ADVANCE_STEPS_PER_TICK = 6;
+export const MAX_ADVANCE_STEPS_PER_TICK = 8;
 
 /** Min consecutive matches to lock on before calibrated. */
-export const MIN_INITIAL_LOCK_RUN = 4;
+export const MIN_INITIAL_LOCK_RUN = 3;
 
 /** How far into the script to search for the opening lock-on. */
 export const INITIAL_LOCK_SEARCH_LIMIT = 250;
@@ -260,7 +260,7 @@ export function shouldAcceptWordMatch(
       matched.score >= 0.375
     );
   }
-  if (forwardJump <= 4 && matched.matchedWords >= 1) {
+  if (forwardJump <= 6 && matched.matchedWords >= 1) {
     return true;
   }
   if (forwardJump <= MAX_FORWARD_WORD_JUMP && matched.matchedWords >= 2) {
@@ -551,6 +551,13 @@ export function advanceFromCursor(
 
   if (sequential && sequential.matchedWords >= 2) {
     return toWordMatchResult(sequential, tail.length);
+  }
+
+  if (sequential && sequential.matchedWords >= 1) {
+    const jump = sequential.endIndex - cursorWord;
+    if (jump >= 1 && jump <= 8) {
+      return toWordMatchResult(sequential, tail.length);
+    }
   }
 
   const skipAhead = findBestAlignment(

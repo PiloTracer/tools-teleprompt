@@ -2,13 +2,19 @@
 export const READ_CENTER_RATIO = 0.5;
 
 /** Stop micro-adjustments when the read line is within this band of the target ratio. */
-export const SCROLL_CENTER_TOLERANCE_RATIO = 0.04;
+export const SCROLL_CENTER_TOLERANCE_RATIO = 0.055;
 
-/** Seconds to reach ~63% of target error for scroll position. */
-export const SCROLL_TRACK_RESPONSE_SEC = 0.2;
+/** Seconds to reach ~63% of target error for scroll position (steady tracking). */
+export const SCROLL_TRACK_RESPONSE_SEC = 0.28;
+
+/** Slower easing when correcting a large vertical offset (reposition after skip-ahead). */
+export const SCROLL_TRACK_LARGE_ERROR_RESPONSE_SEC = 0.36;
+
+/** Pixel error above which large-offset easing applies. */
+export const SCROLL_TRACK_LARGE_ERROR_PX = 160;
 
 /** Max scroll correction speed (px/s). */
-export const SCROLL_TRACK_MAX_PX_PER_SEC = 320;
+export const SCROLL_TRACK_MAX_PX_PER_SEC = 400;
 
 /** Pixels — words on the same visual row within this tolerance. */
 export const READING_LINE_ROW_TOLERANCE_PX = 6;

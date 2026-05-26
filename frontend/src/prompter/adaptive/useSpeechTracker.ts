@@ -29,11 +29,12 @@ import {
 } from "./syncDebug";
 import { startSpeechRecognition } from "./speechRecognitionStart";
 
-const WORD_BUFFER_SIZE = 44;
-const MATCH_WINDOW_WORDS = 20;
+const WORD_BUFFER_SIZE = 48;
+const MATCH_WINDOW_WORDS = 28;
 /** Interim SR words merged into the match window for faster live re-alignment. */
-const INTERIM_TAIL_WORDS = 8;
-export const SILENCE_TIMEOUT_MS = 2200;
+const INTERIM_TAIL_WORDS = 12;
+/** Pause before clearing the reading mark and resuming lever scroll (~1.75s). */
+export const SILENCE_TIMEOUT_MS = 1750;
 const LANG_RETRY_UNMATCHED_THRESHOLD = 8;
 const SR_RESTART_DELAY_MS = 280;
 

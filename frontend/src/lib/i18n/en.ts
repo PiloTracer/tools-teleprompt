@@ -5,6 +5,11 @@ export const en = {
     player: "Player",
     settings: "Settings",
     handoff: "Handoff",
+    /** Short labels for fixed bottom nav (<768px); full names stay in aria-label. */
+    editorShort: "Edit",
+    playerShort: "Play",
+    settingsShort: "Prefs",
+    handoffShort: "Link",
   },
   editor: {
     label: "Script",

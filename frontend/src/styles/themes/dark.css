@@ -36,8 +36,8 @@
 
 [data-theme="dark"] .tp-nav a.active,
 [data-theme="dark"] .ds-mobile-nav a.active {
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: color-mix(in srgb, var(--color-accent) 22%, var(--color-bg-elevated));
+  color: var(--color-accent-hover);
 }
 
 [data-theme="dark"] .ds-segmented__label {

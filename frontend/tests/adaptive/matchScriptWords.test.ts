@@ -404,12 +404,20 @@ describe("shouldAcceptWordMatch", () => {
   });
 
   it("rejects skip-ahead jumps with only one matched word", () => {
-    expect(shouldAcceptWordMatch(matchResult({ wordIndex: 210, score: 0.5, matchedWords: 1 }), 199)).toBe(
-      false,
-    );
-    expect(matchRejectReason(matchResult({ wordIndex: 213, score: 0.5, matchedWords: 1 }), 199)).toBe(
-      "weak_skip_match",
-    );
+    const cursor = 199;
+    const beyondSequential = cursor + MAX_FORWARD_WORD_JUMP + 3;
+    expect(
+      shouldAcceptWordMatch(
+        matchResult({ wordIndex: beyondSequential, score: 0.5, matchedWords: 1 }),
+        cursor,
+      ),
+    ).toBe(false);
+    expect(
+      matchRejectReason(
+        matchResult({ wordIndex: beyondSequential, score: 0.5, matchedWords: 1 }),
+        cursor,
+      ),
+    ).toBe("weak_skip_match");
   });
 
   it("accepts small sequential steps with partial scores", () => {

@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-25 — API Settings test isolation; full suite green (API 26/26, FE 167/167)
+**Closed:** 2026-05-25 — mobile editor nav fix; adaptive sync tuning (silence 1.75s, matcher + scroll); partial device sign-off
 
 **Updated:** 2026-05-25
 
-**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`. API `populate_by_name` + test env isolation shipped. FE **167/167** + API **26/26** pass 2026-05-25 (`.env.dev` and `.env.example`). **Mobile device sign-off still pending** (Open owner actions #7–#8).
+**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`. FE **167/167** pass in container after session changes. **Device sign-off partial:** A1–A2 pass; A3 partial; A4 needs re-test after matcher/scroll tuning; mobile editor nav fixed; player layout (B) not re-run this session.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -36,8 +36,8 @@
 ## Fresh start — next session
 
 1. `@session-control start`
-2. **Manual verify adaptive sync on mobile Chrome:** SR continues after pauses; scroll resumes after ~2s silence; active line centers smoothly; no spurious 50+ word jumps.
-3. **Manual verify player layout:** Bottom slider 20–50% → empty band at bottom; no horizontal scrollbar.
+2. **Re-verify adaptive sync on mobile Chrome** after matcher/scroll tuning — focus A3 smooth centering and A4 line lock speed; debug `localStorage.setItem('tp:debug','1')`.
+3. **Manual verify player layout** — bottom slider 20–50%; no horizontal scrollbar.
 4. Production deploy when owner ready (`deploy/README.md`).
 
 ---
@@ -64,9 +64,10 @@
 | 3 | Production: set `API_OTP_HMAC_SECRET`; confirm Caddy forwards client IP |
 | 4 | Optional: Lighthouse PWA audit (W6) |
 | 5 | Manual phone test on hotspot IP (LAN + multi-QR) — re-scan all multi-QR codes after deploy |
-| 6 | Manual device check: bottom clearance + no horizontal scroll on play route |
-| 7 | Manual device check: adaptive mic sync (sequential read + metadata skip) |
-| 8 | **Mobile sign-off:** verify SR restart fix + silence resume scroll on device. Debug: `localStorage.setItem('tp:debug','1')`; expect `sr.end` → `sr.startInstance reason:"restart"` and lever scroll after ~2s pause. | **Code fix shipped** 2026-05-25 — manual verify pending |
+| 6 | Manual device check: bottom clearance + no horizontal scroll on play route | **Not verified** this session |
+| 7 | Manual device check: adaptive mic sync (sequential read + metadata skip) | **Partial** — A1–A2 pass; A3 partial; A4 fail pre-tune; re-test after commit |
+| 8 | **Mobile sign-off:** SR restart + silence resume + line tracking | **Partial** 2026-05-25 — silence ~1.75s; matcher/scroll tuned; A4 re-test pending |
+| 9 | Mobile editor bottom nav (clipped Settings / broken tabs) | **Fixed** 2026-05-25 — short labels + flex shrink |
 
 ---
 
@@ -123,6 +124,7 @@
 | 2026-05-25 | Mobile speech sync fixes | SR fresh restart on `onend`; center scroll tuning; silence releases mark → lever scroll; vitest 165/165 |
 | 2026-05-25 | session close commit push | Scroll perf (marked-line only); dark range track token; settings-changed event; UI sounds removed; FE 167/167 |
 | 2026-05-25 | session close commit push | API Settings populate_by_name; test env isolation; origin regression tests; API 26/26 |
+| 2026-05-25 | session close commit push | Mobile nav fix; adaptive silence/matcher/scroll tuning; partial device sign-off; FE 167/167 |
 
 ---
 
@@ -143,7 +145,7 @@ ruff check .          → exit 0 (api container)
 pyright .             → exit 0 (api container)
 ```
 
-**Device manual check:** adaptive mic sync + bottom clearance + horizontal scroll — **not verified** (owner). OS mic on/off sound when tapping EN/ES is **not app-controllable**.
+**Device manual check:** A1–A2 pass; A3 partial; A4 fail (pre-tune) — **re-test after matcher/scroll commit**. Player bottom clearance — **not verified**. Mobile editor nav — **fixed**. OS mic on/off sound when tapping EN/ES is **not app-controllable**.
 
 ---
 

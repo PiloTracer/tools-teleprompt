@@ -5,6 +5,10 @@ import {
   computeReadingLineTargetScrollFromElements,
   isReadingLineCenteredFromElements,
   READ_CENTER_RATIO,
+  SCROLL_TRACK_LARGE_ERROR_PX,
+  SCROLL_TRACK_LARGE_ERROR_RESPONSE_SEC,
+  SCROLL_TRACK_MAX_PX_PER_SEC,
+  SCROLL_TRACK_RESPONSE_SEC,
 } from "./computeTargetScroll";
 import { getMarkedReadingLine } from "./readingLineMark";
 import {
@@ -57,6 +61,7 @@ export function useSyncScroll({
   const speedRef = useRef(speed);
   const lastModeRef = useRef<"track" | "lever" | null>(null);
   const lastMarkedWordRef = useRef<string | null>(null);
+  const lastMarkedIndexRef = useRef<number | null>(null);
 
   speedRef.current = speed;
 
@@ -74,6 +79,7 @@ export function useSyncScroll({
       trackCarryRef.current = 0;
       lastModeRef.current = null;
       lastMarkedWordRef.current = null;
+      lastMarkedIndexRef.current = null;
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
@@ -138,24 +144,40 @@ export function useSyncScroll({
         if (lineEl && markedLine) {
           const { lineWords } = markedLine;
           const wordKey = lineEl.dataset.word ?? lineEl.textContent ?? "";
+          const wordIndex = Number(lineEl.dataset.word);
           if (lastMarkedWordRef.current !== wordKey) {
             syncLog("scroll.trackLine", {
               wordIndex: lineEl.dataset.word,
               word: lineEl.textContent,
             });
+            const prevIndex = lastMarkedIndexRef.current;
+            const jump =
+              Number.isFinite(wordIndex) && prevIndex !== null
+                ? Math.abs(wordIndex - prevIndex)
+                : Number.POSITIVE_INFINITY;
+            if (jump > 3) {
+              trackCarryRef.current = 0;
+            }
             lastMarkedWordRef.current = wordKey;
-            trackCarryRef.current = 0;
+            lastMarkedIndexRef.current = Number.isFinite(wordIndex) ? wordIndex : null;
           }
 
           const centered = isReadingLineCenteredFromElements(lineWords, el);
           if (!centered) {
             const before = el.scrollTop;
             const target = computeReadingLineTargetScrollFromElements(lineWords, el);
+            const errorPx = Math.abs(target - before);
+            const responseSec =
+              errorPx > SCROLL_TRACK_LARGE_ERROR_PX
+                ? SCROLL_TRACK_LARGE_ERROR_RESPONSE_SEC
+                : SCROLL_TRACK_RESPONSE_SEC;
             const result = applySmoothScrollTowardTarget(
               el.scrollTop,
               trackCarryRef.current,
               target,
               deltaSec,
+              responseSec,
+              SCROLL_TRACK_MAX_PX_PER_SEC,
             );
             trackCarryRef.current = result.carryPx;
             el.scrollTop = result.scrollTop;
@@ -186,6 +208,7 @@ export function useSyncScroll({
             });
           }
           lastMarkedWordRef.current = null;
+          lastMarkedIndexRef.current = null;
           trackCarryRef.current = 0;
           const clampedSpeed = clampScrollSpeed(speedRef.current);
           const deltaPx = BASE_SCROLL_PX_PER_SEC * clampedSpeed * deltaSec;
@@ -216,6 +239,7 @@ export function useSyncScroll({
       leverCarryRef.current = 0;
       trackCarryRef.current = 0;
       lastMarkedWordRef.current = null;
+      lastMarkedIndexRef.current = null;
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;

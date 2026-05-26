@@ -1,12 +1,12 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-25 (session close — API Settings test isolation; full suite green)
+**Updated:** 2026-05-25 (session close — mobile nav fix; adaptive sync tuning; partial device sign-off)
 
 ---
 
 ## Recommended next
 
-1. **Manual device verify adaptive sync on mobile Chrome** — SR continues after pauses; scroll resumes after ~2s silence; active line centers smoothly; no spurious 50+ word jumps. Debug: `localStorage.setItem('tp:debug','1')`.
+1. **Re-verify adaptive sync on mobile Chrome** (post-tuning) — A3 smooth centering; A4 line lock speed; silence resume ~1.75s. Debug: `localStorage.setItem('tp:debug','1')`.
 2. **Manual device verify player layout** — Bottom slider 20–50%; no horizontal scrollbar on long scripts.
 3. Production deploy when owner ready (`deploy/README.md`).
 4. Manual phone test on hotspot IP (LAN + multi-QR).
@@ -18,8 +18,9 @@
 | Item | Blocker |
 |------|---------|
 | Production deploy | Owner sign-off + env secrets (`API_OTP_HMAC_SECRET`) |
-| Adaptive mic sync sign-off | Manual device check not yet recorded |
+| Adaptive mic sync sign-off | Partial (A1–A2 pass; A3–A4 re-test after tuning) |
 | Player bottom clearance sign-off | Manual device check not yet recorded |
+| Mobile editor nav | Fixed 2026-05-25 — verify on device after deploy |
 
 ---
 
@@ -134,6 +135,8 @@ M8 complete — see **Done — M8 iteration (archived)** below.
 | Mic sync engagement fix (Play auto-enable + ES toggle syncActive) | 2026-05-24 |
 | Mic device routing + SR track start (mic selector, label remap, Play no auto-sync) | 2026-05-24 |
 | Mobile speech sync fixes (SR restart, center scroll, silence resume) | 2026-05-25 |
+| Mobile editor nav fix (short labels, flex shrink) | 2026-05-25 |
+| Adaptive sync tuning (silence 1.75s, matcher window, smooth scroll) | 2026-05-25 |
 
 ---
 

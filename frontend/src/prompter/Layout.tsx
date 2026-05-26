@@ -9,18 +9,24 @@ type LayoutProps = {
 };
 
 const NAV_ITEMS = [
-  { to: "/", end: true as const, label: en.nav.editor },
-  { to: "/play", end: false as const, label: en.nav.player },
-  { to: "/settings", end: false as const, label: en.nav.settings },
-  { to: "/handoff", end: false as const, label: en.nav.handoff },
-];
+  { to: "/", end: true as const, label: en.nav.editor, shortLabel: en.nav.editorShort },
+  { to: "/play", end: false as const, label: en.nav.player, shortLabel: en.nav.playerShort },
+  { to: "/settings", end: false as const, label: en.nav.settings, shortLabel: en.nav.settingsShort },
+  { to: "/handoff", end: false as const, label: en.nav.handoff, shortLabel: en.nav.handoffShort },
+] as const;
 
-function NavLinks() {
+function NavLinks({ compact = false }: { compact?: boolean }) {
   return (
     <>
       {NAV_ITEMS.map((item) => (
-        <NavLink key={item.to} to={item.to} end={item.end}>
-          {item.label}
+        <NavLink
+          key={item.to}
+          to={item.to}
+          end={item.end}
+          aria-label={compact ? item.label : undefined}
+          title={compact ? item.label : undefined}
+        >
+          {compact ? item.shortLabel : item.label}
         </NavLink>
       ))}
     </>
@@ -45,7 +51,7 @@ export function Layout({ children }: LayoutProps) {
         {children}
       </div>
       <nav className="ds-mobile-nav" aria-label="Primary mobile">
-        <NavLinks />
+        <NavLinks compact />
       </nav>
     </div>
   );

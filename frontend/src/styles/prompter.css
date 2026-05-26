@@ -102,12 +102,32 @@
 }
 
 @media (max-width: 767px) {
+  .tp-content {
+    padding: var(--space-3) var(--space-3) var(--space-4);
+  }
+
+  .tp-header {
+    padding-inline: var(--space-3);
+  }
+
+  .tp-brand {
+    font-size: var(--font-size-md);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .tp-upload-btn.ds-button {
     min-height: var(--size-touch-min);
   }
 
   .tp-format-control .ds-segmented__label {
     min-height: var(--size-touch-min);
+  }
+
+  .tp-home-grid {
+    gap: var(--space-4);
   }
 }
 
