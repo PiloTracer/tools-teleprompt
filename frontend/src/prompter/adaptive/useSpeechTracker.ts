@@ -3,8 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import {
   advanceRepeatedlyFromCursor,
   findInitialLock,
+  findRelockAnchoredToIndex,
   matchRejectReason,
+  RELOCK_BACKWARD_VIEWPORT_GAP,
+  RELOCK_DRIFT_BACKWARD_VIEWPORT_GAP,
+  shouldAcceptRelockMatch,
   shouldAcceptWordMatch,
+  type WordMatchResult,
 } from "./matchScriptWords";
 import { tokenize } from "./normalize";
 import {
@@ -33,10 +38,58 @@ const WORD_BUFFER_SIZE = 48;
 const MATCH_WINDOW_WORDS = 28;
 /** Interim SR words merged into the match window for faster live re-alignment. */
 const INTERIM_TAIL_WORDS = 12;
-/** Pause before clearing the reading mark and resuming lever scroll (~1.75s). */
-export const SILENCE_TIMEOUT_MS = 1750;
+/**
+ * Stage-1 silence: clear the visual reading mark so the user sees
+ * "I'm listening". Cursor and calibration are preserved — a resume within
+ * the re-lock window continues from the existing cursor via normal steady
+ * advance (no re-lock, no wobble on natural breath pauses).
+ */
+export const SILENCE_MARK_CLEAR_MS = 1750;
+
+/** Alias preserved for backward compatibility. */
+export const SILENCE_TIMEOUT_MS = SILENCE_MARK_CLEAR_MS;
+
+/**
+ * Stage-2 silence: arm viewport-anchored re-lock for the next SR result.
+ * Set above natural between-sentence breath pauses so brief silences do not
+ * trigger re-lock.
+ */
+export const RELOCK_ARM_TIMEOUT_MS = 4000;
+
 const LANG_RETRY_UNMATCHED_THRESHOLD = 8;
 const SR_RESTART_DELAY_MS = 280;
+
+/**
+ * Failed re-lock attempts (after silence) before falling back to a global
+ * initial-lock scan. Keeps the post-silence latency bounded.
+ */
+const MAX_RELOCK_FALLBACK_TICKS = 5;
+
+/**
+ * Consecutive steady-advance ticks returning no match before we force a
+ * viewport-anchored re-lock — handles silent drift where the silence timer
+ * never fired (sustained low-volume mumbling, etc.). Set conservatively so
+ * brief mic noise gaps during normal reading do not trip it.
+ */
+const SILENT_DRIFT_NULL_TICKS = 10;
+
+/**
+ * Min spoken words required before attempting re-lock. A short 2–3 word
+ * interim chunk is rarely unique within the search radius and produces
+ * imprecise landings that then cause back-and-forth as steady advance and
+ * drift-induced re-lock fight each other. Waiting one extra SR tick for a
+ * 5-word run dramatically stabilises the lock at the cost of ~0.3–0.7s of
+ * latency on the first re-attempt.
+ */
+const MIN_RELOCK_SPOKEN_WORDS = 5;
+
+/**
+ * After a successful re-lock, suppress *drift-induced* re-lock for this long.
+ * Lets steady advance settle, the scroll smoothly recenter, and the SR
+ * interim stabilise without firing a second re-lock attempt. Silence
+ * stage-2 timer is NOT suppressed (genuine long pauses still re-arm).
+ */
+const RELOCK_COOLDOWN_MS = 2000;
 
 function buildLangCandidates(primary: string): string[] {
   return buildRecognitionLangCandidates(primary);
@@ -56,6 +109,12 @@ export type UseSpeechTrackerOptions = {
   micDeviceId?: string;
   micDeviceLabel?: string;
   onMicDeviceRemapped?: (deviceId: string, deviceLabel: string) => void;
+  /**
+   * Returns the script word index currently at the viewport's read-zone band,
+   * or null if unknown. Called only at re-lock time (post-silence), never per
+   * SR result or per frame.
+   */
+  getViewportAnchorWordIndex?: () => number | null;
 };
 
 export type UseSpeechTrackerResult = {
@@ -98,6 +157,7 @@ export function useSpeechTracker({
   micDeviceId = "",
   micDeviceLabel = "",
   onMicDeviceRemapped,
+  getViewportAnchorWordIndex,
 }: UseSpeechTrackerOptions): UseSpeechTrackerResult {
   const supported = isSpeechRecognitionSupported();
 
@@ -111,7 +171,8 @@ export function useSpeechTracker({
   const cursorWordRef = useRef(0);
   const calibratedRef = useRef(false);
   const wordBufferRef = useRef<string[]>([]);
-  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const markClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const relockArmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shouldRunRef = useRef(false);
   const permissionDeniedRef = useRef(false);
   const scriptWordsRef = useRef(scriptWords);
@@ -120,12 +181,19 @@ export function useSpeechTracker({
   const micDeviceIdRef = useRef(micDeviceId);
   const micDeviceLabelRef = useRef(micDeviceLabel);
   const onMicDeviceRemappedRef = useRef(onMicDeviceRemapped);
+  const getViewportAnchorWordIndexRef = useRef(getViewportAnchorWordIndex);
+  const awaitingRelockRef = useRef(false);
+  const relockAttemptsRef = useRef(0);
+  const nullAdvanceStreakRef = useRef(0);
+  const relockTriggerRef = useRef<"silence" | "drift" | null>(null);
+  const relockCooldownUntilRef = useRef(0);
   scriptWordsRef.current = scriptWords;
   parsedLinesRef.current = parsedLines;
   metaOnlyWordsRef.current = buildMetaOnlyWords(parsedLines);
   micDeviceIdRef.current = micDeviceId;
   micDeviceLabelRef.current = micDeviceLabel;
   onMicDeviceRemappedRef.current = onMicDeviceRemapped;
+  getViewportAnchorWordIndexRef.current = getViewportAnchorWordIndex;
 
   useEffect(() => {
     syncLogBootOnce();
@@ -148,15 +216,24 @@ export function useSpeechTracker({
         syncLogThrottled("sr.skip.disabled", 3000, "sr.skip.disabled", { listen });
       }
       shouldRunRef.current = false;
-      if (silenceTimerRef.current !== null) {
-        clearTimeout(silenceTimerRef.current);
-        silenceTimerRef.current = null;
+      if (markClearTimerRef.current !== null) {
+        clearTimeout(markClearTimerRef.current);
+        markClearTimerRef.current = null;
+      }
+      if (relockArmTimerRef.current !== null) {
+        clearTimeout(relockArmTimerRef.current);
+        relockArmTimerRef.current = null;
       }
       setActive(false);
       setReadingWordIndex(null);
       setHasCalibrated(false);
       calibratedRef.current = false;
       cursorWordRef.current = 0;
+      awaitingRelockRef.current = false;
+      relockAttemptsRef.current = 0;
+      nullAdvanceStreakRef.current = 0;
+      relockTriggerRef.current = null;
+      relockCooldownUntilRef.current = 0;
       if (!enabled || !listen) {
         setRecognitionLanguage(null);
       }
@@ -183,6 +260,11 @@ export function useSpeechTracker({
     cursorWordRef.current = 0;
     wordBufferRef.current = [];
     calibratedRef.current = false;
+    awaitingRelockRef.current = false;
+    relockAttemptsRef.current = 0;
+    nullAdvanceStreakRef.current = 0;
+    relockTriggerRef.current = null;
+    relockCooldownUntilRef.current = 0;
 
     const detectedLang = detectScriptLanguage(parsedLinesRef.current);
     const langCandidates = buildLangCandidates(detectedLang);
@@ -252,15 +334,48 @@ export function useSpeechTracker({
       syncLog("sr.recognition.lang", { lang: rec.lang, langIndex });
 
       const armSilenceTimer = () => {
-        if (silenceTimerRef.current !== null) {
-          clearTimeout(silenceTimerRef.current);
+        if (markClearTimerRef.current !== null) {
+          clearTimeout(markClearTimerRef.current);
         }
-        silenceTimerRef.current = setTimeout(() => {
-          if (!cancelled) {
-            syncLog("sr.silence", { timeoutMs: SILENCE_TIMEOUT_MS });
-            setReadingWordIndex(null);
+        if (relockArmTimerRef.current !== null) {
+          clearTimeout(relockArmTimerRef.current);
+        }
+
+        // Stage 1: clear the visual mark — feedback only; cursor preserved so a
+        // resume within RELOCK_ARM_TIMEOUT_MS continues via steady advance.
+        markClearTimerRef.current = setTimeout(() => {
+          if (cancelled) {
+            return;
           }
-        }, SILENCE_TIMEOUT_MS);
+          syncLog("sr.silence.markClear", {
+            timeoutMs: SILENCE_MARK_CLEAR_MS,
+            cursor: cursorWordRef.current,
+            calibrated: calibratedRef.current,
+          });
+          setReadingWordIndex(null);
+        }, SILENCE_MARK_CLEAR_MS);
+
+        // Stage 2: longer silence — user may have skipped ahead while the lever
+        // moved the viewport. Arm viewport-anchored re-lock for the next SR
+        // result and drop the stale spoken tail. Silence-triggered re-lock is
+        // NOT subject to the cooldown.
+        relockArmTimerRef.current = setTimeout(() => {
+          if (cancelled) {
+            return;
+          }
+          syncLog("sr.silence.relockArm", {
+            timeoutMs: RELOCK_ARM_TIMEOUT_MS,
+            cursor: cursorWordRef.current,
+            calibrated: calibratedRef.current,
+          });
+          wordBufferRef.current = [];
+          if (calibratedRef.current) {
+            awaitingRelockRef.current = true;
+            relockTriggerRef.current = "silence";
+            relockAttemptsRef.current = 0;
+            nullAdvanceStreakRef.current = 0;
+          }
+        }, RELOCK_ARM_TIMEOUT_MS);
       };
 
       rec.onstart = () => {
@@ -318,18 +433,119 @@ export function useSpeechTracker({
         if (wordsToMatch.length > 0) {
           const cursor = cursorWordRef.current;
           const isInitialLock = !calibratedRef.current;
-          const matched = isInitialLock
-            ? findInitialLock(wordsToMatch, scriptWordsRef.current)
-            : advanceRepeatedlyFromCursor(
-                wordsToMatch,
-                scriptWordsRef.current,
-                cursor,
-                metaOnlyWordsRef.current,
-              );
+          const needsRelock = !isInitialLock && awaitingRelockRef.current;
 
-          if (matched !== null && shouldAcceptWordMatch(matched, cursor, isInitialLock)) {
+          let matched: WordMatchResult | null = null;
+          let matchMode: "initial" | "relock" | "relockFallback" | "advance" = "advance";
+          let relockAnchor: number = cursor;
+          let usedFallback = false;
+
+          if (isInitialLock) {
+            matchMode = "initial";
+            matched = findInitialLock(wordsToMatch, scriptWordsRef.current);
+          } else if (needsRelock) {
+            matchMode = "relock";
+            const trigger = relockTriggerRef.current;
+            const backwardGap =
+              trigger === "drift"
+                ? RELOCK_DRIFT_BACKWARD_VIEWPORT_GAP
+                : RELOCK_BACKWARD_VIEWPORT_GAP;
+
+            // Defer until we have enough spoken signal — a 2–3 word interim
+            // chunk is rarely unique within the search radius and produces
+            // imprecise landings that then ping-pong with steady advance.
+            if (wordsToMatch.length < MIN_RELOCK_SPOKEN_WORDS) {
+              syncLogThrottled(
+                "sr.relock.defer",
+                1000,
+                "sr.relock.deferShortTail",
+                {
+                  trigger,
+                  spokenLen: wordsToMatch.length,
+                  needed: MIN_RELOCK_SPOKEN_WORDS,
+                  cursor,
+                },
+              );
+              armSilenceTimer();
+              return;
+            }
+
+            const viewportAnchor = getViewportAnchorWordIndexRef.current?.();
+            relockAnchor =
+              viewportAnchor !== null && viewportAnchor !== undefined
+                ? viewportAnchor
+                : cursor;
+            matched = findRelockAnchoredToIndex(
+              wordsToMatch,
+              scriptWordsRef.current,
+              relockAnchor,
+            );
+            // Anti-wobble: reject re-lock matches that land behind the cursor
+            // unless the viewport itself moved back. Drift-triggered re-lock
+            // uses a smaller gap so a wrong earlier lock can self-correct.
+            if (
+              matched !== null &&
+              !shouldAcceptRelockMatch(matched, cursor, relockAnchor, backwardGap)
+            ) {
+              syncLogThrottled(
+                `sr.relock.rejectBackward.${matched.wordIndex}`,
+                2000,
+                "sr.relock.rejectBackward",
+                {
+                  trigger,
+                  matched: matched.wordIndex,
+                  cursor,
+                  anchor: relockAnchor,
+                  backwardGap,
+                  matchedWords: matched.matchedWords,
+                  distinctive: matched.distinctiveMatchedWords,
+                },
+              );
+              matched = null;
+            }
+            if (matched === null) {
+              relockAttemptsRef.current += 1;
+              if (relockAttemptsRef.current >= MAX_RELOCK_FALLBACK_TICKS) {
+                matchMode = "relockFallback";
+                usedFallback = true;
+                matched = findInitialLock(wordsToMatch, scriptWordsRef.current);
+                if (
+                  matched !== null &&
+                  !shouldAcceptRelockMatch(matched, cursor, relockAnchor, backwardGap)
+                ) {
+                  matched = null;
+                }
+              }
+            }
+          } else {
+            matched = advanceRepeatedlyFromCursor(
+              wordsToMatch,
+              scriptWordsRef.current,
+              cursor,
+              metaOnlyWordsRef.current,
+            );
+          }
+
+          // Re-lock and initial-lock branches use the matcher's own acceptance
+          // criteria (strict run + distinctive minimum). Steady advance still
+          // requires shouldAcceptWordMatch to guard against tiny coincidences.
+          const matchAccepted =
+            matched !== null &&
+            (isInitialLock || needsRelock
+              ? true
+              : shouldAcceptWordMatch(matched, cursor, false));
+
+          if (matched !== null && matchAccepted) {
+            const wasRelocking = needsRelock;
             calibratedRef.current = true;
             unmatchedCount = 0;
+            awaitingRelockRef.current = false;
+            relockAttemptsRef.current = 0;
+            nullAdvanceStreakRef.current = 0;
+            if (wasRelocking) {
+              relockCooldownUntilRef.current = Date.now() + RELOCK_COOLDOWN_MS;
+            }
+            relockTriggerRef.current = null;
             const from = cursor;
             const to = matched.wordIndex;
             cursorWordRef.current = to;
@@ -338,22 +554,62 @@ export function useSpeechTracker({
             setRecognitionLanguage(rec.lang);
             const scriptWordsList = scriptWordsRef.current;
             syncLog("sr.advance", {
+              mode: matchMode,
               from,
               to,
               delta: to - from,
+              relockAnchor: wasRelocking ? relockAnchor : undefined,
+              usedFallback: usedFallback || undefined,
               score: Number(matched.score.toFixed(3)),
+              matchedWords: matched.matchedWords,
+              distinctive: matched.distinctiveMatchedWords,
               scriptWord: scriptWordsList[to]?.slice(0, 40),
               progressPct: Number(((to / Math.max(scriptWordsList.length - 1, 1)) * 100).toFixed(1)),
               lang: rec.lang,
             });
           } else {
             unmatchedCount += 1;
+            if (!isInitialLock && !needsRelock) {
+              nullAdvanceStreakRef.current += 1;
+              if (nullAdvanceStreakRef.current >= SILENT_DRIFT_NULL_TICKS) {
+                const inCooldown = Date.now() < relockCooldownUntilRef.current;
+                if (inCooldown) {
+                  // Cooldown active: let the scroll and SR interim settle
+                  // before another re-lock fires. Reset streak so we re-evaluate
+                  // after cooldown rather than re-triggering on the next null.
+                  nullAdvanceStreakRef.current = 0;
+                  syncLogThrottled(
+                    "sr.relock.suppressDrift",
+                    2000,
+                    "sr.relock.suppressDriftCooldown",
+                    {
+                      cursor,
+                      cooldownMsRemaining: Math.max(
+                        0,
+                        relockCooldownUntilRef.current - Date.now(),
+                      ),
+                    },
+                  );
+                } else {
+                  awaitingRelockRef.current = true;
+                  relockTriggerRef.current = "drift";
+                  relockAttemptsRef.current = 0;
+                  nullAdvanceStreakRef.current = 0;
+                  wordBufferRef.current = [];
+                  syncLog("sr.relock.forced", {
+                    reason: "silentDrift",
+                    cursor,
+                  });
+                }
+              }
+            }
             if (matched !== null) {
               syncLogThrottled(
                 `sr.reject.${matched.wordIndex}.${cursor}`,
                 2000,
                 "sr.matchRejected",
                 {
+                  mode: matchMode,
                   wordIndex: matched.wordIndex,
                   score: Number(matched.score.toFixed(3)),
                   cursor,
@@ -364,8 +620,11 @@ export function useSpeechTracker({
               );
             } else {
               syncLogThrottled("sr.noMatch", 1500, "sr.noMatch", {
+                mode: matchMode,
                 unmatchedCount,
+                relockAttempts: relockAttemptsRef.current,
                 cursor,
+                relockAnchor: needsRelock ? relockAnchor : undefined,
                 heard: wordsToMatch.slice(-6),
                 windowWords: wordsToMatch.length,
                 interim: interimText.trim().slice(-80),
@@ -539,9 +798,18 @@ export function useSpeechTracker({
       }
       calibratedRef.current = false;
       cursorWordRef.current = 0;
-      if (silenceTimerRef.current !== null) {
-        clearTimeout(silenceTimerRef.current);
-        silenceTimerRef.current = null;
+      awaitingRelockRef.current = false;
+      relockAttemptsRef.current = 0;
+      nullAdvanceStreakRef.current = 0;
+      relockTriggerRef.current = null;
+      relockCooldownUntilRef.current = 0;
+      if (markClearTimerRef.current !== null) {
+        clearTimeout(markClearTimerRef.current);
+        markClearTimerRef.current = null;
+      }
+      if (relockArmTimerRef.current !== null) {
+        clearTimeout(relockArmTimerRef.current);
+        relockArmTimerRef.current = null;
       }
       setActive(false);
       setReadingWordIndex(null);

@@ -33,6 +33,35 @@ export const MIN_INITIAL_LOCK_RUN = 3;
 /** How far into the script to search for the opening lock-on. */
 export const INITIAL_LOCK_SEARCH_LIMIT = 250;
 
+/** Script words searched on each side of the viewport anchor during silence re-lock. */
+export const RELOCK_SEARCH_RADIUS = 300;
+
+/**
+ * Min consecutive strict matches required to accept a silence re-lock.
+ * Raised from 3 to eliminate ambiguous landings: a 3-word run is rarely unique
+ * within the search radius (function-words + common short words repeat). A
+ * 4-word run with 3 distinctive hits effectively names a unique position.
+ */
+export const MIN_RELOCK_MATCH = 4;
+
+/** Min non-function-word hits required to accept a silence re-lock. */
+export const MIN_RELOCK_DISTINCTIVE = 3;
+
+/**
+ * Anti-jitter guard for silence-triggered re-lock: backward matches require
+ * the viewport anchor to be at least this many words behind the cursor before
+ * we accept a backward jump. Prevents brief mid-sentence pauses from snapping
+ * the mark backward 1–2 words.
+ */
+export const RELOCK_BACKWARD_VIEWPORT_GAP = 20;
+
+/**
+ * Drift-triggered re-lock uses a smaller backward gap so the system can
+ * correct an earlier imprecise lock. Drift only fires after many steady
+ * advances returned null, which is strong evidence the cursor is wrong.
+ */
+export const RELOCK_DRIFT_BACKWARD_VIEWPORT_GAP = 5;
+
 /** Allowed skipped word (SR typo or missed script token) per alignment. */
 export const MAX_ALIGN_GAPS = 1;
 
@@ -615,6 +644,98 @@ export function advanceRepeatedlyFromCursor(
   }
 
   return last;
+}
+
+/**
+ * After silence: re-lock the spoken tail against the script, biased toward the
+ * viewport anchor (where the user is now reading), not the stale speech cursor.
+ *
+ * Uses strict matching and requires both a minimum matched run and a minimum
+ * distinctive (non-function-word) count, so coincidental function-word hits
+ * near the prior cursor cannot win over a real match further away. Tie-breaks
+ * to the candidate nearest the anchor.
+ */
+export function findRelockAnchoredToIndex(
+  transcriptWords: string[],
+  scriptWords: string[],
+  anchorIndex: number,
+  radius = RELOCK_SEARCH_RADIUS,
+): WordMatchResult | null {
+  const spoken = transcriptWords.map(normalize).filter(Boolean);
+  if (spoken.length < MIN_RELOCK_MATCH || scriptWords.length === 0) {
+    return null;
+  }
+
+  const clampedAnchor = Math.max(0, Math.min(anchorIndex, scriptWords.length - 1));
+  const lo = Math.max(0, clampedAnchor - radius);
+  const hi = Math.min(scriptWords.length - 1, clampedAnchor + radius);
+
+  let best: { aligned: AlignResult; distance: number } | null = null;
+
+  for (let scriptStart = lo; scriptStart <= hi; scriptStart += 1) {
+    const scanEnd = Math.min(scriptStart + spoken.length + MAX_ALIGN_GAPS + 2, hi);
+    const aligned = alignWithGaps(
+      spoken,
+      scriptWords,
+      scriptStart,
+      scanEnd,
+      wordsMatchStrict,
+    );
+    if (
+      aligned.matchedWords < MIN_RELOCK_MATCH ||
+      aligned.distinctiveMatchedWords < MIN_RELOCK_DISTINCTIVE
+    ) {
+      continue;
+    }
+    if (isUnspokenScriptWord(scriptWords[aligned.endIndex] ?? "")) {
+      continue;
+    }
+
+    const distance = Math.abs(aligned.endIndex - clampedAnchor);
+    if (
+      !best ||
+      aligned.distinctiveMatchedWords > best.aligned.distinctiveMatchedWords ||
+      (aligned.distinctiveMatchedWords === best.aligned.distinctiveMatchedWords &&
+        aligned.matchedWords > best.aligned.matchedWords) ||
+      (aligned.distinctiveMatchedWords === best.aligned.distinctiveMatchedWords &&
+        aligned.matchedWords === best.aligned.matchedWords &&
+        distance < best.distance)
+    ) {
+      best = { aligned, distance };
+    }
+  }
+
+  if (!best) {
+    return null;
+  }
+
+  return {
+    wordIndex: best.aligned.endIndex,
+    score: Math.min(1, best.aligned.matchedWords / spoken.length),
+    matchedWords: best.aligned.matchedWords,
+    distinctiveMatchedWords: best.aligned.distinctiveMatchedWords,
+  };
+}
+
+/**
+ * Anti-wobble gate for re-lock results: never accept a match behind the cursor
+ * unless the viewport anchor confirms the user actually moved back.
+ *
+ * Returns true when the re-lock candidate should be applied to the cursor.
+ */
+export function shouldAcceptRelockMatch(
+  matched: WordMatchResult | null,
+  cursorWord: number,
+  viewportAnchor: number,
+  backwardGapTolerance = RELOCK_BACKWARD_VIEWPORT_GAP,
+): boolean {
+  if (matched === null) {
+    return false;
+  }
+  if (matched.wordIndex >= cursorWord) {
+    return true;
+  }
+  return viewportAnchor < cursorWord - backwardGapTolerance;
 }
 
 /** @deprecated Used by tests — delegates to sequential advance. */

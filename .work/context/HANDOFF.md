@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-25 — mobile editor nav fix; adaptive sync tuning (silence 1.75s, matcher + scroll); partial device sign-off
+**Closed:** 2026-05-26 — viewport-anchored re-lock matcher for adaptive speech sync; two-stage silence; anti-wobble guard; drift-aware backward gap; re-lock cooldown. FE **179/179** in container. Mobile device re-test pending owner.
 
-**Updated:** 2026-05-25
+**Updated:** 2026-05-26
 
-**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`. FE **167/167** pass in container after session changes. **Device sign-off partial:** A1–A2 pass; A3 partial; A4 needs re-test after matcher/scroll tuning; mobile editor nav fixed; player layout (B) not re-run this session.
+**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync rework round-3** on `main`. FE **179/179** pass in container after session changes (+12 from baseline 167). **Device sign-off pending re-test** of the new re-lock pipeline on mobile Chrome.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -36,9 +36,11 @@
 ## Fresh start — next session
 
 1. `@session-control start`
-2. **Re-verify adaptive sync on mobile Chrome** after matcher/scroll tuning — focus A3 smooth centering and A4 line lock speed; debug `localStorage.setItem('tp:debug','1')`.
-3. **Manual verify player layout** — bottom slider 20–50%; no horizontal scrollbar.
-4. Production deploy when owner ready (`deploy/README.md`).
+2. **Mobile device re-test adaptive re-lock (round-3 tuning)** — focus the "resume after metadata-scroll" path: re-acquisition must be quick AND stable (no back-and-forth wobble). Debug log keys: `sr.silence.markClear`, `sr.silence.relockArm`, `sr.relock.deferShortTail`, `sr.relock.rejectBackward`, `sr.relock.suppressDriftCooldown`, `sr.advance` with `mode: "relock"`. Enable via `localStorage.setItem('tp:debug','1')`.
+3. If wobble persists: bump `MIN_RELOCK_SPOKEN_WORDS` 5→6 or `MIN_RELOCK_MATCH` 4→5 (`frontend/src/prompter/adaptive/{useSpeechTracker,matchScriptWords}.ts`).
+4. If re-acquisition feels too slow: drop `MIN_RELOCK_SPOKEN_WORDS` to 4.
+5. **Manual verify player layout** — bottom slider 20–50%; no horizontal scrollbar.
+6. Production deploy when owner ready (`deploy/README.md`).
 
 ---
 
@@ -51,7 +53,7 @@
 | Master plan | **Approved** v1.2 (`20260521-full-plan.md`) |
 | Implementation-ready | **yes** |
 | M1–M7 | **complete** 2026-05-21 |
-| M8 adaptive teleprompter | **re-shipped** 2026-05-24 — speech sync + skip-ahead matcher (after interim removal `95f804e`) |
+| M8 adaptive teleprompter | **re-shipped** 2026-05-24 — speech sync + skip-ahead matcher (after interim removal `95f804e`); 2026-05-26 viewport-anchored re-lock + two-stage silence + anti-wobble + drift-aware backward gap + cooldown |
 
 ---
 
@@ -68,6 +70,7 @@
 | 7 | Manual device check: adaptive mic sync (sequential read + metadata skip) | **Partial** — A1–A2 pass; A3 partial; A4 fail pre-tune; re-test after commit |
 | 8 | **Mobile sign-off:** SR restart + silence resume + line tracking | **Partial** 2026-05-25 — silence ~1.75s; matcher/scroll tuned; A4 re-test pending |
 | 9 | Mobile editor bottom nav (clipped Settings / broken tabs) | **Fixed** 2026-05-25 — short labels + flex shrink |
+| 10 | **Mobile re-test:** adaptive re-lock (round-3 tuning) — quick re-acquisition + stable mark after metadata-scroll | Pending owner |
 
 ---
 
@@ -125,6 +128,10 @@
 | 2026-05-25 | session close commit push | Scroll perf (marked-line only); dark range track token; settings-changed event; UI sounds removed; FE 167/167 |
 | 2026-05-25 | session close commit push | API Settings populate_by_name; test env isolation; origin regression tests; API 26/26 |
 | 2026-05-25 | session close commit push | Mobile nav fix; adaptive silence/matcher/scroll tuning; partial device sign-off; FE 167/167 |
+| 2026-05-26 | Adaptive re-lock rearchitect — round 1 | `findRelockAnchoredToIndex` (viewport-anchored, strict, distinctive-required, tie-break to nearest); `findViewportAnchorWordIndex`; tracker `awaitingRelock` + viewport-anchor callback wired through Player; FE 173/173 |
+| 2026-05-26 | Adaptive re-lock — round 2 (wobble) | Two-stage silence (`SILENCE_MARK_CLEAR_MS=1750`, `RELOCK_ARM_TIMEOUT_MS=4000`); `shouldAcceptRelockMatch` anti-wobble gate (`RELOCK_BACKWARD_VIEWPORT_GAP=20`); silent-drift threshold 5→10; FE 179/179 |
+| 2026-05-26 | Adaptive re-lock — round 3 (hesitation) | `MIN_RELOCK_MATCH` 3→4; `MIN_RELOCK_DISTINCTIVE` 2→3; `MIN_RELOCK_SPOKEN_WORDS=5` defer-gate; drift-vs-silence trigger with `RELOCK_DRIFT_BACKWARD_VIEWPORT_GAP=5`; `RELOCK_COOLDOWN_MS=2000` for drift-induced re-lock; FE 179/179 |
+| 2026-05-26 | session close commit push | Adaptive re-lock rounds 1–3 + bookends on `main`; device re-test pending |
 
 ---
 
@@ -134,18 +141,18 @@ See `.work/plans/UNKNOWNS.md` — U9 resolved (M7 LAN + multi-QR). U1/U6/U8 clos
 
 ---
 
-## Last verification (2026-05-25)
+## Last verification (2026-05-26)
 
 ```
 npm run lint          → exit 0 (frontend container)
 npm run typecheck     → exit 0 (frontend container)
-npm test -- --run     → 167/167 (frontend container)
-pytest tests/ -q      → 26/26 (api container; .env.dev and .env.example)
-ruff check .          → exit 0 (api container)
-pyright .             → exit 0 (api container)
+npm test -- --run     → 179/179 (frontend container)
+pytest tests/ -q      → not re-run this session (no api changes)
+ruff check .          → not re-run this session (no api changes)
+pyright .             → not re-run this session (no api changes)
 ```
 
-**Device manual check:** A1–A2 pass; A3 partial; A4 fail (pre-tune) — **re-test after matcher/scroll commit**. Player bottom clearance — **not verified**. Mobile editor nav — **fixed**. OS mic on/off sound when tapping EN/ES is **not app-controllable**.
+**Device manual check:** Re-test **pending** after this commit. User feedback during session: round-1 fix removed the original "line not identified / snaps back" failure; round-2 reduced wobble; round-3 targets residual hesitation after metadata-scroll. Player bottom clearance — still not verified. Mobile editor nav — fixed (prior session).
 
 ---
 

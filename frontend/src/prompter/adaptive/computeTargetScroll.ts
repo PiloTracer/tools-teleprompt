@@ -76,6 +76,50 @@ export function computeReadingLineTargetScrollFromElements(
   return viewport.scrollTop + (lineCenterY - targetCenterY);
 }
 
+/**
+ * Word index of the `.tp-word` whose vertical center is closest to the
+ * viewport's read-zone band — i.e. where the user is currently reading.
+ *
+ * Returns null when no annotated words intersect the viewport (script not
+ * yet annotated, or scrolled fully off-screen).
+ */
+export function findViewportAnchorWordIndex(
+  viewport: HTMLElement,
+  scriptRoot: HTMLElement,
+  centerRatio = READ_CENTER_RATIO,
+): number | null {
+  const viewportRect = viewport.getBoundingClientRect();
+  if (viewportRect.height <= 0) {
+    return null;
+  }
+  const targetY = viewportRect.top + viewportRect.height * centerRatio;
+  const words = scriptRoot.querySelectorAll<HTMLElement>(".tp-word");
+  if (words.length === 0) {
+    return null;
+  }
+
+  let bestIndex: number | null = null;
+  let bestDistance = Infinity;
+
+  for (const el of words) {
+    const rect = el.getBoundingClientRect();
+    if (rect.bottom < viewportRect.top || rect.top > viewportRect.bottom) {
+      continue;
+    }
+    const center = rect.top + rect.height / 2;
+    const distance = Math.abs(center - targetY);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      const raw = Number(el.dataset.word);
+      if (Number.isFinite(raw)) {
+        bestIndex = raw;
+      }
+    }
+  }
+
+  return bestIndex;
+}
+
 /** Target scrollTop to center the full visual line containing `wordEl`. */
 export function computeReadingLineTargetScrollTop(
   wordEl: HTMLElement,

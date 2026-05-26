@@ -1,15 +1,17 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-25 (session close — mobile nav fix; adaptive sync tuning; partial device sign-off)
+**Updated:** 2026-05-26 (session close — adaptive re-lock rounds 1–3; viewport-anchored matcher; two-stage silence; anti-wobble guard; drift-aware backward gap; cooldown)
 
 ---
 
 ## Recommended next
 
-1. **Re-verify adaptive sync on mobile Chrome** (post-tuning) — A3 smooth centering; A4 line lock speed; silence resume ~1.75s. Debug: `localStorage.setItem('tp:debug','1')`.
-2. **Manual device verify player layout** — Bottom slider 20–50%; no horizontal scrollbar on long scripts.
-3. Production deploy when owner ready (`deploy/README.md`).
-4. Manual phone test on hotspot IP (LAN + multi-QR).
+1. **Mobile device re-test — adaptive re-lock (round-3 tuning).** Specifically the "resume after metadata-scroll" path: re-acquisition must be quick AND stable; no back-and-forth wobble. Enable debug with `localStorage.setItem('tp:debug','1')`. Watch keys: `sr.silence.markClear`, `sr.silence.relockArm`, `sr.relock.deferShortTail`, `sr.relock.rejectBackward`, `sr.relock.suppressDriftCooldown`, `sr.advance` `mode:"relock"`.
+2. If wobble persists → bump `MIN_RELOCK_SPOKEN_WORDS` 5→6 or `MIN_RELOCK_MATCH` 4→5 (`frontend/src/prompter/adaptive/{useSpeechTracker,matchScriptWords}.ts`).
+3. If re-acquisition feels too slow → drop `MIN_RELOCK_SPOKEN_WORDS` to 4.
+4. Manual device verify player layout — bottom slider 20–50%; no horizontal scrollbar on long scripts.
+5. Production deploy when owner ready (`deploy/README.md`).
+6. Manual phone test on hotspot IP (LAN + multi-QR).
 
 ---
 
@@ -18,7 +20,7 @@
 | Item | Blocker |
 |------|---------|
 | Production deploy | Owner sign-off + env secrets (`API_OTP_HMAC_SECRET`) |
-| Adaptive mic sync sign-off | Partial (A1–A2 pass; A3–A4 re-test after tuning) |
+| Adaptive mic sync sign-off (round-3) | Pending owner device re-test |
 | Player bottom clearance sign-off | Manual device check not yet recorded |
 | Mobile editor nav | Fixed 2026-05-25 — verify on device after deploy |
 
@@ -137,6 +139,7 @@ M8 complete — see **Done — M8 iteration (archived)** below.
 | Mobile speech sync fixes (SR restart, center scroll, silence resume) | 2026-05-25 |
 | Mobile editor nav fix (short labels, flex shrink) | 2026-05-25 |
 | Adaptive sync tuning (silence 1.75s, matcher window, smooth scroll) | 2026-05-25 |
+| Adaptive re-lock rearchitect (viewport-anchored matcher; two-stage silence; anti-wobble; drift-aware backward gap; cooldown) | 2026-05-26 |
 
 ---
 

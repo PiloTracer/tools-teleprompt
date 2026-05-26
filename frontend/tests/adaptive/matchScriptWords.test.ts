@@ -4,12 +4,17 @@ import {
   advanceFromCursor,
   advanceRepeatedlyFromCursor,
   findInitialLock,
+  findRelockAnchoredToIndex,
   isSkippableScriptToken,
   matchRejectReason,
   matchTranscriptToWordIndex,
   MAX_FORWARD_WORD_JUMP,
+  MIN_RELOCK_DISTINCTIVE,
+  MIN_RELOCK_MATCH,
   MIN_SKIP_AHEAD_DISTINCTIVE,
   MIN_SKIP_AHEAD_MATCH,
+  RELOCK_BACKWARD_VIEWPORT_GAP,
+  shouldAcceptRelockMatch,
   shouldAcceptWordMatch,
   type WordMatchResult,
   wordsMatchLenient,
@@ -350,6 +355,262 @@ describe("isSkippableScriptToken", () => {
     expect(isSkippableScriptToken("11")).toBe(true);
     expect(isSkippableScriptToken("[CARD")).toBe(true);
     expect(isSkippableScriptToken("estandares")).toBe(false);
+  });
+});
+
+describe("findRelockAnchoredToIndex", () => {
+  // Script designed to mimic a real script with three "blocks":
+  //   - Block A (early content where the stale cursor was when silence began)
+  //   - Block B (metadata-ish lines the lever scrolled past during silence)
+  //   - Block C (the line the user actually resumes reading)
+  const SCRIPT_BLOCK_A = [
+    "Hoy",
+    "presentamos",
+    "nuestro",
+    "nuevo",
+    "producto",
+    "que",
+    "facilita",
+    "el",
+    "trabajo",
+    "diario",
+    "de",
+    "los",
+    "equipos",
+    "creativos",
+    "en",
+    "la",
+    "industria",
+    "audiovisual",
+    "y",
+    "permite",
+    "compartir",
+    "guiones",
+    "rapidamente",
+    "con",
+    "cualquier",
+    "dispositivo",
+    "movil",
+    "conectado",
+    "a",
+    "la",
+    "misma",
+    "red",
+    "domestica",
+    "sin",
+    "necesitar",
+    "configuracion",
+    "complicada",
+    "ni",
+    "instalaciones",
+    "tediosas",
+  ];
+  const SCRIPT_BLOCK_B = [
+    "Mostrar",
+    "tarjeta",
+    "cinco",
+    "segundos",
+    "Logo",
+    "principal",
+    "Subtitulo",
+    "Autor",
+    "Fecha",
+    "Version",
+    "Open",
+    "source",
+    "github",
+    "punto",
+    "com",
+    "PiloTracer",
+    "tools",
+    "teleprompt",
+    "Documentacion",
+    "Ayuda",
+    "Captura",
+    "pantalla",
+    "cargando",
+    "Bob",
+    "editor",
+    "argentino",
+    "Mostrar",
+    "tarjeta",
+    "cinco",
+    "segundos",
+    "Logo",
+    "Subtitulo",
+    "Autor",
+    "Fecha",
+    "Version",
+    "PiloTracer",
+    "tools",
+    "teleprompt",
+    "Logo",
+    "principal",
+  ];
+  const SCRIPT_BLOCK_C = [
+    "Continuamos",
+    "explicando",
+    "como",
+    "funciona",
+    "el",
+    "sistema",
+    "adaptativo",
+    "basado",
+    "en",
+    "reconocimiento",
+    "de",
+    "voz",
+    "para",
+    "seguir",
+    "el",
+    "ritmo",
+    "natural",
+    "del",
+    "presentador",
+    "evitando",
+    "interrupciones",
+    "molestas",
+    "durante",
+    "la",
+    "grabacion",
+    "profesional",
+    "del",
+    "contenido",
+    "final",
+    "publicado",
+  ];
+  const SCRIPT = [...SCRIPT_BLOCK_A, ...SCRIPT_BLOCK_B, ...SCRIPT_BLOCK_C];
+  const BLOCK_C_START = SCRIPT_BLOCK_A.length + SCRIPT_BLOCK_B.length;
+
+  it("locks onto resumed speech far past the stale cursor", () => {
+    const anchorIndex = BLOCK_C_START + 2;
+    const result = findRelockAnchoredToIndex(
+      ["continuamos", "explicando", "como", "funciona", "el", "sistema", "adaptativo"],
+      SCRIPT,
+      anchorIndex,
+    );
+    expect(result).not.toBeNull();
+    expect(result?.wordIndex).toBeGreaterThanOrEqual(BLOCK_C_START);
+    expect(result?.wordIndex).toBeLessThan(BLOCK_C_START + SCRIPT_BLOCK_C.length);
+    expect(result?.matchedWords).toBeGreaterThanOrEqual(MIN_RELOCK_MATCH);
+    expect(result?.distinctiveMatchedWords).toBeGreaterThanOrEqual(MIN_RELOCK_DISTINCTIVE);
+  });
+
+  it("does not snap back behind the anchor on function-word coincidences", () => {
+    // Spoken text legitimately matches Block C, but Block A also has "el" / "en" / "la"
+    // sprinkled. The anchor is in Block C; the result must stay near the anchor.
+    const anchorIndex = BLOCK_C_START + 5;
+    const result = findRelockAnchoredToIndex(
+      ["el", "sistema", "adaptativo", "basado", "en", "reconocimiento"],
+      SCRIPT,
+      anchorIndex,
+    );
+    expect(result).not.toBeNull();
+    expect(result?.wordIndex).toBeGreaterThanOrEqual(BLOCK_C_START);
+  });
+
+  it("rejects matches with only function-word coincidences (no distinctive run)", () => {
+    const anchorIndex = BLOCK_C_START + 5;
+    const result = findRelockAnchoredToIndex(
+      ["el", "la", "de", "en", "y", "que"],
+      SCRIPT,
+      anchorIndex,
+    );
+    expect(result).toBeNull();
+  });
+
+  it("returns null when the spoken tail is too short", () => {
+    const result = findRelockAnchoredToIndex(["sistema"], SCRIPT, 50);
+    expect(result).toBeNull();
+  });
+
+  it("respects the search radius bound", () => {
+    // Anchor far from where the real match sits; tiny radius keeps it out of reach.
+    const anchorIndex = 0;
+    const result = findRelockAnchoredToIndex(
+      ["continuamos", "explicando", "como", "funciona"],
+      SCRIPT,
+      anchorIndex,
+      4,
+    );
+    expect(result).toBeNull();
+  });
+
+  it("tie-breaks toward the candidate nearest the anchor", () => {
+    // Two distinctive phrases that match the spoken tail: one early, one late.
+    const tieScript = [
+      "alpha",
+      "presentamos",
+      "nuevo",
+      "producto",
+      "creativo",
+      "interesante",
+      ...Array(80).fill(0).map((_, i) => `palabra${i}`),
+      "presentamos",
+      "nuevo",
+      "producto",
+      "creativo",
+      "interesante",
+      ...Array(20).fill(0).map((_, i) => `cola${i}`),
+    ];
+    const earlyMatchEnd = 5; // end of first "presentamos nuevo producto creativo interesante"
+    const lateMatchStart = 1 + 5 + 80; // index of second "presentamos"
+    const lateMatchEnd = lateMatchStart + 4;
+
+    const earlyAnchorResult = findRelockAnchoredToIndex(
+      ["presentamos", "nuevo", "producto", "creativo", "interesante"],
+      tieScript,
+      earlyMatchEnd + 2,
+    );
+    expect(earlyAnchorResult?.wordIndex).toBe(earlyMatchEnd);
+
+    const lateAnchorResult = findRelockAnchoredToIndex(
+      ["presentamos", "nuevo", "producto", "creativo", "interesante"],
+      tieScript,
+      lateMatchStart + 2,
+    );
+    expect(lateAnchorResult?.wordIndex).toBe(lateMatchEnd);
+  });
+});
+
+describe("shouldAcceptRelockMatch", () => {
+  function r(wordIndex: number, partial?: Partial<WordMatchResult>): WordMatchResult {
+    return {
+      wordIndex,
+      score: 0.6,
+      matchedWords: MIN_RELOCK_MATCH,
+      distinctiveMatchedWords: MIN_RELOCK_DISTINCTIVE,
+      ...partial,
+    };
+  }
+
+  it("returns false for null match", () => {
+    expect(shouldAcceptRelockMatch(null, 100, 100)).toBe(false);
+  });
+
+  it("accepts forward matches (anti-wobble does not block forward progress)", () => {
+    expect(shouldAcceptRelockMatch(r(105), 100, 100)).toBe(true);
+    expect(shouldAcceptRelockMatch(r(100), 100, 100)).toBe(true);
+  });
+
+  it("rejects backward match when viewport anchor is not behind cursor", () => {
+    expect(shouldAcceptRelockMatch(r(98), 100, 100)).toBe(false);
+    expect(shouldAcceptRelockMatch(r(98), 100, 110)).toBe(false);
+  });
+
+  it("rejects backward match when viewport is only slightly behind cursor", () => {
+    const slightlyBack = 100 - (RELOCK_BACKWARD_VIEWPORT_GAP - 1);
+    expect(shouldAcceptRelockMatch(r(95), 100, slightlyBack)).toBe(false);
+  });
+
+  it("accepts backward match when viewport itself moved significantly back", () => {
+    const significantlyBack = 100 - (RELOCK_BACKWARD_VIEWPORT_GAP + 1);
+    expect(shouldAcceptRelockMatch(r(60), 100, significantlyBack)).toBe(true);
+  });
+
+  it("respects a custom backward-gap tolerance override", () => {
+    expect(shouldAcceptRelockMatch(r(95), 100, 90, 5)).toBe(true);
+    expect(shouldAcceptRelockMatch(r(95), 100, 96, 5)).toBe(false);
   });
 });
 

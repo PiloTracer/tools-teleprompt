@@ -5,6 +5,7 @@ import {
   annotateScriptWords,
   clearScriptWordAnnotations,
 } from "./adaptive/annotateScriptWords";
+import { findViewportAnchorWordIndex } from "./adaptive/computeTargetScroll";
 import {
   detectScriptLanguage,
   formatRecognitionLanguageLabel,
@@ -118,6 +119,15 @@ export function Player() {
     setScriptWordsVersion((version) => version + 1);
   }, [html, hasScript, settings.fontSize, settings.sidePadding]);
 
+  const getViewportAnchorWordIndex = useCallback((): number | null => {
+    const viewport = viewportRef.current;
+    const root = scriptRootRef.current;
+    if (!viewport || !root) {
+      return null;
+    }
+    return findViewportAnchorWordIndex(viewport, root);
+  }, []);
+
   const onMicDeviceRemapped = useCallback((deviceId: string, deviceLabel: string) => {
     setSettings((prev) => {
       if (prev.micDeviceId === deviceId && prev.micDeviceLabel === deviceLabel) {
@@ -145,6 +155,7 @@ export function Player() {
     micDeviceId: settings.micDeviceId,
     micDeviceLabel: settings.micDeviceLabel,
     onMicDeviceRemapped,
+    getViewportAnchorWordIndex,
   });
 
   useReadingLineMark({
