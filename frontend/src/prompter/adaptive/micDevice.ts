@@ -209,7 +209,10 @@ export async function resolveMicForSpeech(
 export async function openMicSession(deviceId: string): Promise<MicSessionOpenResult> {
   const trimmed = deviceId.trim();
   if (!trimmed) {
-    return { stream: null, deviceIdUsed: "" };
+    // Default-input mode must still open getUserMedia so mobile Chrome can
+    // surface the permission prompt before SR starts.
+    const { stream, deviceIdUsed } = await acquireMicStream("");
+    return { stream, deviceIdUsed };
   }
   const { stream, deviceIdUsed } = await acquireMicStream(trimmed);
   return { stream, deviceIdUsed };

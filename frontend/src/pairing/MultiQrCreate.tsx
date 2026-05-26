@@ -166,6 +166,7 @@ export function MultiQrCreate({ embedded = false }: MultiQrCreateProps) {
           <QrFrame
             src={qrDataUrl}
             alt={en.handoff.multiImageAlt(activeChunk.index, activeChunk.total)}
+            hint={en.handoff.qrScanHintMulti}
             imageTestId="multi-qr-image"
           />
           <div className="tp-handoff-nav">

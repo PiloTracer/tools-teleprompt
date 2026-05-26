@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-24 — verification hardening complete (lint/typecheck/tests green, quieter test logs)
+**Closed:** 2026-05-25 — UIS-07 UX polish committed; Caddyfile mic permission fix; speech sync freeze on mobile discovered (open bug)
 
-**Updated:** 2026-05-24
+**Updated:** 2026-05-25
 
-**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`: mic SR → word matcher → reading-line underline → scroll track. **This session:** verification hardening + cleanup on current branch state: removed lint blockers, stabilized route assertions, applied deprecated dead-zone behavior, and gated `tp-sync` debug logs in test mode for clean CI signal. **FE checks in container:** lint pass, typecheck pass, vitest 157/157 pass. **Manual:** real-device heyday mic + SR still owner-verified.
+**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`. **This session:** UIS-07 UX polish (Toggle DS, Settings refactor, QR encode hardening) + Caddyfile `microphone=(self)` fix enabling mic prompt on mobile Chrome. FE checks last green 2026-05-24 (157/157). **Open bug:** speech sync starts on mobile then freezes mid-script (see Open owner actions #8).
 
 **Plan-master-ready:** 2026-05-20
 
@@ -36,9 +36,10 @@
 ## Fresh start — next session
 
 1. `@session-control start`
-2. **Manual verify adaptive sync on device:** read sequentially, skip metadata blocks, confirm no spurious 50+ word jumps; red underline stays on current line without layout shift.
-3. **Manual verify player layout:** Bottom slider 20–50% → empty band at bottom; no horizontal scrollbar on long lines.
-4. Production deploy when owner ready (`deploy/README.md`).
+2. **Investigate speech sync freeze on mobile Chrome** (open bug): SR starts, recognises first lines, then stops advancing — scroll freezes mid-script. See § Open owner actions #8.
+3. **Manual verify adaptive sync on device:** sequential read; no spurious 50+ word jumps; red underline tracks current line.
+4. **Manual verify player layout:** Bottom slider 20–50% → empty band at bottom; no horizontal scrollbar.
+5. Production deploy when owner ready (`deploy/README.md`).
 
 ---
 
@@ -66,6 +67,7 @@
 | 5 | Manual phone test on hotspot IP (LAN + multi-QR) — re-scan all multi-QR codes after deploy |
 | 6 | Manual device check: bottom clearance + no horizontal scroll on play route |
 | 7 | Manual device check: adaptive mic sync (sequential read + metadata skip) |
+| 8 | **Bug:** speech sync starts on mobile Chrome (mic permission granted after Caddyfile fix), recognises initial lines, then freezes — no further SR events / scroll stops. Investigate `sr.error` / `sr.end` in console (`localStorage.setItem('tp:debug','1')`); likely SR session silently ending after first restart cycle on mobile. |
 
 ---
 

@@ -1,0 +1,122 @@
+/* Toggle — settings-row switch (example C5). See .work.ui/design-system/Toggle.md */
+
+.ds-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--size-touch-min);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.ds-toggle:hover:not(:has(input:disabled)) {
+  background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+}
+
+.ds-toggle__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ds-toggle__label {
+  display: block;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.ds-toggle__description {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
+
+.ds-toggle__control {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 1.625rem;
+}
+
+.ds-toggle input[type="checkbox"] {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.ds-toggle__track {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--surface-inset);
+  box-shadow: var(--elevation-inset);
+  transition: background var(--duration-normal) var(--ease-standard);
+}
+
+.ds-toggle__thumb {
+  position: absolute;
+  top: 50%;
+  left: 0.125rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--color-bg-elevated);
+  box-shadow: var(--elevation-1);
+  pointer-events: none;
+  transition: transform var(--duration-normal) var(--ease-standard);
+  transform: translateY(-50%);
+}
+
+.ds-toggle input:checked + .ds-toggle__track {
+  background: var(--color-accent);
+}
+
+.ds-toggle input:checked + .ds-toggle__track .ds-toggle__thumb {
+  transform: translate(1.125rem, -50%);
+}
+
+.ds-toggle input:focus-visible + .ds-toggle__track {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.ds-toggle:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.ds-toggle[data-size="compact"] {
+  min-height: 2.25rem;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.ds-toggle[data-size="compact"] .ds-toggle__control {
+  width: 2.25rem;
+  height: 1.375rem;
+}
+
+.ds-toggle[data-size="compact"] .ds-toggle__thumb {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ds-toggle[data-size="compact"] input:checked + .ds-toggle__track .ds-toggle__thumb {
+  transform: translate(0.875rem, -50%);
+}

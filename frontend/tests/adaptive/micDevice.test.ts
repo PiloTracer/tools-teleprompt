@@ -72,9 +72,11 @@ describe("micDevice", () => {
     releaseMicStream(session.stream);
   });
 
-  it("openMicSession returns null stream for default", async () => {
+  it("openMicSession opens stream for default device to trigger permission prompt", async () => {
     const session = await openMicSession("");
-    expect(session.stream).toBeNull();
+    expect(session.stream).not.toBeNull();
+    expect(session.deviceIdUsed).toBe("mic-default");
+    releaseMicStream(session.stream);
   });
 
   it("resolveMicDeviceFromList matches by label when id changed", () => {

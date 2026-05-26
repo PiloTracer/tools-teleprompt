@@ -11,8 +11,8 @@
  *    — Hard limit on the full handoff URL (`origin + path + #fragment`). The qrcode
  *    library auto-detects byte mode because handoff URLs contain lowercase letters
  *    (scheme, hostname, path, base64url fragment); alphanumeric mode (~3391 chars) is
- *    not reachable without case-insensitive URLs. EC level L is used because QR codes
- *    are displayed on clean screens with minimal physical damage risk.
+ *    not reachable without case-insensitive URLs. EC level **M** is used when the URL
+ *    is short enough (~≤2200 chars) for better phone-camera scans; otherwise **L**.
  *    Mode detection MUST use {@link maxCompressedBytesForHandoffQr}
  *    and {@link maxMultiQrChunkBytes} derived from this value and `PUBLIC_ORIGIN` length.
  *
@@ -50,6 +50,12 @@ export const QR_FRAGMENT_THRESHOLD_BYTES = 8192;
  */
 export const QR_MAX_URL_CHARS = 2900;
 
+/**
+ * Prefer URLs at or below this size when possible so QR codes can use EC level M
+ * and lower module density (better phone-camera reliability on screens).
+ */
+export const QR_EC_M_PREFERRED_MAX_URL_CHARS = 2200;
+
 export function handoffReceiveUrlLength(origin: string, fragment: string): number {
   const base = origin.replace(/\/$/, "");
   return `${base}${HANDOFF_RECEIVE_PATH}#${fragment}`.length;
@@ -78,7 +84,9 @@ export function maxMultiQrChunkBytes(origin: string): number {
   const prefix =
     `${base}${MULTI_HANDOFF_RECEIVE_PATH}#${MULTI_HANDOFF_FRAGMENT_PREFIX}` +
     `${worstId}.${worstIndex}.${worstTotal}.`;
-  const maxB64Chars = QR_MAX_URL_CHARS - prefix.length;
+  // Intentionally keep chunks below hard capacity to improve scan reliability.
+  const targetUrlChars = Math.min(QR_EC_M_PREFERRED_MAX_URL_CHARS, QR_MAX_URL_CHARS);
+  const maxB64Chars = targetUrlChars - prefix.length;
   if (maxB64Chars <= 0) {
     return 0;
   }

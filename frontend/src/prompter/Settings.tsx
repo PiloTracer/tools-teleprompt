@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { Button } from "../components/ds/Button";
+import { Toggle } from "../components/ds/Toggle";
 import { en } from "../lib/i18n/en";
 import {
   BOTTOM_PADDING_MAX,
@@ -81,14 +82,21 @@ export function Settings() {
     };
 
   if (!hydrated) {
-    return <p className="tp-settings-loading">{en.settings.loading}</p>;
+    return (
+      <div className="tp-settings-loading" aria-busy="true" aria-live="polite">
+        <p>{en.settings.loading}</p>
+      </div>
+    );
   }
 
   return (
-    <form className="tp-settings ds-card" onSubmit={(e) => void onSubmit(e)}>
-      <h2 className="tp-settings__title">{en.settings.title}</h2>
+    <form className="tp-settings ds-card" onSubmit={(e) => void onSubmit(e)} aria-busy={false}>
+      <h1 className="tp-settings__title">{en.settings.title}</h1>
 
       <div className="tp-settings__fields">
+        <fieldset className="ds-section tp-settings__section">
+          <legend className="ds-section__legend">{en.settings.sectionDisplay}</legend>
+          <div className="ds-section__body">
         <label className="tp-settings__range ds-range">
           <span className="ds-range__label">{en.settings.speed}</span>
           <input
@@ -187,23 +195,25 @@ export function Settings() {
           </div>
         </div>
 
-        <label className="tp-settings__mirror ds-checkbox">
-          <input
-            type="checkbox"
-            checked={settings.mirror}
-            onChange={(e) => update("mirror", e.target.checked)}
-          />
-          <span className="ds-checkbox__label">{en.settings.mirror}</span>
-        </label>
+        <Toggle
+          className="tp-settings__toggle"
+          label={en.settings.mirror}
+          checked={settings.mirror}
+          onChange={(e) => update("mirror", e.target.checked)}
+        />
+          </div>
+        </fieldset>
 
-        <label className="tp-settings__mirror ds-checkbox">
-          <input
-            type="checkbox"
-            checked={settings.adaptiveEnabled}
-            onChange={(e) => update("adaptiveEnabled", e.target.checked)}
-          />
-          <span className="ds-checkbox__label">{en.settings.adaptiveEnabled}</span>
-        </label>
+        <fieldset className="ds-section tp-settings__section">
+          <legend className="ds-section__legend">{en.settings.sectionSpeech}</legend>
+          <div className="ds-section__body">
+        <Toggle
+          className="tp-settings__toggle"
+          label={en.settings.adaptiveEnabled}
+          description={en.settings.adaptiveEnabledHint}
+          checked={settings.adaptiveEnabled}
+          onChange={(e) => update("adaptiveEnabled", e.target.checked)}
+        />
 
         {settings.adaptiveEnabled ? (
           <label className="tp-settings__mic ds-select">
@@ -231,6 +241,8 @@ export function Settings() {
         {settings.adaptiveEnabled ? (
           <p className="tp-settings__privacy">{en.settings.adaptivePrivacy}</p>
         ) : null}
+          </div>
+        </fieldset>
       </div>
 
       <div className="tp-settings__actions">

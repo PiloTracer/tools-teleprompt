@@ -33,6 +33,10 @@ vi.mock("../src/pairing/client", () => ({
 
 vi.mock("qrcode", () => ({
   default: {
+    toString: vi.fn(
+      async (url: string, opts?: { errorCorrectionLevel?: string }) =>
+        `<svg xmlns="http://www.w3.org/2000/svg" data-ec="${opts?.errorCorrectionLevel ?? "L"}">${url.length}</svg>`,
+    ),
     toDataURL: vi.fn(async (url: string) => `data:image/png;base64,mock-${url.length}`),
   },
 }));
@@ -79,7 +83,10 @@ describe("HandoffCreate (M5-T8)", () => {
     await waitFor(() => {
       expect(screen.getByTestId("handoff-qr-mode")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("handoff-qr-image")).toHaveAttribute("src", expect.stringContaining("data:image/png"));
+    expect(screen.getByTestId("handoff-qr-image")).toHaveAttribute(
+      "src",
+      expect.stringContaining("data:image/svg+xml"),
+    );
     expect(mockedCreate).not.toHaveBeenCalled();
     const handoffLink = screen.getByTestId("handoff-qr-mode").querySelector("a[href*='handoff/receive']");
     expect(handoffLink?.getAttribute("href")).toMatch(/^http:\/\/10\.42\.0\.1:9173\/handoff\/receive#tp=v1\./);

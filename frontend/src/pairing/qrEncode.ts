@@ -5,6 +5,7 @@ import {
   HANDOFF_FRAGMENT_PREFIX,
   HANDOFF_RECEIVE_PATH,
   handoffReceiveUrlLength,
+  QR_EC_M_PREFERRED_MAX_URL_CHARS,
   QR_MAX_URL_CHARS,
 } from "./qrConstants";
 import {
@@ -64,17 +65,77 @@ export async function buildHandoffQrUrl(
   return handoffUrl;
 }
 
+/** ISO quiet zone + screen-scan tuning (see deploy/README handoff tips). */
+export const QR_RENDER_MARGIN = 4;
+
+/** SVG scales crisply on any display size; PNG fallback uses this width. */
+export const QR_RENDER_PNG_WIDTH = 1024;
+
+export const QR_EC_M_MAX_URL_CHARS = QR_EC_M_PREFERRED_MAX_URL_CHARS;
+
+export type QrErrorCorrectionLevel = "L" | "M";
+
+/**
+ * Prefer M (~15% recovery) for phone camera scans when the URL fits; L maximizes capacity.
+ */
+export function resolveQrErrorCorrectionLevel(urlLength: number): QrErrorCorrectionLevel {
+  return urlLength <= QR_EC_M_MAX_URL_CHARS ? "M" : "L";
+}
+
+function qrColorOptions() {
+  return {
+    dark: "#000000",
+    light: "#ffffff",
+  } as const;
+}
+
+function svgMarkupToDataUrl(svg: string): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+async function renderQrSvg(
+  handoffUrl: string,
+  errorCorrectionLevel: QrErrorCorrectionLevel,
+): Promise<string> {
+  return QRCode.toString(handoffUrl, {
+    type: "svg",
+    margin: QR_RENDER_MARGIN,
+    errorCorrectionLevel,
+    color: qrColorOptions(),
+  });
+}
+
 export async function generateHandoffQrDataUrl(handoffUrl: string): Promise<string> {
   assertHandoffUrlFitsInQr(handoffUrl);
+  const preferred = resolveQrErrorCorrectionLevel(handoffUrl.length);
   try {
-    return await QRCode.toDataURL(handoffUrl, {
-      margin: 2,
-      width: 512,
-      errorCorrectionLevel: "L",
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "QR encode failed";
-    throw new QrGenerationError(message);
+    const svg = await renderQrSvg(handoffUrl, preferred);
+    return svgMarkupToDataUrl(svg);
+  } catch (firstErr) {
+    if (preferred === "M") {
+      try {
+        const svg = await renderQrSvg(handoffUrl, "L");
+        return svgMarkupToDataUrl(svg);
+      } catch {
+        /* fall through to PNG */
+      }
+    }
+    try {
+      return await QRCode.toDataURL(handoffUrl, {
+        margin: QR_RENDER_MARGIN,
+        width: QR_RENDER_PNG_WIDTH,
+        errorCorrectionLevel: "L",
+        color: qrColorOptions(),
+      });
+    } catch (pngErr) {
+      const message =
+        pngErr instanceof Error
+          ? pngErr.message
+          : firstErr instanceof Error
+            ? firstErr.message
+            : "QR encode failed";
+      throw new QrGenerationError(message);
+    }
   }
 }
 

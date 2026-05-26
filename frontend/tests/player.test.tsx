@@ -290,10 +290,10 @@ describe("PlayerControls (M4-T2, R3–R4)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("checkbox", { name: /mirror/i })).toBeInTheDocument();
+      expect(screen.getByRole("switch", { name: /mirror/i })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("checkbox", { name: /mirror/i }));
+    fireEvent.click(screen.getByRole("switch", { name: /mirror/i }));
     expect(screen.getByLabelText(/teleprompter player/i)).toHaveClass("tp-player--mirror");
   });
 

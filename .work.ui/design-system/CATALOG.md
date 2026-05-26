@@ -1,6 +1,6 @@
 # Design system catalog — tools-teleprompt
 
-**Updated:** 2026-05-23 · **Path:** `.work.ui/design-system/CATALOG.md`  
+**Updated:** 2026-05-25 · **Path:** `.work.ui/design-system/CATALOG.md`  
 **Stack:** vanilla-css · **Tokens:** `frontend/src/styles/tokens.css`  
 **Prefix:** `ds-` (new primitives) · `tp-` (brownfield — migrate incrementally)  
 **Storybook:** n/a v1 (`DOCS_UI_STACK.md`) — stories deferred; document variants here before use
@@ -30,6 +30,7 @@
 | **RangeSlider** | primitive | `styles/components/ds-range.css` | default; optional `compact` | n/a | Native `input[type=range]` + label + value; `aria-valuemin/max/now` | S1 | **done** |
 | **Select** | primitive | `styles/components/ds-select.css` | default | n/a | Associated label; keyboard native | S1 | **done** |
 | **Checkbox** | primitive | `styles/components/ds-checkbox.css` | default | n/a | Label association; 44px row on mobile | S1 | **done** |
+| **Toggle** | primitive | `styles/components/ds-toggle.css` · [Toggle.md](./Toggle.md) · `components/ds/Toggle.tsx` | `default`, `compact` | n/a | `role="switch"`; label left / control right; ≥44px row (`default`) | S3 | **done** |
 | **Textarea** | primitive | `styles/components/ds-textarea.css` | default | n/a | Label + `aria-describedby` for hints | S2 | **done** |
 | **SegmentedControl** | primitive | `styles/components/ds-segmented.css` | 2–4 options | n/a | `role="radiogroup"`; radio options | S1 | **done** (player theme) |
 | **CopyButton** | primitive | `components/ds/CopyButton.tsx` + CSS | default | n/a | Success `role="status"`; clipboard fail alert | S4 | **done** |
@@ -45,6 +46,7 @@
 | **PlayerToolbar** | layout | `.tp-player-toolbar*` tokenized | windowed, fullscreen-bottom | n/a | `role="toolbar"`; control grouping | S1 | **done** |
 | **BottomSheet** | layout | `components/ds/BottomSheet.tsx` | default | n/a | Focus trap; Escape closes; restore focus | S1/P1 | planned |
 | **Card** | pattern | `styles/components/ds-card.css` | `elevated`, `flat` | n/a | Semantic section/article where appropriate | S2 | **done** |
+| **Section** | pattern | `styles/components/ds-section.css` | default | n/a | `fieldset` + legend + inset body (C5 grouping) | S3 | **done** |
 | **PageHeader** | pattern | `styles/components/ds-page-header.css` | default | n/a | One `h1` per page; optional actions slot | S2–S4 | planned |
 | **EmptyState** | pattern | `.tp-player-empty-state` in `Player.tsx` | default | n/a | Heading + body + optional CTA link | S1 | **done** |
 | **LoadingState** | pattern | `.tp-player-loading` in `Player.tsx` | inline, block | n/a | `aria-busy="true"` | S1 | **done** |
@@ -93,6 +95,27 @@
 
 Wrap native range: `.ds-range` > label + input + `.ds-range__value`.
 
+### Toggle (`ds-toggle`)
+
+Settings row: label (+ optional description) left; switch track right.
+
+```html
+<label class="ds-toggle" for="id">
+  <span class="ds-toggle__text"><span class="ds-toggle__label">Label</span></span>
+  <span class="ds-toggle__control">
+    <input id="id" type="checkbox" role="switch" />
+    <span class="ds-toggle__track" aria-hidden="true"><span class="ds-toggle__thumb"></span></span>
+  </span>
+</label>
+```
+
+| Prop / attr | Values | Default |
+|-------------|--------|---------|
+| `data-size` / `size` | `default`, `compact` | `default` |
+| `checked` | boolean | — |
+
+**Example id:** `mobile-controls/C5` · **Behavior source:** native checkbox (no OSS)
+
 ### AppShell
 
 | Breakpoint | Nav placement |
@@ -108,7 +131,7 @@ Wrap native range: `.ds-range` > label + input + `.ds-range__value`.
 |-------|------------|----------|
 | 1 | Button, IconButton, RangeSlider, Select, ErrorAlert, AppShell, MobileNav, PlayerToolbar, EmptyState, LoadingState, HelpPanel | S1 `player` |
 | 2 | Card, PageHeader, Textarea, SegmentedControl | S2 `home-editor` |
-| 3 | Checkbox, StatusBanner | S3 `settings` |
+| 3 | Checkbox, Toggle, StatusBanner | S3 `settings` |
 | 4 | QrFrame, CopyButton, HandoffStepIndicator, HandoffResultCard, OtpDisplay | S4 `handoff-hub` |
 
 ---
@@ -123,5 +146,5 @@ Wrap native range: `.ds-range` > label + input + `.ds-range__value`.
 
 ## Next actions
 
-1. `@ui-component-build plan - S1` — implement P0 primitives marked S1 as CSS + wire into `PlayerControls` / `Layout`.
-2. `@ui-component-build complete` — after visual + a11y milestone verify.
+1. `@ui-component-build start` — wire **Toggle** into `Settings.tsx` (mirror + speech sync); deprecate checkbox rows per [Toggle.md](./Toggle.md).
+2. `@ui-visual-verify milestone` + `@ui-accessibility-audit` after settings migration.

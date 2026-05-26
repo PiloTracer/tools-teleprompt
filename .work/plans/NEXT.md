@@ -1,15 +1,16 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-24 (session close — verification hardening + log hygiene committed)
+**Updated:** 2026-05-25 (session close — UIS-07 UX polish + Caddyfile mic fix committed)
 
 ---
 
 ## Recommended next
 
-1. **Manual device verify adaptive sync** — Hard-refresh (Ctrl+Shift+R). Settings → select heyday mic. Enable speech sync; press **ES** then **Play** (Play alone does not start mic). Console (`localStorage tp:debug=1`): expect `sr.startInstance { mode: 'track' }`, then `sr.heard` / `sr.advance`. If `mode: 'default'` or `trackStartUnsupported`, update Chrome or set heyday as system default mic.
-2. **Manual device verify player layout** — Bottom slider 20–50%; no horizontal scrollbar on long scripts.
-3. Production deploy when owner ready (`deploy/README.md`).
-4. Manual phone test on hotspot IP (LAN + multi-QR).
+1. **Investigate speech sync freeze on mobile Chrome (open bug)** — SR grants mic permission (Caddyfile fixed), recognises initial lines, then freezes. Enable debug: `localStorage.setItem('tp:debug','1')`, hard-refresh, reproduce. Check console for `sr.error` / `sr.end` events after the first restart cycle. Most likely cause: mobile Chrome's SR session silently terminating after a `no-speech` error without the restart loop recovering correctly on mobile. Fix in `useSpeechTracker.ts`.
+2. **Manual device verify adaptive sync** — sequential read; no spurious 50+ word jumps; red underline tracks current line.
+3. **Manual device verify player layout** — Bottom slider 20–50%; no horizontal scrollbar on long scripts.
+4. Production deploy when owner ready (`deploy/README.md`).
+5. Manual phone test on hotspot IP (LAN + multi-QR).
 
 ---
 

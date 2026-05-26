@@ -5,7 +5,7 @@
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  max-width: min(32rem, 90vw);
+  max-width: min(40rem, 96vw);
 }
 
 .ds-qr-frame__hint {
@@ -19,17 +19,20 @@
   width: 100%;
   padding: var(--space-4);
   border-radius: var(--radius-lg);
-  background: var(--surface-elevated);
+  /* Always white behind the symbol — improves camera contrast on dark UI */
+  background: #ffffff;
   box-shadow: var(--elevation-2);
 }
 
 .ds-qr-frame__image {
   display: block;
-  width: 100%;
+  width: min(100%, 36rem);
   height: auto;
-  max-width: 32rem;
+  min-width: min(24rem, 100%);
   margin: 0 auto;
-  border-radius: var(--radius-md);
+  border-radius: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .ds-qr-frame__footer {

@@ -23,10 +23,12 @@ describe("Settings (S3)", () => {
     });
 
     expect(screen.getByRole("button", { name: /save settings/i })).toHaveClass("ds-button");
+    expect(screen.getByRole("group", { name: /display & layout/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /speech sync/i })).toBeInTheDocument();
     expect(screen.getByRole("radiogroup", { name: /theme/i })).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: /mirror text/i })).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: /speech sync/i })).toBeInTheDocument();
-    expect(screen.queryByRole("checkbox", { name: /auto-sync/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: /mirror text/i })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: /speech sync/i })).toBeInTheDocument();
+    expect(screen.queryByRole("switch", { name: /auto-sync/i })).not.toBeInTheDocument();
   });
 
   it("persists settings and applies document theme on save", async () => {

@@ -17,8 +17,7 @@ export function QrFrame({ src, alt, hint, children, imageTestId }: QrFrameProps)
           className="ds-qr-frame__image"
           src={src}
           alt={alt}
-          width={512}
-          height={512}
+          decoding="sync"
           data-testid={imageTestId}
         />
       </div>

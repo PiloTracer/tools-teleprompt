@@ -62,7 +62,7 @@ test.describe("S3 settings accessibility milestone", () => {
     await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
     expect(await page.getByRole("slider").count()).toBe(4);
     await expect(page.getByRole("radiogroup", { name: /theme/i })).toBeVisible();
-    await expect(page.getByRole("checkbox", { name: /mirror/i })).toBeVisible();
+    await expect(page.getByRole("switch", { name: /mirror/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /save settings/i })).toBeVisible();
   });
 

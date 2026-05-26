@@ -19,6 +19,8 @@ export const en = {
   },
   settings: {
     title: "Settings",
+    sectionDisplay: "Display & layout",
+    sectionSpeech: "Speech sync",
     loading: "Loading settings…",
     speed: "Scroll speed",
     fontSize: "Font size",
@@ -29,6 +31,8 @@ export const en = {
     themeDark: "Dark",
     mirror: "Mirror text (camera setups)",
     adaptiveEnabled: "Speech sync (microphone)",
+    adaptiveEnabledHint:
+      "Uses your microphone and browser speech recognition while playing. Audio stays on your device.",
     micDevice: "Microphone",
     micDeviceDefault: "Default (system)",
     micDeviceLoading: "Detecting microphones…",
@@ -100,7 +104,10 @@ export const en = {
     generatingQr: "Generating QR…",
     qrFailed: "Could not generate QR handoff.",
     qrTooLarge: "Script is too large for a QR code — use relay handoff instead.",
-    qrScanHint: "Scan this QR code on your other device, or open the link below.",
+    qrScanHint:
+      "Scan on your phone. For best results: turn screen brightness up, reduce glare, hold the phone square to the code, and fill most of the camera view. Or copy the link below.",
+    qrScanHintMulti:
+      "Scan each code in order. If one chunk is hard, move a bit farther back, keep the phone square to the screen, and hold for 1-2 seconds. Or copy the link below.",
     qrImageAlt: "QR code for cross-device handoff",
     qrLinkLabel: "Handoff link",
     originLabel: "Handoff link host",

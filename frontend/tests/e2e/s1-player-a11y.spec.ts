@@ -37,7 +37,7 @@ test.describe("S1 player accessibility milestone", () => {
     await expect(page.getByRole("toolbar", { name: "Player settings" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
     await expect(page.getByRole("group", { name: /theme/i })).toHaveCount(0);
-    await expect(page.getByRole("checkbox", { name: /mirror/i })).toBeVisible();
+    await expect(page.getByRole("switch", { name: /mirror/i })).toBeVisible();
     await expect(page.getByLabel(/scroll speed/i)).toBeVisible();
 
     const skipLink = page.getByRole("link", { name: "Skip to content" });

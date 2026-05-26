@@ -1,6 +1,7 @@
 import { useCallback, useState, type ChangeEvent } from "react";
 
 import { Button } from "../components/ds/Button";
+import { Toggle } from "../components/ds/Toggle";
 import { Help } from "./Help";
 import { en } from "../lib/i18n/en";
 import {
@@ -247,17 +248,14 @@ export function PlayerControls({
               ))}
             </div>
 
-            <label className="tp-player-mirror" title={en.settings.mirror}>
-              <input
-                type="checkbox"
-                disabled={disabled}
-                checked={settings.mirror}
-                aria-label={en.settings.mirror}
-                onChange={(e) => update("mirror", e.target.checked)}
-              />
-              <span className="tp-player-mirror__control" aria-hidden="true" />
-              <span className="tp-player-mirror__label">{en.playerControls.mirror}</span>
-            </label>
+            <Toggle
+              className="tp-player-mirror"
+              size="compact"
+              label={en.playerControls.mirror}
+              disabled={disabled}
+              checked={settings.mirror}
+              onChange={(e) => update("mirror", e.target.checked)}
+            />
           </div>
         </div>
 
