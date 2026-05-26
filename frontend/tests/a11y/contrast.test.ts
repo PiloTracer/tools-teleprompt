@@ -43,6 +43,12 @@ const PLAYER_DARK: ContrastPair[] = [
     minRatio: 4.5,
   },
   {
+    name: "range track on dark toolbar",
+    foreground: "#707070",
+    background: "#242424",
+    minRatio: 3,
+  },
+  {
     name: "toolbar labels on elevated",
     foreground: "#a8a8a8",
     background: "#242424",
@@ -143,6 +149,12 @@ describe("S2 editor contrast (UIS-04)", () => {
 });
 
 const SETTINGS_DARK: ContrastPair[] = [
+  {
+    name: "range track on dark settings surface",
+    foreground: "#707070",
+    background: "#1a1a1a",
+    minRatio: 3,
+  },
   {
     name: "settings title on dark surface card",
     foreground: "#f0f0f0",

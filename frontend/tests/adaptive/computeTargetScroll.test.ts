@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   applySmoothScrollTowardTarget,
+  computeReadingLineTargetScrollFromElements,
   computeReadingLineTargetScrollTop,
   computeTargetScrollTop,
   getReadingLineWordElements,
   isReadingLineCentered,
+  isReadingLineCenteredFromElements,
   READ_CENTER_RATIO,
   SCROLL_TRACK_MAX_PX_PER_SEC,
 } from "../../src/prompter/adaptive/computeTargetScroll";
@@ -112,6 +114,105 @@ describe("computeReadingLineTargetScrollTop", () => {
     });
 
     expect(computeReadingLineTargetScrollTop(word, viewport, root)).toBe(310);
+  });
+});
+
+describe("computeReadingLineTargetScrollFromElements", () => {
+  it("centers using bounds of multiple line words", () => {
+    const viewport = {
+      getBoundingClientRect: () => ({
+        top: 0,
+        height: 400,
+        left: 0,
+        right: 0,
+        bottom: 400,
+        width: 0,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }),
+      scrollTop: 0,
+      clientHeight: 400,
+    } as unknown as HTMLElement;
+
+    const left = {
+      getBoundingClientRect: () => ({
+        top: 500,
+        bottom: 520,
+        left: 0,
+        right: 0,
+        width: 0,
+        height: 20,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }),
+    } as unknown as HTMLElement;
+
+    const right = {
+      getBoundingClientRect: () => ({
+        top: 500,
+        bottom: 520,
+        left: 0,
+        right: 0,
+        width: 0,
+        height: 20,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }),
+    } as unknown as HTMLElement;
+
+    expect(computeReadingLineTargetScrollFromElements([left, right], viewport)).toBe(310);
+  });
+});
+
+describe("isReadingLineCenteredFromElements", () => {
+  it("uses the full line center, not a single word", () => {
+    const viewport = {
+      getBoundingClientRect: () => ({
+        top: 0,
+        height: 400,
+        left: 0,
+        right: 0,
+        bottom: 400,
+        width: 0,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }),
+    } as unknown as HTMLElement;
+
+    const high = {
+      getBoundingClientRect: () => ({
+        top: 50,
+        bottom: 70,
+        left: 0,
+        right: 0,
+        width: 0,
+        height: 20,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }),
+    } as unknown as HTMLElement;
+
+    const low = {
+      getBoundingClientRect: () => ({
+        top: 330,
+        bottom: 350,
+        left: 0,
+        right: 0,
+        width: 0,
+        height: 20,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }),
+    } as unknown as HTMLElement;
+
+    expect(isReadingLineCentered(high, viewport)).toBe(false);
+    expect(isReadingLineCenteredFromElements([high, low], viewport)).toBe(true);
   });
 });
 

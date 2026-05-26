@@ -30,6 +30,7 @@ import {
   loadScriptSource,
   loadSettings,
   saveSettings,
+  SETTINGS_CHANGED_EVENT,
   type PrompterSettings,
 } from "./storage";
 import { useFullscreen } from "./useFullscreen";
@@ -56,6 +57,8 @@ export function Player() {
   const [scriptWordsVersion, setScriptWordsVersion] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
   const { targetRef: fullscreenRef, isFullscreen, isSupported, toggleFullscreen } =
     useFullscreen();
@@ -71,6 +74,14 @@ export function Player() {
         setHydrated(true);
       },
     );
+  }, []);
+
+  useEffect(() => {
+    const refreshSettings = () => {
+      void loadSettings().then(setSettings);
+    };
+    window.addEventListener(SETTINGS_CHANGED_EVENT, refreshSettings);
+    return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, refreshSettings);
   }, []);
 
   const html = useMemo(() => renderScript(source, format), [source, format]);
@@ -207,16 +218,16 @@ export function Player() {
       return;
     }
     syncLog("player.toggleSpeechSync", { nextListen: true, wasListen: false });
-    if (!settings.adaptiveEnabled) {
+    if (!settingsRef.current.adaptiveEnabled) {
       const next: PrompterSettings = {
-        ...settings,
+        ...settingsRef.current,
         adaptiveEnabled: true,
         adaptiveAutoSync: true,
       };
       onSettingsChange(next);
     }
     setSyncActive(true);
-  }, [onSettingsChange, settings, syncActive]);
+  }, [onSettingsChange, syncActive]);
 
   const onSpeedChange = useCallback((speed: number) => {
     setSettings((prev) => {

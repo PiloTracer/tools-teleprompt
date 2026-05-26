@@ -15,6 +15,8 @@
   --color-text-muted: #777777;
   --color-border-default: #d0d0d0;
   --color-border-strong: #999999;
+  /** Range slider track (groove); distinct from thumb accent */
+  --color-range-track: var(--color-bg-inset);
   --color-accent: #2563eb;
   --color-accent-hover: #1d4ed8;
   --color-accent-contrast: #ffffff;

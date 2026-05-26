@@ -32,23 +32,36 @@ export function markReadingLine(
   return lineWords[0] ?? wordEl;
 }
 
-/** First word on the marked reading line with the highest word index (leading edge). */
-export function findMarkedReadingLine(scriptRoot: HTMLElement): HTMLElement | null {
-  const marked = scriptRoot.querySelectorAll<HTMLElement>(`.${READING_LINE_CLASS}`);
-  if (marked.length === 0) {
-    return null;
-  }
+/** All words currently highlighted as the reading line (small set — safe per frame). */
+export function getMarkedReadingLineWords(scriptRoot: HTMLElement): HTMLElement[] {
+  return Array.from(scriptRoot.querySelectorAll<HTMLElement>(`.${READING_LINE_CLASS}`));
+}
 
-  let lead = marked[0]!;
-  let leadIndex = Number(lead.dataset.word ?? -1);
+function firstWordOnMarkedLine(marked: HTMLElement[]): HTMLElement {
+  let anchor = marked[0]!;
+  let anchorIndex = Number(anchor.dataset.word ?? Infinity);
   for (const candidate of marked) {
-    const index = Number(candidate.dataset.word ?? -1);
-    if (index > leadIndex) {
-      lead = candidate;
-      leadIndex = index;
+    const index = Number(candidate.dataset.word ?? Infinity);
+    if (index < anchorIndex) {
+      anchor = candidate;
+      anchorIndex = index;
     }
   }
+  return anchor;
+}
 
-  const lineWords = getReadingLineWordElements(lead, scriptRoot);
-  return lineWords[0] ?? lead;
+/** Marked reading line in one DOM query (for per-frame scroll). */
+export function getMarkedReadingLine(
+  scriptRoot: HTMLElement,
+): { anchor: HTMLElement; lineWords: HTMLElement[] } | null {
+  const lineWords = getMarkedReadingLineWords(scriptRoot);
+  if (lineWords.length === 0) {
+    return null;
+  }
+  return { anchor: firstWordOnMarkedLine(lineWords), lineWords };
+}
+
+/** First word on the marked reading line (lowest word index among highlights). */
+export function findMarkedReadingLine(scriptRoot: HTMLElement): HTMLElement | null {
+  return getMarkedReadingLine(scriptRoot)?.anchor ?? null;
 }

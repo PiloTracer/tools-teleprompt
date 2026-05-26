@@ -211,6 +211,7 @@ export function Settings() {
           className="tp-settings__toggle"
           label={en.settings.adaptiveEnabled}
           description={en.settings.adaptiveEnabledHint}
+          aria-label={en.settings.adaptiveEnabled}
           checked={settings.adaptiveEnabled}
           onChange={(e) => update("adaptiveEnabled", e.target.checked)}
         />

@@ -6,6 +6,9 @@ export const STORAGE_KEYS = {
   settings: "tp:settings",
 } as const;
 
+/** Fired in-tab after settings are persisted (Player reloads without remount). */
+export const SETTINGS_CHANGED_EVENT = "tp:settings-changed";
+
 export type Theme = "light" | "dark";
 
 export type PrompterSettings = {
@@ -208,12 +211,21 @@ export async function loadSettings(): Promise<PrompterSettings> {
   }
 }
 
+function notifySettingsChanged(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.dispatchEvent(new CustomEvent(SETTINGS_CHANGED_EVENT));
+}
+
 export async function saveSettings(settings: PrompterSettings): Promise<void> {
   const payload = JSON.stringify(pairAdaptiveFlags(settings));
   if (writeLocal(STORAGE_KEYS.settings, payload)) {
+    notifySettingsChanged();
     return;
   }
   await idbSet(STORAGE_KEYS.settings, payload);
+  notifySettingsChanged();
 }
 
 /** Test helper — clear persisted script + settings. */

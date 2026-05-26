@@ -44,6 +44,32 @@ export function getReadingLineWordElements(
   return row.length > 0 ? row : [wordEl];
 }
 
+function readingLineCenterY(lineWords: HTMLElement[]): number {
+  let minTop = Infinity;
+  let maxBottom = -Infinity;
+  for (const el of lineWords) {
+    const rect = el.getBoundingClientRect();
+    minTop = Math.min(minTop, rect.top);
+    maxBottom = Math.max(maxBottom, rect.bottom);
+  }
+  return (minTop + maxBottom) / 2;
+}
+
+/** Target scrollTop from a known set of line word elements (no full-script scan). */
+export function computeReadingLineTargetScrollFromElements(
+  lineWords: HTMLElement[],
+  viewport: HTMLElement,
+  centerRatio = READ_CENTER_RATIO,
+): number {
+  if (lineWords.length === 0) {
+    return viewport.scrollTop;
+  }
+  const lineCenterY = readingLineCenterY(lineWords);
+  const viewportRect = viewport.getBoundingClientRect();
+  const targetCenterY = viewportRect.top + viewportRect.height * centerRatio;
+  return viewport.scrollTop + (lineCenterY - targetCenterY);
+}
+
 /** Target scrollTop to center the full visual line containing `wordEl`. */
 export function computeReadingLineTargetScrollTop(
   wordEl: HTMLElement,
@@ -52,31 +78,33 @@ export function computeReadingLineTargetScrollTop(
   centerRatio = READ_CENTER_RATIO,
 ): number {
   const lineWords = getReadingLineWordElements(wordEl, scriptRoot);
-  const first = lineWords[0]!;
-  const last = lineWords[lineWords.length - 1]!;
-  const firstRect = first.getBoundingClientRect();
-  const lastRect = last.getBoundingClientRect();
-  const lineCenterY = (firstRect.top + lastRect.bottom) / 2;
-  const viewportRect = viewport.getBoundingClientRect();
-  const targetCenterY = viewportRect.top + viewportRect.height * centerRatio;
-  return viewport.scrollTop + (lineCenterY - targetCenterY);
+  return computeReadingLineTargetScrollFromElements(lineWords, viewport, centerRatio);
 }
 
 /** True when the read line is already on the target band (no scroll needed). */
+export function isReadingLineCenteredFromElements(
+  lineWords: HTMLElement[],
+  viewport: HTMLElement,
+  centerRatio = READ_CENTER_RATIO,
+  tolerance = SCROLL_CENTER_TOLERANCE_RATIO,
+): boolean {
+  const viewportRect = viewport.getBoundingClientRect();
+  if (viewportRect.height <= 0 || lineWords.length === 0) {
+    return true;
+  }
+  const centerY = readingLineCenterY(lineWords);
+  const ratio = (centerY - viewportRect.top) / viewportRect.height;
+  return Math.abs(ratio - centerRatio) <= tolerance;
+}
+
+/** True when a single word's center sits on the target band. */
 export function isReadingLineCentered(
   wordEl: HTMLElement,
   viewport: HTMLElement,
   centerRatio = READ_CENTER_RATIO,
   tolerance = SCROLL_CENTER_TOLERANCE_RATIO,
 ): boolean {
-  const viewportRect = viewport.getBoundingClientRect();
-  if (viewportRect.height <= 0) {
-    return true;
-  }
-  const wordRect = wordEl.getBoundingClientRect();
-  const centerY = wordRect.top + wordRect.height / 2;
-  const ratio = (centerY - viewportRect.top) / viewportRect.height;
-  return Math.abs(ratio - centerRatio) <= tolerance;
+  return isReadingLineCenteredFromElements([wordEl], viewport, centerRatio, tolerance);
 }
 
 /**

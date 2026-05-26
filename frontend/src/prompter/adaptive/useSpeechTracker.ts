@@ -19,7 +19,14 @@ import {
   resolveMicForSpeech,
   sampleMicLevel,
 } from "./micDevice";
-import { syncLog, syncLogBootOnce, syncLogOnChange, syncLogThrottled, syncWarn } from "./syncDebug";
+import {
+  isSyncDebugEnabled,
+  syncLog,
+  syncLogBootOnce,
+  syncLogOnChange,
+  syncLogThrottled,
+  syncWarn,
+} from "./syncDebug";
 import { startSpeechRecognition } from "./speechRecognitionStart";
 
 const WORD_BUFFER_SIZE = 44;
@@ -484,7 +491,7 @@ export function useSpeechTracker({
             deviceIdUsed: session.deviceIdUsed,
             tracks: micStream?.getAudioTracks().length ?? 0,
           });
-          if (micStream) {
+          if (micStream && isSyncDebugEnabled()) {
             const level = await sampleMicLevel(micStream);
             syncLog("sr.mic.level", {
               rms: Number(level.toFixed(4)),

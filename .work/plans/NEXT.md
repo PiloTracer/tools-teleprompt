@@ -1,6 +1,6 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-25 (session close — mobile speech sync fixes committed)
+**Updated:** 2026-05-25 (session close — scroll perf, dark sliders, settings reload)
 
 ---
 

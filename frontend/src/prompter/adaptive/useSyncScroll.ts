@@ -2,11 +2,11 @@ import { useEffect, useRef, type RefObject } from "react";
 
 import {
   applySmoothScrollTowardTarget,
-  computeReadingLineTargetScrollTop,
-  isReadingLineCentered,
+  computeReadingLineTargetScrollFromElements,
+  isReadingLineCenteredFromElements,
   READ_CENTER_RATIO,
 } from "./computeTargetScroll";
-import { findMarkedReadingLine } from "./readingLineMark";
+import { getMarkedReadingLine } from "./readingLineMark";
 import {
   syncLog,
   syncLogBootOnce,
@@ -107,7 +107,8 @@ export function useSyncScroll({
 
       if (lastTimeRef.current !== null && !reducedMotion) {
         const deltaSec = Math.min((time - lastTimeRef.current) / 1000, 0.05);
-        const lineEl = root ? findMarkedReadingLine(root) : null;
+        const markedLine = root ? getMarkedReadingLine(root) : null;
+        const lineEl = markedLine?.anchor ?? null;
         const mode: "track" | "lever" = lineEl !== null ? "track" : "lever";
 
         if (lastModeRef.current !== mode) {
@@ -134,7 +135,8 @@ export function useSyncScroll({
           syncEngaged,
         });
 
-        if (lineEl && root) {
+        if (lineEl && markedLine) {
+          const { lineWords } = markedLine;
           const wordKey = lineEl.dataset.word ?? lineEl.textContent ?? "";
           if (lastMarkedWordRef.current !== wordKey) {
             syncLog("scroll.trackLine", {
@@ -145,10 +147,10 @@ export function useSyncScroll({
             trackCarryRef.current = 0;
           }
 
-          const centered = isReadingLineCentered(lineEl, el);
+          const centered = isReadingLineCenteredFromElements(lineWords, el);
           if (!centered) {
             const before = el.scrollTop;
-            const target = computeReadingLineTargetScrollTop(lineEl, el, root);
+            const target = computeReadingLineTargetScrollFromElements(lineWords, el);
             const result = applySmoothScrollTowardTarget(
               el.scrollTop,
               trackCarryRef.current,

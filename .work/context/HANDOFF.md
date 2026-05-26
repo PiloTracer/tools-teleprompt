@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-25 — mobile speech sync: SR restart fix, smoother center scroll, silence resume auto-scroll
+**Closed:** 2026-05-25 — adaptive scroll perf, dark range tracks, settings reload; UI sounds removed (OS mic cue not controllable)
 
 **Updated:** 2026-05-25
 
-**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`. **This session:** fixed mobile SR restart (fresh instance after `onend`), centered active line with gentler scroll tracking, and resumed baseline auto-scroll after ~2.2s speech silence. FE checks green 2026-05-25 (165/165). **Mobile device sign-off still pending** (Open owner actions #7–#8).
+**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`. **Latest:** per-frame scroll tracks marked line only; dark-mode slider groove visible; Player reloads settings on save; UI sounds feature removed after OS mic beep cannot be muted from web. FE **167/167** pass 2026-05-25. **Mobile device sign-off still pending** (Open owner actions #7–#8). API `test_public_config` (3) may fail without deploy env — unrelated to FE commit.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -121,6 +121,7 @@
 | 2026-05-24 (close) | Mic device routing + SR track start | mic selector, label remap, `start(audioTrack)`; Play no auto-sync; vitest 157/157 |
 | 2026-05-24 (close) | Verification hardening + log hygiene | fixed FE lint blockers; App route async assertions; test-mode `tp-sync` debug gating; FE lint/typecheck/tests green in container |
 | 2026-05-25 | Mobile speech sync fixes | SR fresh restart on `onend`; center scroll tuning; silence releases mark → lever scroll; vitest 165/165 |
+| 2026-05-25 | session close commit push | Scroll perf (marked-line only); dark range track token; settings-changed event; UI sounds removed; FE 167/167 |
 
 ---
 
@@ -135,10 +136,11 @@ See `.work/plans/UNKNOWNS.md` — U9 resolved (M7 LAN + multi-QR). U1/U6/U8 clos
 ```
 npm run lint          → exit 0 (frontend container)
 npm run typecheck     → exit 0 (frontend container)
-npm test -- --run     → 165/165 (frontend container)
+npm test -- --run     → 167/167 (frontend container)
+pytest tests/ -q      → 19 pass, 3 fail test_public_config (env; not in this commit)
 ```
 
-**Device manual check:** adaptive mic sync (SR restart, silence resume, center scroll) + bottom clearance + horizontal scroll — **not verified** (owner).
+**Device manual check:** adaptive mic sync + bottom clearance + horizontal scroll — **not verified** (owner). OS mic on/off sound when tapping EN/ES is **not app-controllable**.
 
 ---
 
