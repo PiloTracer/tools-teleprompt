@@ -1,6 +1,6 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-25 (session close — scroll perf, dark sliders, settings reload)
+**Updated:** 2026-05-25 (session close — API Settings test isolation; full suite green)
 
 ---
 

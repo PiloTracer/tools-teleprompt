@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="API_", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="API_", extra="ignore", populate_by_name=True)
 
     max_script_bytes: int = 262_144
     session_ttl_seconds: int = 300

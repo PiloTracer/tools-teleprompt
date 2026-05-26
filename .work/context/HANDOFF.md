@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-25 — adaptive scroll perf, dark range tracks, settings reload; UI sounds removed (OS mic cue not controllable)
+**Closed:** 2026-05-25 — API Settings test isolation; full suite green (API 26/26, FE 167/167)
 
 **Updated:** 2026-05-25
 
-**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`. **Latest:** per-frame scroll tracks marked line only; dark-mode slider groove visible; Player reloads settings on save; UI sounds feature removed after OS mic beep cannot be muted from web. FE **167/167** pass 2026-05-25. **Mobile device sign-off still pending** (Open owner actions #7–#8). API `test_public_config` (3) may fail without deploy env — unrelated to FE commit.
+**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync** on `main`. API `populate_by_name` + test env isolation shipped. FE **167/167** + API **26/26** pass 2026-05-25 (`.env.dev` and `.env.example`). **Mobile device sign-off still pending** (Open owner actions #7–#8).
 
 **Plan-master-ready:** 2026-05-20
 
@@ -122,6 +122,7 @@
 | 2026-05-24 (close) | Verification hardening + log hygiene | fixed FE lint blockers; App route async assertions; test-mode `tp-sync` debug gating; FE lint/typecheck/tests green in container |
 | 2026-05-25 | Mobile speech sync fixes | SR fresh restart on `onend`; center scroll tuning; silence releases mark → lever scroll; vitest 165/165 |
 | 2026-05-25 | session close commit push | Scroll perf (marked-line only); dark range track token; settings-changed event; UI sounds removed; FE 167/167 |
+| 2026-05-25 | session close commit push | API Settings populate_by_name; test env isolation; origin regression tests; API 26/26 |
 
 ---
 
@@ -131,13 +132,15 @@ See `.work/plans/UNKNOWNS.md` — U9 resolved (M7 LAN + multi-QR). U1/U6/U8 clos
 
 ---
 
-## Last verification (2026-05-25 close)
+## Last verification (2026-05-25)
 
 ```
 npm run lint          → exit 0 (frontend container)
 npm run typecheck     → exit 0 (frontend container)
 npm test -- --run     → 167/167 (frontend container)
-pytest tests/ -q      → 19 pass, 3 fail test_public_config (env; not in this commit)
+pytest tests/ -q      → 26/26 (api container; .env.dev and .env.example)
+ruff check .          → exit 0 (api container)
+pyright .             → exit 0 (api container)
 ```
 
 **Device manual check:** adaptive mic sync + bottom clearance + horizontal scroll — **not verified** (owner). OS mic on/off sound when tapping EN/ES is **not app-controllable**.
