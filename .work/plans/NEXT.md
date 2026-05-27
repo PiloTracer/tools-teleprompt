@@ -1,17 +1,20 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-26 (session close — adaptive re-lock rounds 1–3; viewport-anchored matcher; two-stage silence; anti-wobble guard; drift-aware backward gap; cooldown)
+**Updated:** 2026-05-26 (late) — adaptive re-lock rounds R8–R10 attempted on top of `33234b1` baseline, **all reverted** by owner after device tests. No code change committed; only HANDOFF + retrospective updated.
 
 ---
 
 ## Recommended next
 
-1. **Mobile device re-test — adaptive re-lock (round-3 tuning).** Specifically the "resume after metadata-scroll" path: re-acquisition must be quick AND stable; no back-and-forth wobble. Enable debug with `localStorage.setItem('tp:debug','1')`. Watch keys: `sr.silence.markClear`, `sr.silence.relockArm`, `sr.relock.deferShortTail`, `sr.relock.rejectBackward`, `sr.relock.suppressDriftCooldown`, `sr.advance` `mode:"relock"`.
-2. If wobble persists → bump `MIN_RELOCK_SPOKEN_WORDS` 5→6 or `MIN_RELOCK_MATCH` 4→5 (`frontend/src/prompter/adaptive/{useSpeechTracker,matchScriptWords}.ts`).
-3. If re-acquisition feels too slow → drop `MIN_RELOCK_SPOKEN_WORDS` to 4.
-4. Manual device verify player layout — bottom slider 20–50%; no horizontal scrollbar on long scripts.
-5. Production deploy when owner ready (`deploy/README.md`).
-6. Manual phone test on hotspot IP (LAN + multi-QR).
+> **Read first:** [`../context/20260526-adaptive-relock-r4-r6-retrospective.md`](../context/20260526-adaptive-relock-r4-r6-retrospective.md). Rounds 4–10 are documented as dead ends with verdicts. Do **not** repeat: scroll-freeze during silence (R8/R9), permissive matcher floor below 4/3 (R10), raised matcher thresholds above 4/3 (R5), `onspeechstart` instant snap (R4), restoring `readingWordIndex` in failure paths (R6).
+
+1. **Mobile SR dedup** (from R4 work, isolated commit) — Android Chrome confidence-zero filter + prefix dedup. Standalone utility in `speechResultUtils.ts`. Device test: read continuously → `sr.heard` debug log shows no duplicate words. Low risk.
+2. **Compound word split** (from R4 work, isolated commit) — handles hyphenated tokens / URLs in matcher input. Trivial annotation change. Device test: script with URLs → matcher works through them.
+3. **IntersectionObserver paragraph hints — observability ONLY** (from R4 work) — `useVisibleWordRange` + `annotateBlockWordRanges`, log `sync.viewportRange`, **do not wire into matcher constraints in this commit**. Provides ground truth for future matcher work.
+4. **Decision point** — after 1–3 device-validated, owner decides: continue browser SR with cautious matcher work (hybrid silence-trigger: anchored first, global as null fallback), OR move to streaming ASR provider (AssemblyAI / Deepgram). The retrospective Lesson 3 argues browser SR has hit its ceiling for Spanish content on mobile Chrome.
+5. Manual device verify player layout — bottom slider 20–50%; no horizontal scrollbar on long scripts.
+6. Production deploy when owner ready (`deploy/README.md`) — speech-sync residual issues do not block other features.
+7. Manual phone test on hotspot IP (LAN + multi-QR).
 
 ---
 
@@ -20,7 +23,8 @@
 | Item | Blocker |
 |------|---------|
 | Production deploy | Owner sign-off + env secrets (`API_OTP_HMAC_SECRET`) |
-| Adaptive mic sync sign-off (round-3) | Pending owner device re-test |
+| Adaptive mic sync sign-off | **R4–R10 all rejected on device.** Round-3 baseline (`33234b1`) is current best — still produces residual "skipped lines on resume". Pending owner decision per item 4 above. |
+| ASR provider decision | Owner — continue browser SR or move to streaming ASR |
 | Player bottom clearance sign-off | Manual device check not yet recorded |
 | Mobile editor nav | Fixed 2026-05-25 — verify on device after deploy |
 
@@ -140,6 +144,7 @@ M8 complete — see **Done — M8 iteration (archived)** below.
 | Mobile editor nav fix (short labels, flex shrink) | 2026-05-25 |
 | Adaptive sync tuning (silence 1.75s, matcher window, smooth scroll) | 2026-05-25 |
 | Adaptive re-lock rearchitect (viewport-anchored matcher; two-stage silence; anti-wobble; drift-aware backward gap; cooldown) | 2026-05-26 |
+| Adaptive re-lock rounds R8–R10 attempted and reverted (scroll-freeze + `findGlobalLock`); retrospective updated to cover R4–R10 dead ends | 2026-05-26 |
 
 ---
 

@@ -2,11 +2,11 @@
 
 ## Session status
 
-**Closed:** 2026-05-26 — viewport-anchored re-lock matcher for adaptive speech sync; two-stage silence; anti-wobble guard; drift-aware backward gap; re-lock cooldown. FE **179/179** in container. Mobile device re-test pending owner.
+**Closed:** 2026-05-26 (late) — adaptive re-lock rounds R8–R10 attempted on top of baseline `33234b1` (R8 stage-2 scroll-freeze, R9 2.5s scroll-freeze timer, R10 permissive `findGlobalLock` + scroll-freeze removal). **All reverted** by owner after device tests reproduced the same "skipped lines on resume" symptom that R7 produced. Working tree returned to baseline `33234b1`. Untracked retrospective `20260526-adaptive-relock-r4-r6-retrospective.md` updated to cover R4–R10 — keep this file; it is the canonical record of dead ends.
 
-**Updated:** 2026-05-26
+**Updated:** 2026-05-26 (late)
 
-**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync rework round-3** on `main`. FE **179/179** pass in container after session changes (+12 from baseline 167). **Device sign-off pending re-test** of the new re-lock pipeline on mobile Chrome.
+**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync = round-3 baseline (`33234b1`) on `main`** — no behavioral change committed this session. FE 179/179 baseline tests pass in container; experimental branches reached 193/193 before each rollback. **Device sign-off still pending** and is now believed to require either the incremental work in the retrospective's "Recommended approach" or a switch to streaming ASR (not browser SR).
 
 **Plan-master-ready:** 2026-05-20
 
@@ -35,12 +35,19 @@
 
 ## Fresh start — next session
 
-1. `@session-control start`
-2. **Mobile device re-test adaptive re-lock (round-3 tuning)** — focus the "resume after metadata-scroll" path: re-acquisition must be quick AND stable (no back-and-forth wobble). Debug log keys: `sr.silence.markClear`, `sr.silence.relockArm`, `sr.relock.deferShortTail`, `sr.relock.rejectBackward`, `sr.relock.suppressDriftCooldown`, `sr.advance` with `mode: "relock"`. Enable via `localStorage.setItem('tp:debug','1')`.
-3. If wobble persists: bump `MIN_RELOCK_SPOKEN_WORDS` 5→6 or `MIN_RELOCK_MATCH` 4→5 (`frontend/src/prompter/adaptive/{useSpeechTracker,matchScriptWords}.ts`).
-4. If re-acquisition feels too slow: drop `MIN_RELOCK_SPOKEN_WORDS` to 4.
-5. **Manual verify player layout** — bottom slider 20–50%; no horizontal scrollbar.
-6. Production deploy when owner ready (`deploy/README.md`).
+> **Read first:** [`20260526-adaptive-relock-r4-r6-retrospective.md`](./20260526-adaptive-relock-r4-r6-retrospective.md) — full record of rounds **4–10** (2026-05-26 afternoon → late evening), all rolled back. Updated late on 2026-05-26 to cover R8–R10 device-test failures. Documents what was tried, what each owner-feedback verdict was, and the strict order for the next attempt.
+>
+> **Do NOT** re-attempt the dead-end directions: scroll-freeze during silence (R8/R9 disproven on device); permissive matcher floor below 4/3 (R10 disproven on device); raised matcher thresholds above 4/3 (R5 disproven); `onspeechstart` instant snap (R4 disproven); restoring `readingWordIndex` in failure paths (R6 disproven).
+
+1. `@session-control start`.
+2. **Recommended next attempt order** — incremental, isolated, device-tested between each. See retrospective § "Recommended approach":
+   1. Mobile SR dedup (`speechResultUtils.ts` from R4) — Android Chrome confidence-zero filter + prefix dedup.
+   2. Compound word split (from R4).
+   3. IntersectionObserver paragraph hints as **observability only** in v1 — log `sync.viewportRange`, do not wire into matcher constraints.
+   4. Only after 1–3 are device-validated, consider a hybrid silence-trigger matcher (anchored first, global as null fallback) — explicitly verify it does not regress R7/R10.
+3. **Realistic ceiling:** browser Web Speech API on mobile Chrome may not be reliable enough for Spanish content with long pauses. If incremental work above does not produce acceptable UX, the credible production path is **streaming ASR** (AssemblyAI / Deepgram) — not further matcher retuning. Retrospective Lesson 3.
+4. **Manual verify player layout** — bottom slider 20–50%; no horizontal scrollbar.
+5. Production deploy when owner ready (`deploy/README.md`) — speech-sync residual issues do not block other features.
 
 ---
 
@@ -70,7 +77,8 @@
 | 7 | Manual device check: adaptive mic sync (sequential read + metadata skip) | **Partial** — A1–A2 pass; A3 partial; A4 fail pre-tune; re-test after commit |
 | 8 | **Mobile sign-off:** SR restart + silence resume + line tracking | **Partial** 2026-05-25 — silence ~1.75s; matcher/scroll tuned; A4 re-test pending |
 | 9 | Mobile editor bottom nav (clipped Settings / broken tabs) | **Fixed** 2026-05-25 — short labels + flex shrink |
-| 10 | **Mobile re-test:** adaptive re-lock (round-3 tuning) — quick re-acquisition + stable mark after metadata-scroll | Pending owner |
+| 10 | **Mobile re-test:** adaptive re-lock (round-3 tuning) — quick re-acquisition + stable mark after metadata-scroll | **Tested 2026-05-26** — round-3 baseline still produces "skipped lines on resume" complaint; rounds 4–10 all reverted. See retrospective. |
+| 11 | **Decision needed:** continue browser SR with incremental fixes per retrospective § "Recommended approach", OR move to streaming ASR provider (AssemblyAI / Deepgram). Retrospective Lesson 3 makes the case the matcher has hit its ceiling for Spanish content on mobile Chrome. | Pending owner |
 
 ---
 
@@ -132,6 +140,11 @@
 | 2026-05-26 | Adaptive re-lock — round 2 (wobble) | Two-stage silence (`SILENCE_MARK_CLEAR_MS=1750`, `RELOCK_ARM_TIMEOUT_MS=4000`); `shouldAcceptRelockMatch` anti-wobble gate (`RELOCK_BACKWARD_VIEWPORT_GAP=20`); silent-drift threshold 5→10; FE 179/179 |
 | 2026-05-26 | Adaptive re-lock — round 3 (hesitation) | `MIN_RELOCK_MATCH` 3→4; `MIN_RELOCK_DISTINCTIVE` 2→3; `MIN_RELOCK_SPOKEN_WORDS=5` defer-gate; drift-vs-silence trigger with `RELOCK_DRIFT_BACKWARD_VIEWPORT_GAP=5`; `RELOCK_COOLDOWN_MS=2000` for drift-induced re-lock; FE 179/179 |
 | 2026-05-26 | session close commit push | Adaptive re-lock rounds 1–3 + bookends on `main`; device re-test pending |
+| 2026-05-26 (afternoon) | Adaptive re-lock — rounds 4–7 (attempted) | IntersectionObserver paragraph constraint, compound split, head-first re-lock, mobile SR dedup, stricter matcher thresholds, drift-relock disabled, post-relock skip-ahead disabled. **All reverted** — see retrospective. Working tree: never committed. |
+| 2026-05-26 (evening) | Adaptive re-lock — round 8 (attempted) | Stage-2 scroll-freeze (`scrollFrozen` state through `useSyncScroll`/`Player`/tests). **Reverted** after device test in R9 reproduced "skipped lines" — see retrospective. |
+| 2026-05-26 (late) | Adaptive re-lock — round 9 (attempted) | 2.5s `SCROLL_FREEZE_TIMEOUT_MS` independent of stage-2 re-lock arm. **Reverted** — owner reported workflow break (deliberate meta-scroll pauses cut short by freeze) and matcher still failed on resume. |
+| 2026-05-26 (late) | Adaptive re-lock — round 10 (attempted) | New `findGlobalLock` permissive full-script matcher (3-word `findInitialLock`-grade criterion, viewport-biased tie-break) replacing `findRelockAnchoredToIndex` for silence-trigger; dropped backward-gap reject + paragraph constraint + 5-word defer on silence path; removed all `scrollFrozen` plumbing. FE 193/193 in container. **Reverted** — owner reported "skipped lines on resume" matching the R7 symptom; 3-word floor confirmed too permissive for Spanish content. |
+| 2026-05-26 (late) | Session close — no commits | Working tree returned to baseline `33234b1`; only addition is updated retrospective at `.work/context/20260526-adaptive-relock-r4-r6-retrospective.md` and this HANDOFF update. |
 
 ---
 
@@ -141,18 +154,22 @@ See `.work/plans/UNKNOWNS.md` — U9 resolved (M7 LAN + multi-QR). U1/U6/U8 clos
 
 ---
 
-## Last verification (2026-05-26)
+## Last verification (2026-05-26 late)
+
+**Code at `HEAD`:** `c822a2c` (LICENSE typo, on top of `33234b1` round-3 baseline). No behavioral change committed this session.
+
+**Experimental branches verified before each rollback** (R10 / late-evening branch was the last):
 
 ```
 npm run lint          → exit 0 (frontend container)
 npm run typecheck     → exit 0 (frontend container)
-npm test -- --run     → 179/179 (frontend container)
+npm test -- --run     → 193/193 (frontend container)
 pytest tests/ -q      → not re-run this session (no api changes)
 ruff check .          → not re-run this session (no api changes)
 pyright .             → not re-run this session (no api changes)
 ```
 
-**Device manual check:** Re-test **pending** after this commit. User feedback during session: round-1 fix removed the original "line not identified / snaps back" failure; round-2 reduced wobble; round-3 targets residual hesitation after metadata-scroll. Player bottom clearance — still not verified. Mobile editor nav — fixed (prior session).
+**Device manual check:** Round-3 baseline (`33234b1`) tested by owner during this session — residual "skipped lines on resume" persists. Rounds 8 (stage-2 scroll-freeze), 9 (2.5s scroll-freeze), and 10 (permissive `findGlobalLock` + freeze removal) tested on device and rejected by owner; all reverted. The retrospective documents what each attempt looked like, the owner-feedback verdict on each, and why it was wrong. Player bottom clearance — still not verified. Mobile editor nav — fixed (prior session).
 
 ---
 
