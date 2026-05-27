@@ -10,10 +10,10 @@ export type WordMatchResult = {
 };
 
 /** Max script words the cursor may advance in one SR event (sequential reading). */
-export const MAX_FORWARD_WORD_JUMP = 18;
+export const MAX_FORWARD_WORD_JUMP = 14;
 
 /** How far ahead to search when the user skips metadata or non-spoken lines. */
-export const SKIP_AHEAD_SEARCH_LIMIT = 100;
+export const SKIP_AHEAD_SEARCH_LIMIT = 80;
 
 /** Min aligned tail words required to accept a jump past MAX_FORWARD_WORD_JUMP. */
 export const MIN_SKIP_AHEAD_MATCH = 4;
@@ -22,10 +22,10 @@ export const MIN_SKIP_AHEAD_MATCH = 4;
 export const MIN_SKIP_AHEAD_DISTINCTIVE = 2;
 
 /** Recent SR tail — only these words drive steady advance. */
-export const ADVANCE_TAIL_WORDS = 12;
+export const ADVANCE_TAIL_WORDS = 8;
 
 /** Max sequential word advances per SR tick (catch-up within one utterance). */
-export const MAX_ADVANCE_STEPS_PER_TICK = 8;
+export const MAX_ADVANCE_STEPS_PER_TICK = 6;
 
 /** Min consecutive matches to lock on before calibrated. */
 export const MIN_INITIAL_LOCK_RUN = 3;
@@ -33,8 +33,8 @@ export const MIN_INITIAL_LOCK_RUN = 3;
 /** How far into the script to search for the opening lock-on. */
 export const INITIAL_LOCK_SEARCH_LIMIT = 250;
 
-/** Script words searched on each side of the viewport anchor during silence re-lock. */
-export const RELOCK_SEARCH_RADIUS = 300;
+/** Script words searched on each side of the anchor during re-lock. */
+export const RELOCK_SEARCH_RADIUS = 200;
 
 /**
  * Min consecutive strict matches required to accept a silence re-lock.
@@ -66,7 +66,7 @@ export const RELOCK_DRIFT_BACKWARD_VIEWPORT_GAP = 5;
 export const MAX_ALIGN_GAPS = 1;
 
 /** Steady reading tolerates more SR substitutions than initial lock-on. */
-export const MAX_STEADY_ALIGN_GAPS = 3;
+export const MAX_STEADY_ALIGN_GAPS = 2;
 
 const FUNCTION_WORDS = new Set([
   "a",
