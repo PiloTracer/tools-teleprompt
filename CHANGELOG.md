@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. Version format follows [SemVer](https://semver.org/).
 
+## [0.2.7] - 2026-07-10
+
+### Changed
+
+- Re-release as v0.2.7 (same code as v0.2.6 — corrected version tracking for production deploy reference)
+
 ## [0.2.6] - 2026-07-10
 
 ### Added
