@@ -1,6 +1,6 @@
 # tools-teleprompt
 
-**Version 0.2.5**
+**Version 0.2.6**
 
 A self-hosted web teleprompter: paste or upload a script, tune scroll speed and display, present fullscreen on any device. Send the script to a phone or tablet via QR or a short-lived link — no accounts, no database.
 
@@ -263,9 +263,9 @@ Internal planning, ADRs, and session handoff live under `.work/` and `.ai/`. You
 
 ## Versioning
 
-- **Current release:** `0.2.5` (see [`VERSION`](VERSION) and [`CHANGELOG.md`](CHANGELOG.md))
-- Frontend and API packages also declare `0.2.5` in their respective manifests
-- Create a GitHub Release from tag `v0.2.5` when publishing
+- **Current release:** `0.2.6` (see [`VERSION`](VERSION) and [`CHANGELOG.md`](CHANGELOG.md))
+- Frontend and API packages also declare `0.2.6` in their respective manifests
+- Create a GitHub Release from tag `v0.2.6` when publishing
 
 ---
 

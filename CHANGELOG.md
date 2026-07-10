@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. Version format follows [SemVer](https://semver.org/).
 
+## [0.2.6] - 2026-07-10
+
+### Added
+
+- `DISABLE_SERVER_HANDOFF` config: disable LAN/Relay handoff to keep scripts client-side only when publishing publicly
+
 ## [0.2.5] - 2026-07-10
 
 ### Added
@@ -11,12 +17,10 @@ All notable changes to this project are documented here. Version format follows 
 - Adaptive speech utilities: `speechResultUtils.ts`, `useVisibleWordRange.ts`, and `restartBackoff.ts`
 - `bin/start.sh cleanup` and `bin/start.sh rebuild` commands for safe dangling-resource cleanup and forced container rebuilds
 - README.md local installation guide: hotspot + custom domain access from a phone or tablet
-- `DISABLE_SERVER_HANDOFF` config: disable LAN/Relay handoff to keep scripts client-side only when publishing publicly
 
 ### Changed
 
 - API and frontend package manifests now report version `0.2.5`
-
 - Hardened Docker Compose deployment: `restart: unless-stopped` on the frontend service and Caddy frontend port configurable via environment variable
 
 ### Notes
@@ -41,5 +45,6 @@ First public release.
 - Scripts are stored locally in the browser after handoff; relay data in Redis expires in minutes
 - For phone QR handoff on a hotspot, open the app via your laptop's LAN IP (not `localhost`) — see README
 
+[0.2.6]: https://github.com/PiloTracer/tools-teleprompt/releases/tag/v0.2.6
 [0.2.5]: https://github.com/PiloTracer/tools-teleprompt/releases/tag/v0.2.5
 [0.1.0]: https://github.com/PiloTracer/tools-teleprompt/releases/tag/v0.1.0
