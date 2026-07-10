@@ -73,3 +73,18 @@ async def test_public_handoff_config_uses_request_host(
     assert response.status_code == 200
     body = response.json()
     assert body["spa_public_origin"] == "http://10.42.0.1:9173"
+
+
+@pytest.mark.asyncio
+async def test_public_handoff_config_exposes_disable_flag(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tp_platform.config import settings
+
+    monkeypatch.setattr(settings, "disable_server_handoff", True)
+
+    response = await client.get("/api/v1/handoff/public-config")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["disable_server_handoff"] is True

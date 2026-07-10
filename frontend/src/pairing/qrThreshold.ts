@@ -127,21 +127,24 @@ export async function fitsMultiQrHandoff(
 
 /**
  * Fallback order: single QR → multi-QR → LAN → relay (ADR 006).
+ * When `disableServerHandoff` is true, LAN and relay are not available and the
+ * function returns `null` if the script does not fit in QR codes.
  */
 export async function resolveHandoffMode(
   source: string,
   format: ScriptFormat,
   origin: string,
   maxScriptBytes: number,
-): Promise<HandoffMode> {
+  disableServerHandoff: boolean = false,
+): Promise<HandoffMode | null> {
   if (!source.trim()) {
-    return "relay";
+    return disableServerHandoff ? null : "relay";
   }
   if (scriptByteLength(source) > maxScriptBytes) {
-    return "relay";
+    return disableServerHandoff ? null : "relay";
   }
   if (!compressionSupported()) {
-    return "lan";
+    return disableServerHandoff ? null : "lan";
   }
   if (await fitsQrHandoff(source, format, origin)) {
     return "single-qr";
@@ -149,5 +152,5 @@ export async function resolveHandoffMode(
   if (await fitsMultiQrHandoff(source, format, origin, maxScriptBytes)) {
     return "multi-qr";
   }
-  return "lan";
+  return disableServerHandoff ? null : "lan";
 }

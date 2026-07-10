@@ -19,11 +19,31 @@ async def _create(client: AsyncClient, text: str = "Hello relay") -> dict[str, s
     return body
 
 
+async def _create_expect_disabled(client: AsyncClient, text: str = "Hello relay") -> None:
+    response = await client.post(
+        "/api/v1/sessions",
+        json={"text": text, "format": "plain"},
+    )
+    assert response.status_code == 403
+    assert response.headers["content-type"].startswith("application/problem+json")
+
+
 @pytest.mark.asyncio
 async def test_create_stores_with_ttl(client: AsyncClient, fake_redis: FakeRedis) -> None:
     body = await _create(client)
     ttl = await fake_redis.ttl(session_key(body["token"]))  # pyright: ignore[reportUnknownMemberType]
     assert 0 < ttl <= 300
+
+
+@pytest.mark.asyncio
+async def test_create_disabled_returns_403(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tp_platform.config import settings
+
+    monkeypatch.setattr(settings, "disable_server_handoff", True)
+    await _create_expect_disabled(client)
 
 
 @pytest.mark.asyncio

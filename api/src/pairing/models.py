@@ -56,6 +56,7 @@ class LanHandoffPayloadResponse(BaseModel):
 class PublicHandoffConfigResponse(BaseModel):
     spa_public_origin: str
     api_public_base_url: str
+    disable_server_handoff: bool = False
 
 
 class SessionRecord(BaseModel):

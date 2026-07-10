@@ -21,6 +21,15 @@ async def _create_lan(client: AsyncClient, text: str = "Hello LAN") -> dict[str,
     return body
 
 
+async def _create_lan_expect_disabled(client: AsyncClient, text: str = "Hello LAN") -> None:
+    response = await client.post(
+        "/api/v1/handoff/lan",
+        json={"text": text, "format": "plain"},
+    )
+    assert response.status_code == 403
+    assert response.headers["content-type"].startswith("application/problem+json")
+
+
 @pytest.fixture(autouse=True)
 def reset_lan_store() -> Iterator[None]:
     lan_store.clear()
@@ -35,6 +44,17 @@ async def test_create_returns_claim_url(client: AsyncClient) -> None:
     expires_at = datetime.fromisoformat(body["expires_at"].replace("Z", "+00:00"))
     assert expires_at > datetime.now(UTC)
     assert expires_at <= datetime.now(UTC) + timedelta(seconds=LAN_TTL_SECONDS + 1)
+
+
+@pytest.mark.asyncio
+async def test_create_disabled_returns_403(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tp_platform.config import settings
+
+    monkeypatch.setattr(settings, "disable_server_handoff", True)
+    await _create_lan_expect_disabled(client)
 
 
 @pytest.mark.asyncio

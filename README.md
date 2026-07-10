@@ -120,12 +120,12 @@ http://tele.aiepic.app:9080
 
 Handoff modes (picked automatically for your script size):
 
-| Mode | Best for |
-|------|----------|
-| **Single QR** | Small scripts — one scan opens the player |
-| **Multi-QR** | Larger scripts — scan each code (any order); progress shows on the phone |
-| **LAN link** | Same Wi-Fi or hotspot — open a one-time link on the phone |
-| **Relay + OTP** | Very large scripts — short code on phone, OTP on laptop |
+| Mode | Sends script to server? | Best for |
+|------|------------------------|----------|
+| **Single QR** | ❌ No — encoded in the QR URL | Small scripts — one scan opens the player |
+| **Multi-QR** | ❌ No — encoded across QR URLs | Larger scripts — scan each code (any order); progress shows on the phone |
+| **LAN link** | ✅ Yes — stored in API memory for 2 minutes | Same Wi-Fi or hotspot — open a one-time link on the phone |
+| **Relay + OTP** | ✅ Yes — stored in Redis for 5 minutes | Very large scripts — short code on phone, OTP on laptop |
 
 ---
 
@@ -150,6 +150,39 @@ If QR codes point at `localhost`, your phone cannot reach them. Use your laptop'
 5. Scan with the phone; for multi-QR, scan all codes (each scan may open a new tab — that is expected)
 
 More detail: [`deploy/README.md`](deploy/README.md) (environment variables, production checklist, security headers).
+
+---
+
+## Publishing publicly without server-side script storage
+
+If you expose this app to the internet and want to guarantee that user scripts never touch your server, disable the server-based handoff modes. With this setting, only **Single QR** and **Multi-QR** remain available; **LAN link** and **Relay + OTP** are blocked both in the UI and at the API.
+
+1. In `.env.dev` (or `.env.prd` for production), set:
+
+   ```bash
+   DISABLE_SERVER_HANDOFF=true
+   ```
+
+2. Restart the stack:
+
+   ```bash
+   ./bin/start.sh dev restart
+   ```
+
+3. Confirm the public config reports the flag:
+
+   ```bash
+   curl -sS "http://localhost:9080/api/v1/handoff/public-config" | grep disable_server_handoff
+   ```
+
+When `DISABLE_SERVER_HANDOFF=true`:
+
+- The handoff page hides LAN and Relay buttons.
+- `POST /api/v1/sessions` and `POST /api/v1/handoff/lan` return `403 Forbidden`.
+- Scripts still fit in the user's browser local storage for normal editing/playing.
+- Redis is no longer needed for script privacy, although the stack currently still starts it.
+
+> **Note:** Even with server handoff disabled, always serve the public instance over HTTPS so Chrome allows microphone access for speech sync.
 
 ---
 

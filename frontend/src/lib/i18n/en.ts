@@ -105,10 +105,14 @@ export const en = {
     modeMultiQr: "Script needs multiple QR codes — scan each code in order on your phone.",
     modeLan: "Script fits LAN one-shot handoff — open the link on your phone (same network).",
     modeRelay: "Using relay handoff with OTP (server stores script briefly).",
+    modeServerHandoffDisabled:
+      "Server handoff is disabled on this instance. QR handoff is still available if the script fits.",
     createQr: "Generate QR code",
     generatingQr: "Generating QR…",
     qrFailed: "Could not generate QR handoff.",
     qrTooLarge: "Script is too large for a QR code — use relay handoff instead.",
+    qrTooLargeServerDisabled:
+      "Script is too large for QR handoff and server handoff is disabled on this instance.",
     qrScanHint:
       "Scan on your phone. For best results: turn screen brightness up, reduce glare, hold the phone square to the code, and fill most of the camera view. Or copy the link below.",
     qrScanHintMulti:

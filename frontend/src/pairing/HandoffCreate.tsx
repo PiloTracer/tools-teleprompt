@@ -20,7 +20,12 @@ import {
   PairingApiError,
 } from "./client";
 import { MultiQrCreate } from "./MultiQrCreate";
-import { blocksCrossDeviceHandoff, resolveHandoffOrigin, resolveHandoffOriginAsync } from "./publicOrigin";
+import {
+  blocksCrossDeviceHandoff,
+  isServerHandoffDisabled,
+  resolveHandoffOrigin,
+  resolveHandoffOriginAsync,
+} from "./publicOrigin";
 import { buildHandoffQrUrl, generateHandoffQrDataUrl, QrGenerationError } from "./qrEncode";
 import { type HandoffMode, resolveHandoffMode } from "./qrThreshold";
 
@@ -29,7 +34,8 @@ export function HandoffCreate() {
   const [format, setFormat] = useState<ScriptFormat>("plain");
   const [loading, setLoading] = useState(true);
   const [modeLoading, setModeLoading] = useState(true);
-  const [handoffMode, setHandoffMode] = useState<HandoffMode>("relay");
+  const [handoffMode, setHandoffMode] = useState<HandoffMode | null>("relay");
+  const [serverHandoffDisabled, setServerHandoffDisabled] = useState<boolean | undefined>(undefined);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<CreateSessionResponse | null>(null);
@@ -48,6 +54,7 @@ export function HandoffCreate() {
     void resolveHandoffOriginAsync(window.location.origin).then((origin) => {
       if (!cancelled) {
         setHandoffOrigin(origin);
+        setServerHandoffDisabled(Boolean(isServerHandoffDisabled()));
         setOriginLoading(false);
       }
     });
@@ -65,16 +72,26 @@ export function HandoffCreate() {
   }, []);
 
   useEffect(() => {
-    if (loading || !source.trim()) {
+    if (loading || serverHandoffDisabled === undefined) {
+      setModeLoading(true);
+      return;
+    }
+    if (!source.trim()) {
       setModeLoading(false);
-      setHandoffMode("relay");
+      setHandoffMode(serverHandoffDisabled ? null : "relay");
       return;
     }
 
     const origin = handoffOrigin;
     let cancelled = false;
     setModeLoading(true);
-    void resolveHandoffMode(source, format, origin, DEFAULT_MAX_SCRIPT_BYTES)
+    void resolveHandoffMode(
+      source,
+      format,
+      origin,
+      DEFAULT_MAX_SCRIPT_BYTES,
+      serverHandoffDisabled,
+    )
       .then((mode) => {
         if (cancelled) {
           return;
@@ -84,7 +101,7 @@ export function HandoffCreate() {
       })
       .catch(() => {
         if (!cancelled) {
-          setHandoffMode("relay");
+          setHandoffMode(serverHandoffDisabled ? null : "relay");
           setModeLoading(false);
         }
       });
@@ -92,7 +109,7 @@ export function HandoffCreate() {
     return () => {
       cancelled = true;
     };
-  }, [loading, source, format, handoffOrigin]);
+  }, [loading, source, format, handoffOrigin, serverHandoffDisabled]);
 
   const onCreateRelay = useCallback(async () => {
     setError(null);
@@ -183,16 +200,21 @@ export function HandoffCreate() {
           format,
           handoffOrigin,
           DEFAULT_MAX_SCRIPT_BYTES,
+          serverHandoffDisabled ?? false,
         );
-        setHandoffMode(nextMode === "single-qr" ? "multi-qr" : nextMode);
-        setError(en.handoff.qrTooLarge);
+        setHandoffMode(nextMode);
+        if (serverHandoffDisabled && nextMode !== "multi-qr") {
+          setError(en.handoff.qrTooLargeServerDisabled);
+        } else {
+          setError(en.handoff.qrTooLarge);
+        }
       } else {
         setError(en.handoff.qrFailed);
       }
     } finally {
       setQrGenerating(false);
     }
-  }, [source, format, handoffOrigin]);
+  }, [source, format, handoffOrigin, serverHandoffDisabled]);
 
   const handoffOriginBlocked = blocksCrossDeviceHandoff(handoffOrigin);
 
@@ -208,7 +230,9 @@ export function HandoffCreate() {
         ? en.handoff.modeMultiQr
         : handoffMode === "lan"
           ? en.handoff.modeLan
-          : en.handoff.modeRelay;
+          : handoffMode === "relay"
+            ? en.handoff.modeRelay
+            : en.handoff.modeServerHandoffDisabled;
 
   const lanPageUrl = lanSession ? lanHandoffPageUrl(lanSession.token, handoffOrigin) : null;
 
@@ -280,7 +304,7 @@ export function HandoffCreate() {
             </>
           ) : null}
 
-          {handoffMode === "lan" && !modeLoading ? (
+          {handoffMode === "lan" && !modeLoading && !serverHandoffDisabled ? (
             <>
               <Button
                 type="button"
@@ -307,7 +331,7 @@ export function HandoffCreate() {
             </>
           ) : null}
 
-          {handoffMode === "relay" && !modeLoading ? (
+          {handoffMode === "relay" && !modeLoading && !serverHandoffDisabled ? (
             <Button
               type="button"
               variant="primary"

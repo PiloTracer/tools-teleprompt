@@ -55,6 +55,12 @@ class LockedError(AppError):
     title = "Locked"
 
 
+class ServerHandoffDisabledError(AppError):
+    status_code = 403
+    error_type = "server-handoff-disabled"
+    title = "Server Handoff Disabled"
+
+
 def problem_detail(
     *,
     status: int,

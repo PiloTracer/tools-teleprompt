@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     frontend_public_port: int = Field(default=9173, validation_alias="FRONTEND_HOST_PORT")
     otp_hmac_secret: str = Field(default="dev-only-change-me")
     log_level: str = "INFO"
+    disable_server_handoff: bool = Field(
+        default=False, validation_alias="DISABLE_SERVER_HANDOFF"
+    )
 
 
 settings = Settings()

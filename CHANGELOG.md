@@ -11,6 +11,7 @@ All notable changes to this project are documented here. Version format follows 
 - Adaptive speech utilities: `speechResultUtils.ts`, `useVisibleWordRange.ts`, and `restartBackoff.ts`
 - `bin/start.sh cleanup` and `bin/start.sh rebuild` commands for safe dangling-resource cleanup and forced container rebuilds
 - README.md local installation guide: hotspot + custom domain access from a phone or tablet
+- `DISABLE_SERVER_HANDOFF` config: disable LAN/Relay handoff to keep scripts client-side only when publishing publicly
 
 ### Changed
 

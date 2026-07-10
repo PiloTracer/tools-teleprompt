@@ -14,6 +14,7 @@ from pairing.models import (
 from pairing.public_config import resolve_spa_public_origin
 from pairing.service import PairingService
 from tp_platform.config import settings
+from tp_platform.errors import ServerHandoffDisabledError
 from tp_platform.rate_limit import enforce_claim_rate_limit, enforce_create_rate_limit
 
 router = APIRouter(prefix="/api/v1", tags=["pairing"])
@@ -24,6 +25,11 @@ def get_pairing_service(request: Request) -> PairingService:
     return PairingService(redis, settings)
 
 
+def require_server_handoff() -> None:
+    if settings.disable_server_handoff:
+        raise ServerHandoffDisabledError("Relay and LAN handoff are disabled on this instance.")
+
+
 @router.post(
     "/sessions",
     response_model=CreateSessionResponse,
@@ -32,6 +38,7 @@ def get_pairing_service(request: Request) -> PairingService:
 async def create_session(
     payload: CreateSessionRequest,
     _: None = Depends(enforce_create_rate_limit),
+    __: None = Depends(require_server_handoff),
     service: PairingService = Depends(get_pairing_service),
 ) -> CreateSessionResponse:
     return await service.create_session(payload)
@@ -59,6 +66,7 @@ async def public_handoff_config(request: Request) -> PublicHandoffConfigResponse
     return PublicHandoffConfigResponse(
         spa_public_origin=spa_origin,
         api_public_base_url=settings.public_base_url.rstrip("/"),
+        disable_server_handoff=settings.disable_server_handoff,
     )
 
 
@@ -70,6 +78,7 @@ async def public_handoff_config(request: Request) -> PublicHandoffConfigResponse
 async def create_lan_handoff(
     payload: CreateLanHandoffRequest,
     _: None = Depends(enforce_create_rate_limit),
+    __: None = Depends(require_server_handoff),
 ) -> CreateLanHandoffResponse:
     token, expires_at = lan_store.create(
         payload.text,

@@ -4,9 +4,11 @@
  */
 type PublicHandoffConfig = {
   spa_public_origin: string;
+  disable_server_handoff: boolean;
 };
 
 let cachedRemoteOrigin: string | null | undefined;
+let cachedDisableServerHandoff: boolean | undefined;
 
 function apiBaseUrl(): string {
   const base = import.meta.env.VITE_API_BASE_URL;
@@ -92,7 +94,7 @@ function originFromBuildEnv(): string | null {
   return null;
 }
 
-async function fetchRemoteOrigin(): Promise<string | null> {
+async function fetchRemoteConfig(): Promise<PublicHandoffConfig | null> {
   try {
     const base = apiBaseUrl();
     const url = base
@@ -102,15 +104,24 @@ async function fetchRemoteOrigin(): Promise<string | null> {
     if (!response.ok) {
       return null;
     }
-    const body = (await response.json()) as PublicHandoffConfig;
-    const origin = body.spa_public_origin?.trim();
-    if (!origin || isLoopbackOrigin(origin)) {
-      return null;
-    }
-    return origin.replace(/\/$/, "");
+    return (await response.json()) as PublicHandoffConfig;
   } catch {
     return null;
   }
+}
+
+async function fetchRemoteOrigin(): Promise<string | null> {
+  const config = await fetchRemoteConfig();
+  if (!config) {
+    cachedDisableServerHandoff = false;
+    return null;
+  }
+  cachedDisableServerHandoff = Boolean(config.disable_server_handoff);
+  const origin = config.spa_public_origin?.trim();
+  if (!origin || isLoopbackOrigin(origin)) {
+    return null;
+  }
+  return origin.replace(/\/$/, "");
 }
 
 /** True when phones on the LAN cannot reach this origin (localhost / 127.0.0.1). */
@@ -151,7 +162,16 @@ export async function resolveHandoffOriginAsync(fallbackOrigin: string): Promise
   return resolveHandoffOrigin(fallbackOrigin);
 }
 
+/**
+ * Whether the API has disabled LAN/Relay handoff.
+ * Returns `undefined` until the public-config request has resolved.
+ */
+export function isServerHandoffDisabled(): boolean | undefined {
+  return cachedDisableServerHandoff;
+}
+
 /** Test helper — clears cached API config. */
 export function resetHandoffOriginCache(): void {
   cachedRemoteOrigin = undefined;
+  cachedDisableServerHandoff = undefined;
 }
