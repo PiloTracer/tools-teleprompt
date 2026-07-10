@@ -7,7 +7,7 @@ All notable changes to this project are documented here. Version format follows 
 ### Added
 
 - `DISABLE_SERVER_HANDOFF` config: disable LAN/Relay handoff to keep scripts client-side only when publishing publicly
-- Production deployment stack: `deploy/docker-compose.prd.yml`, `deploy/Caddyfile.prd`, `api/Dockerfile.prd`, `frontend/Dockerfile.prd`
+- Production deployment stack: `deploy/docker-compose.prd.yml`, `api/Dockerfile.prd`, `frontend/Dockerfile.prd`, `frontend/nginx.prd.conf` (prd relies on host nginx, no Caddy container)
 
 ### Changed
 

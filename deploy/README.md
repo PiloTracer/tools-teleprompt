@@ -1,14 +1,18 @@
-# Production deployment — tools-teleprompt
+# Deployment — tools-teleprompt
 
-**Stack:** Caddy (reverse proxy) · Vite static frontend · FastAPI pairing API · Redis 7 (ephemeral relay)
+**Dev stack:** Caddy (reverse proxy) · Vite dev frontend · FastAPI pairing API · Redis 7 (ephemeral relay)
+
+**Prd stack:** Host nginx (reverse proxy) · nginx static frontend · FastAPI pairing API · Redis 7 (ephemeral relay)
 
 ---
 
 ## Prerequisites
 
 - Docker Engine 24+ with Compose v2
-- Host port available (default **9080** via `CADDY_HOST_PORT`; frontend dev/HMR **9173** via `FRONTEND_HOST_PORT`)
-- TLS certificate (production) — terminate at Caddy or upstream load balancer
+- Host ports available:
+  - **dev**: `CADDY_HOST_PORT` (default **9080**) for Caddy; `FRONTEND_HOST_PORT` (default **9173**) for Vite dev/HMR
+  - **prd**: `FRONTEND_HOST_PORT` (default **9080**) for the static frontend; `API_DEV_PORT` (default **8000**) for the API
+- TLS certificate (production) — terminate at host nginx or upstream load balancer
 
 ---
 
@@ -36,12 +40,18 @@
 4. Verify health:
 
    ```bash
+   # dev
    curl -sS "http://localhost:${CADDY_HOST_PORT:-9080}/health"
+   # prd
+   curl -sS "http://localhost:${API_DEV_PORT:-8000}/health"
    ```
 
    Expect HTTP 200 with JSON body indicating API + Redis reachable.
 
-5. Open the app at `http://localhost:${CADDY_HOST_PORT:-9080}/`.
+5. Open the app:
+
+   - dev: `http://localhost:${CADDY_HOST_PORT:-9080}/`
+   - prd: `http://localhost:${FRONTEND_HOST_PORT:-9080}/` (or your host nginx URL)
 
 Direct Vite dev + HMR WebSocket (optional): `http://localhost:${FRONTEND_HOST_PORT:-9173}/`.
 
@@ -56,11 +66,11 @@ Direct Vite dev + HMR WebSocket (optional): `http://localhost:${FRONTEND_HOST_PO
 | `COMPOSE_PROJECT_NAME` | no | `${STACK_NAME}-${STACK_ENV}` | Compose project prefix |
 | `PUBLIC_HOST` | no | `localhost` | LAN/hotspot IP for handoff URL hints (e.g. `10.42.0.1`) |
 | `PUBLIC_ORIGIN` | no | *(derived)* | Full SPA origin for QR/LAN links; overrides `PUBLIC_HOST`+port. Shorter URLs fit more script in a QR (D14). |
-| `API_PUBLIC_BASE_URL` | no | `http://localhost:9080` | Public API base for LAN claim URLs (Caddy port on hotspot) |
-| `CADDY_HOST_PORT` | no | `9080` | Host port → Caddy :80 (primary app URL) |
-| `FRONTEND_HOST_PORT` | no | `9173` | Host port → Vite dev + HMR WebSocket |
-| `FRONTEND_DEV_PORT` | no | `5173` | Vite listen port inside container |
-| `API_DEV_PORT` | no | `8000` | API listen port inside container |
+| `API_PUBLIC_BASE_URL` | no | `http://localhost:9080` | Public API base for LAN claim URLs |
+| `CADDY_HOST_PORT` | no | `9080` | **dev only** — host port → Caddy :80 (primary app URL) |
+| `FRONTEND_HOST_PORT` | no | `9173` | dev: Vite dev/HMR host port; prd: static frontend host port (default **9080**) |
+| `FRONTEND_DEV_PORT` | no | `5173` | **dev only** — Vite listen port inside container |
+| `API_DEV_PORT` | no | `8000` | API listen port inside container; exposed on host in prd |
 | `API_MAX_SCRIPT_BYTES` | no | `262144` | Max relay script size (256 KB) |
 | `API_SESSION_TTL_SECONDS` | no | `300` | Relay TTL (5 min) |
 | `API_RATE_LIMIT_CREATE` | no | `10` | Creates per IP per window |
@@ -71,17 +81,23 @@ Direct Vite dev + HMR WebSocket (optional): `http://localhost:${FRONTEND_HOST_PO
 
 ---
 
-## Security headers (Caddy)
+## Security headers
 
-`deploy/Caddyfile.dev` (development) and `deploy/Caddyfile.prd` (production) set CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Permissions-Policy` on all responses. Cross-check: `.ai/standards/20260520-threat-model.md`.
+- **dev**: `deploy/Caddyfile.dev` sets CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Permissions-Policy`.
+- **prd**: `frontend/nginx.prd.conf` sets the same headers on the static frontend. Host nginx must preserve or re-add them when proxying.
+
+Cross-check: `.ai/standards/20260520-threat-model.md`.
 
 Verify after deploy:
 
 ```bash
+# dev
 curl -sI "http://localhost:${CADDY_HOST_PORT:-9080}/" | grep -iE 'content-security-policy|x-frame-options|x-content-type'
+# prd
+curl -sI "http://localhost:${FRONTEND_HOST_PORT:-9080}/" | grep -iE 'content-security-policy|x-frame-options|x-content-type'
 ```
 
-Caddy forwards `X-Forwarded-For` / `X-Real-IP` to the API for rate limiting.
+In dev, Caddy forwards `X-Forwarded-For` / `X-Real-IP` to the API for rate limiting. In prd, configure host nginx to do the same.
 
 ---
 
@@ -107,12 +123,12 @@ Two limits apply; do not conflate them:
 
 A script can pass the 8192 B check yet fail QR generation when the full URL exceeds 3360 chars (common with long hotspot hostnames). The UI then falls back to multi-QR, LAN, or relay.
 
-**Hotspot / LAN:** Set in `.env.dev` (or `.env.prd`):
+**Hotspot / LAN:** Set in `.env.dev` or `.env.prd`:
 
-- `PUBLIC_ORIGIN=http://<laptop-ip>:9173` — QR and SPA handoff links (Vite port)
-- `API_PUBLIC_BASE_URL=http://<laptop-ip>:9080` — LAN API claim URLs (Caddy port)
+- `PUBLIC_ORIGIN=http://<host>:<frontend-port>` — QR and SPA handoff links
+- `API_PUBLIC_BASE_URL=http://<host>:<api-port>` — LAN API claim URLs
 
-Restart after changes: `bin/start.sh dev restart`. The handoff page shows **Handoff link host** — confirm it shows your LAN IP before scanning.
+Restart after changes: `bin/start.sh dev restart` or `bin/start.sh prd restart`. The handoff page shows **Handoff link host** — confirm it shows your public host before scanning.
 
 The API exposes `GET /api/v1/handoff/public-config` (`spa_public_origin`) so QR links stay correct even when the browser is opened via LAN IP while env vars were stale. If you open the app at `http://localhost:…`, QR generation is blocked with an error — use `http://<laptop-ip>:9080` instead.
 
@@ -134,6 +150,8 @@ bin/start.sh prd restart
 ```bash
 bin/start.sh dev logs:api
 bin/start.sh dev logs:caddy
+bin/start.sh prd logs:api
+bin/start.sh prd logs:frontend
 ```
 
 ### Redis flush (abuse recovery)
@@ -150,7 +168,7 @@ docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec 
 
 - Redeploy previous image/tag via compose
 - QR disabled → relay-only fallback is built into the UI (scripts over threshold auto-use relay)
-- CSP can revert to report-only by editing the active Caddyfile (`deploy/Caddyfile.dev` or `deploy/Caddyfile.prd`) if a false positive blocks assets
+- CSP can revert to report-only by editing `deploy/Caddyfile.dev` (dev) or `frontend/nginx.prd.conf` (prd) if a false positive blocks assets
 
 ---
 
@@ -174,24 +192,55 @@ For production-like or public deployments, use the dedicated production compose 
 ```bash
 cp .env.example .env.prd
 # edit .env.prd: STACK_ENV=prd, COMPOSE_PROJECT_NAME=tools-teleprompt-prd,
-#                API_OTP_HMAC_SECRET, API_PUBLIC_BASE_URL, PUBLIC_ORIGIN, etc.
+#                FRONTEND_HOST_PORT, API_DEV_PORT, API_OTP_HMAC_SECRET,
+#                API_PUBLIC_BASE_URL, PUBLIC_ORIGIN, etc.
 ./bin/start.sh prd start
 ```
 
 `deploy/docker-compose.prd.yml` uses:
 
 - `api/Dockerfile.prd` — production API image (no reload, no dev deps)
-- `frontend/Dockerfile.prd` — static build served by Caddy on port 80
-- `deploy/Caddyfile.prd` — reverse proxy to `api:8000` and `frontend:80`
+- `frontend/Dockerfile.prd` — static build served by nginx on port 80
+- `frontend/nginx.prd.conf` — SPA routing + security headers
+
+There is **no Caddy container in prd**. The host nginx is expected to:
+
+- Proxy `/api/*` and `/health` to `localhost:${API_DEV_PORT:-8000}`
+- Proxy everything else to `localhost:${FRONTEND_HOST_PORT:-9080}`
+- Terminate TLS and forward `X-Forwarded-For` / `X-Real-IP`
 
 The production frontend is built with `VITE_API_BASE_URL` from `.env.prd`; leave it empty to have the browser use the same origin.
 
-Alternatively, you can build the images manually and reference them in an override file.
+Example host nginx location blocks:
+
+```nginx
+location /health {
+    proxy_pass http://127.0.0.1:8000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+
+location /api/ {
+    proxy_pass http://127.0.0.1:8000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+
+location / {
+    proxy_pass http://127.0.0.1:9080;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+```
 
 ## Production checklist
 
 - [ ] `API_OTP_HMAC_SECRET` set to a strong random value (≥32 bytes)
-- [ ] TLS enabled (Caddy auto HTTPS or upstream terminator)
+- [ ] Host nginx configured to proxy `/api/*` and `/health` to API, all other paths to frontend
+- [ ] TLS enabled at host nginx or upstream terminator
 - [ ] CSP headers verified with `curl -I`
 - [ ] Rate limits appropriate for expected traffic
 - [ ] Frontend is served from the production static image, not the Vite dev server

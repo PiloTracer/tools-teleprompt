@@ -49,7 +49,13 @@ else
   C_RESET="" C_BOLD="" C_DIM="" C_GREEN="" C_YELLOW="" C_RED="" C_CYAN=""
 fi
 
-SERVICES=(redis api frontend caddy)
+stack_services() {
+  if [[ "$STACK_CONTEXT" == "prd" ]]; then
+    printf '%s\n' redis api frontend
+  else
+    printf '%s\n' redis api frontend caddy
+  fi
+}
 
 # ── Safe .env parsing (never source .env) ─────────────────────────────────────
 read_dotenv_value() {
@@ -155,9 +161,9 @@ init_menu_tty() {
 
 valid_service() {
   local want="$1" s
-  for s in "${SERVICES[@]}"; do
+  while IFS= read -r s; do
     [[ "$s" == "$want" ]] && return 0
-  done
+  done < <(stack_services)
   return 1
 }
 
@@ -182,7 +188,7 @@ require_service_running() {
   local svc="$1"
   if ! valid_service "$svc"; then
     printf '%sERROR: Unknown service %q. Valid: %s%s\n' \
-      "$C_RED" "$svc" "${SERVICES[*]}" "$C_RESET" >&2
+      "$C_RED" "$svc" "$(stack_services | tr '\n' ' ')" "$C_RESET" >&2
     return 1
   fi
   if ! service_is_running "$svc"; then
@@ -194,10 +200,14 @@ require_service_running() {
 wait_for_stack_ready() {
   local i max="${START_WAIT_SECONDS:-120}"
   for ((i = 1; i <= max; i += 2)); do
-    if curl -sf --max-time 2 "http://localhost:${CADDY_HOST_PORT}/health" >/dev/null 2>&1 \
-      && service_is_running redis; then
-      if [[ "$STACK_CONTEXT" == "prd" ]] \
-        || curl -sf --max-time 2 "http://localhost:${FRONTEND_HOST_PORT}/" >/dev/null 2>&1; then
+    if service_is_running redis; then
+      if [[ "$STACK_CONTEXT" == "prd" ]]; then
+        if curl -sf --max-time 2 "http://localhost:${API_DEV_PORT:-8000}/health" >/dev/null 2>&1 \
+          && curl -sf --max-time 2 "http://localhost:${FRONTEND_HOST_PORT:-9080}/" >/dev/null 2>&1; then
+          return 0
+        fi
+      elif curl -sf --max-time 2 "http://localhost:${CADDY_HOST_PORT}/health" >/dev/null 2>&1 \
+        && curl -sf --max-time 2 "http://localhost:${FRONTEND_HOST_PORT}/" >/dev/null 2>&1; then
         return 0
       fi
     fi
@@ -269,14 +279,24 @@ print_banner() {
 }
 
 urls_hint() {
-  local base="http://${PUBLIC_HOST}:${CADDY_HOST_PORT}"
   printf '%sURLs (%s / %s context):%s\n' "$C_BOLD" "$STACK_ENV" "$STACK_CONTEXT" "$C_RESET"
-  printf '  App:      %s/\n' "$base"
-  printf '  Player:   %s/play\n' "$base"
-  printf '  Handoff:  %s/handoff/create\n' "$base"
-  printf '  Health:   %s/health\n' "$base"
-  printf '  API:      %s/api/v1/sessions\n' "$base"
-  if [[ "$STACK_CONTEXT" == "dev" ]]; then
+  if [[ "$STACK_CONTEXT" == "prd" ]]; then
+    local fe_base="http://${PUBLIC_HOST}:${FRONTEND_HOST_PORT:-9080}"
+    local api_base="http://${PUBLIC_HOST}:${API_DEV_PORT:-8000}"
+    printf '  Frontend: %s/\n' "$fe_base"
+    printf '  Player:   %s/play\n' "$fe_base"
+    printf '  Handoff:  %s/handoff/create\n' "$fe_base"
+    printf '  Health:   %s/health\n' "$api_base"
+    printf '  API:      %s/api/v1/sessions\n' "$api_base"
+    printf '  (Host nginx should proxy /api/* to port %s and everything else to port %s)\n' \
+      "${API_DEV_PORT:-8000}" "${FRONTEND_HOST_PORT:-9080}"
+  else
+    local base="http://${PUBLIC_HOST}:${CADDY_HOST_PORT}"
+    printf '  App:      %s/\n' "$base"
+    printf '  Player:   %s/play\n' "$base"
+    printf '  Handoff:  %s/handoff/create\n' "$base"
+    printf '  Health:   %s/health\n' "$base"
+    printf '  API:      %s/api/v1/sessions\n' "$base"
     printf '  Vite dev: http://%s:%s/ (HMR WebSocket on same port)\n' "$PUBLIC_HOST" "$FRONTEND_HOST_PORT"
     printf '  QR handoff: http://%s:%s/handoff/create (set PUBLIC_HOST for LAN/hotspot)\n' \
       "$PUBLIC_HOST" "$FRONTEND_HOST_PORT"
@@ -289,18 +309,23 @@ health_summary_line() {
     printf 'Health: stack stopped'
     return 0
   fi
-  if curl -sf --max-time 2 "http://localhost:${CADDY_HOST_PORT}/health" >/dev/null 2>&1; then
-    api_ok="ok"
+  if [[ "$STACK_CONTEXT" == "prd" ]]; then
+    if curl -sf --max-time 2 "http://localhost:${API_DEV_PORT:-8000}/health" >/dev/null 2>&1; then
+      api_ok="ok"
+    fi
+    if curl -sf --max-time 2 "http://localhost:${FRONTEND_HOST_PORT:-9080}/" >/dev/null 2>&1; then
+      fe_ok="ok"
+    fi
+  else
+    if curl -sf --max-time 2 "http://localhost:${CADDY_HOST_PORT}/health" >/dev/null 2>&1; then
+      api_ok="ok"
+    fi
+    if curl -sf --max-time 2 "http://localhost:${FRONTEND_HOST_PORT}/" >/dev/null 2>&1; then
+      fe_ok="ok"
+    fi
   fi
   if service_is_running redis && dc exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; then
     redis_ok="ok"
-  fi
-  if [[ "$STACK_CONTEXT" == "prd" ]]; then
-    if curl -sf --max-time 2 "http://localhost:${CADDY_HOST_PORT}/" >/dev/null 2>&1; then
-      fe_ok="ok"
-    fi
-  elif curl -sf --max-time 2 "http://localhost:${FRONTEND_HOST_PORT}/" >/dev/null 2>&1; then
-    fe_ok="ok"
   fi
   printf 'Health: API=%s  Redis=%s  Frontend=%s' "$api_ok" "$redis_ok" "$fe_ok"
 }
@@ -577,7 +602,7 @@ render_menu_header() {
   load_env
   local running total
   running="$(running_count)"
-  total="${#SERVICES[@]}"
+  total="$(stack_services | wc -l | tr -d ' ')"
   clear >&2 2>/dev/null || printf '\033[2J\033[H' >&2
   printf '%s┌─ tools-teleprompt ─ %s context ─────────────────────────────┐%s\n' "$C_CYAN" "$STACK_CONTEXT" "$C_RESET"
   printf '%s│%s Project: %-20s  Running: %s/%s\n' "$C_CYAN" "$C_RESET" "$COMPOSE_PROJECT_NAME" "$running" "$total"
@@ -623,14 +648,16 @@ show_menu() {
 
 pick_service() {
   local i svc
+  local -a services
+  mapfile -t services < <(stack_services)
   printf 'Services: ' >&2
-  for i in "${!SERVICES[@]}"; do
-    printf '%s=%s ' "$((i + 1))" "${SERVICES[$i]}" >&2
+  for i in "${!services[@]}"; do
+    printf '%s=%s ' "$((i + 1))" "${services[$i]}" >&2
   done
   printf '\nPick number: ' >&2
   read -r i <"${MENU_TTY:-/dev/tty}"
-  if [[ "$i" =~ ^[0-9]+$ ]] && (( i >= 1 && i <= ${#SERVICES[@]} )); then
-    svc="${SERVICES[$((i - 1))]}"
+  if [[ "$i" =~ ^[0-9]+$ ]] && (( i >= 1 && i <= ${#services[@]} )); then
+    svc="${services[$((i - 1))]}"
     printf '%s' "$svc"
     return 0
   fi
@@ -750,7 +777,7 @@ dispatch_cli() {
         cmd_logs_service "$svc"
       else
         printf '%sERROR: Unknown service %q for logs. Valid: %s%s\n' \
-          "$C_RED" "$svc" "${SERVICES[*]}" "$C_RESET" >&2
+          "$C_RED" "$svc" "$(stack_services | tr '\n' ' ')" "$C_RESET" >&2
         exit 1
       fi
       ;;
@@ -762,7 +789,7 @@ dispatch_cli() {
         cmd_shell_service "$svc"
       else
         printf '%sERROR: Unknown service %q for shell. Valid: %s%s\n' \
-          "$C_RED" "$svc" "${SERVICES[*]}" "$C_RESET" >&2
+          "$C_RED" "$svc" "$(stack_services | tr '\n' ' ')" "$C_RESET" >&2
         exit 1
       fi
       ;;

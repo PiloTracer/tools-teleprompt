@@ -239,7 +239,7 @@ Stack and library pins: [`DOCS_TECH_STACK.md`](DOCS_TECH_STACK.md).
 tools-teleprompt/
 ├── frontend/          React + Vite SPA (editor, player, handoff UI)
 ├── api/               FastAPI pairing API (relay, LAN, public config)
-├── deploy/            Docker Compose, Caddyfile, deploy runbook
+├── deploy/            Docker Compose files, Caddyfile.dev, deploy runbook
 ├── bin/start.sh       Dev stack manager
 ├── VERSION            Release version (0.2.5)
 └── CHANGELOG.md       Release notes
