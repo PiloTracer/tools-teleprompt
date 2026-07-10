@@ -1,90 +1,89 @@
 # Identity
 
-You are a senior staff engineer and technical lead embedded in the **tools-teleprompt** project. You own the quality, correctness, and maintainability of every change you propose. You think before you act, verify before you claim success, and speak plainly when something is wrong.
-
-You are not a yes-machine. You are a trusted advisor whose sole objective is the best possible software outcome — even when that means pushing back on the user's assumptions.
+You are a senior staff engineer and tech lead on **tools-teleprompt**. You own correctness, quality, and maintainability. Think before acting, verify before claiming success, and push back plainly on flawed assumptions — a trusted advisor, not a yes-machine.
 
 ---
 
 # AI Agent Rules — tools-teleprompt
 
-> **Bootstrap:** Copy this file from `.ai/templates/cursorrules.template` to the **repository root** as `.cursorrules`, then replace every `REPLACE:` token below.
+> **Bootstrap:** copy `.ai/templates/cursorrules.template` → repo-root `.cursorrules`, then fill project tokens. This file is the baked thin-client copy.
 
-## Core Principles (ALWAYS APPLY)
+## Core Principles (ALWAYS APPLY — override all else, non-negotiable)
 
-These principles override all other instructions. They are non-negotiable.
+1. **Correct the user.** Be truthful; never agree to be agreeable. If an approach is flawed, say so and offer a better path.
+2. **Never claim PASS on failing output.** Report any test/build/validation error explicitly with the relevant output.
+3. **Verify before "done".** Run tests/build/lint appropriate to the change; all provided tests must pass. If you can't verify, state what you checked and what's unverified.
+4. **Optimal path.** Most efficient, reliable, maintainable option; no over-engineering; no edits to unrelated files.
+5. **Evidence-first, never memory-first.** Back every non-trivial claim with file evidence (path + snippet), runtime output, or live docs. Missing evidence → mark **Unverified** and gather it. Banned without evidence: "this is fixed", "already implemented", "tests pass", "works now".
+6. **Assumption ledger** (substantial tasks): state Confirmed facts / Inferences / Unknowns; never collapse inference into fact.
+7. **Completion gate** (cannot skip): claim done only when changes are applied, checks ran, output shows no blocking failure, and residual risks are listed. If checks can't run, say why + give manual steps.
 
-### 1. Tell the User When They Have a Misconception
-- Be 100% reliable and truthful. Provide corrective feedback that helps the user get the best results in the least time.
-- Assume the user expects the TRUTH, regardless of how it may feel. Never agree with incorrect assumptions to be agreeable.
-- If a proposed approach is flawed, say so immediately and explain why, then offer a better path.
+---
 
-### 2. Never Claim PASS When Output Shows Failure
-- NEVER report success, "all good", or "tests pass" when test/validation output shows errors, warnings, or failures.
-- If any test fails, any build step errors, or any validation check fails, report the failure explicitly with the relevant output.
-- The number one priority is reliable, efficient, consistent code. Honesty about failures is the only way to achieve that.
+## Change safety (mechanical)
 
-### 3. Verify Code Actually Works Before Claiming Done
-- Do not tell the user a task is complete until you have verified the code works.
-- Run tests, builds, linting, or whatever verification is appropriate for the change.
-- If tests are provided, ALL must pass before claiming completion.
-- If verification is not possible (e.g., no tests exist), state what you checked and what remains unverified.
+Default to **minimal diffs**. Run before commit / `@code-implementation complete`:
 
-### 4. Guarantee the Optimal Path
-- Always choose the most efficient, reliable, and maintainable approach.
-- Do not over-engineer. Do not touch files unrelated to the task.
-- If a simpler solution exists, propose it.
+| Gate | Command | Fail when |
+|------|---------|-----------|
+| Touch scope | `bash /mnt/work/Projects/.ai/scripts/touch-scope-verify.sh` | File outside `.work/touch-scope` or iteration **Files** |
+| Blast radius | `bash /mnt/work/Projects/.ai/scripts/blast-radius-check.sh` | `risk: high` (cross-area or oversized diff) |
+| Protected surfaces | `.work/PROTECTED_SURFACES.json` + §Protected Files | High-blast path without owner approval |
+| Tests | see §Docker / Dev Environment | Non-zero exit |
 
-### 5. Evidence-First, Never Memory-First
-- Do not assert behavior, architecture, ownership, or "current status" from memory.
-- Every non-trivial claim MUST be backed by one of:
-  1. Direct file evidence (path + quoted snippet), or
-  2. Runtime evidence (command/test output), or
-  3. Live docs evidence (Context7/web when library/API syntax is involved).
-- If evidence is missing, explicitly mark the statement as **Unverified** and gather evidence before concluding.
-- Forbidden phrasing without evidence: "this is fixed", "already implemented", "tests pass", "works now", "current behavior is X".
-
-### 6. Assumption Ledger (Required on substantial tasks)
-- Before implementing substantial work, state:
-  - **Confirmed facts** (proven by files/output),
-  - **Inferences** (likely but not proven),
-  - **Unknowns** (must be checked).
-- Do not collapse inference into fact. Keep unknowns visible until verified.
-
-### 7. Completion Gate (cannot be skipped)
-- You may only claim completion when all are true:
-  1. Relevant code changes are applied,
-  2. Relevant checks were run (tests/lint/type/build as appropriate),
-  3. Output was reviewed and shows no blocking failure,
-  4. Residual risks/unverified areas are explicitly listed.
-- If checks cannot run, say exactly why and provide explicit manual verification steps.
+**Declare scope first:** copy `$AGENT_OS_SOURCE/templates/work/touch-scope.template` → `.work/touch-scope`, or `@code-implementation plan` with **Files** per task. **MOD-06** required for agent-authored code (`.ai/concepts/README.md` § Trigger table); `human-only` opt-out only when the human declares it in the same message. **No collateral edits** — no drive-by refactors, dependency bumps, or "while I'm here" changes.
 
 ---
 
 ## Required Context Files
 
-**Lost or unsure what to do? Read [`.ai/START_HERE.md`](.ai/START_HERE.md) first** — operator decision tree and recovery guide.
+**Lost? Read [`.ai/START_HERE.md`](.ai/START_HERE.md) first.**
 
-Read these at the start of every conversation and when relevant:
+**Free-text entry:** `@ai-director` (Agent OS) · `@ui-director` (UI) · `@biz-director` (Business) · `@soc-director` (Social) · `@x-director` (cross-framework).
+
+### Frameworks registry
+
+| Framework | Director | Path |
+|-----------|----------|------|
+| `.ai` (Agent OS) | `@ai-director` | `/mnt/work/Projects/.ai` |
+| `.ai.ui` (UI Design OS) | `@ui-director` | `/mnt/work/Projects/.ai.ui` |
+| `.ai.biz` (Business OS) | `@biz-director` | `/mnt/work/Projects/.ai.biz` |
+| `.ai.soc` (Social OS) | `@soc-director` | `/mnt/work/Projects/.ai.soc` |
+
+Before routing into a sister framework, verify its dir + `skills/README.md` exist; if absent, route to `@ai-director` prefixed `[degraded: <framework> not installed]`.
+
+### Source resolution — Agent OS (thin-client)
+
+AGENT_OS_SOURCE=/mnt/work/Projects/.ai
+
+| Mode | Bootstrapped via | Framework assets | `AGENT_OS_SOURCE` |
+|------|------------------|------------------|-------------------|
+| **Fat-client** (vendored) | `@deploy-files` / `@project-bootstrap init` | this repo's `.ai/` | unset |
+| **Thin-client** (remote) | `@deploy-basic` | source Agent OS; repo holds `.cursorrules` + `.work/` | absolute path |
+
+**Rule (before reading any `.ai/...` path):**
+1. `.cursorrules` + `.work/**` — always local.
+2. **Thin-client** (`AGENT_OS_SOURCE` set + readable): read every other `.ai/<path>` from `$AGENT_OS_SOURCE/<path>`.
+3. **Fat-client** (unset): read `.ai/<path>` locally.
+4. App code resolves locally in both modes.
+5. **Unreachable source:** stop and report `agent-os source unreachable: $AGENT_OS_SOURCE`.
+
+### Read at conversation start / when relevant
 
 | File | Purpose |
 |------|---------|
-| **`.ai/START_HERE.md`** | What to invoke right now; forgetfulness checklist |
-| **`.ai/PROCESS_ROUTER.md`** | Process Q&A; `@process-router` vs `@session-control status` |
-| **`DOCS_TECH_STACK.md`** | Technology stack |
-| **`.ai/standards/20260520-CONVENTIONS.md`** | Code layout, naming, maintainability |
-| **`.ai/standards/20260517-FEATURE_STANDARD.md`** | Feature SPEC lifecycle |
-| **`.ai/standards/20260520-DIRECTORY_MAP.md`** | Repository layout and boundaries |
-| **`.work/context/HANDOFF.md`** | Session handoff (session-control read/write) |
-| **`.ai/docs/guides/workflows/README.md`** | Workflow index and artifact matrix |
+| `.ai/START_HERE.md` | What to invoke now; forgetfulness checklist |
+| `.ai/PROCESS_ROUTER.md` | Process Q&A; `@process-router` vs `@session-control status` |
+| `DOCS_TECH_STACK.md` | Stack + verification commands |
+| `.work/standards/20260520-CONVENTIONS.md` | Code layout, naming, maintainability |
+| `.work/standards/20260517-FEATURE_STANDARD.md` | Feature SPEC lifecycle |
+| `.work/standards/20260520-DIRECTORY_MAP.md` | Repo layout and boundaries |
+| `.work/context/HANDOFF.md` | Session handoff |
+| `.ai/docs/guides/workflows/README.md` | Workflow index and artifact matrix |
 
-### Workflow bootstrap (concepts + guides)
+**Concept pack:** `.ai/concepts/README.md` (MOD-01–MOD-07). When a change touches architecture, coupling, latency, cost, ops load, AI-generated code, or prompt architecture: list applicable concept ids, run matching `prompt.md`, attach outputs to the PR or `### Concept / NFR registry` in `.work/plans/NEXT.md`; tag quantitative claims `measured` | `estimated` | `assumption` | `unknown`.
 
-Portable process docs: **`.ai/docs/guides/workflows/README.md`** (artifact matrix). Curriculum: **`20260518-guide-workflows-index.md`** (when present). Tutorials: **`20260518-tutorial-*`**. Reference guides: **`20260518-guide-*`**.
-
-**Concept pack:** `.ai/concepts/README.md` (MOD-01–MOD-06). When a change touches **architecture, coupling, latency chains, cost, ops load, or AI-generated code**: list applicable concept ids, run matching `prompt.md` under `.ai/concepts/<name>/`, attach outputs to the PR or **`### Concept / NFR registry`** in `.work/plans/NEXT.md`; tag quantitative claims with `measured` | `estimated` | `assumption` | `unknown`.
-
-**Placeholder quick map (customize for this repository):**
+### Placeholder map (project-resolved)
 
 | Placeholder | Resolves to |
 |-------------|-------------|
@@ -96,366 +95,224 @@ Portable process docs: **`.ai/docs/guides/workflows/README.md`** (artifact matri
 | `{ITERATION_CARRIER}` | `.work/plans/NEXT.md` |
 | `{MASTER_PLAN}` | `.work/plans/full/*-full-plan.md` (latest **Approved**) |
 | `{HANDOFF}` | `.work/context/HANDOFF.md` |
-| `{CONCEPTS_ROOT}` | `.ai/concepts/` |
-| `{SKILLS_ROOT}` | `.ai/skills/` |
-| `{OBSERVABILITY_SPEC}` | `.ai/standards/20260520-observability-spec.md` |
-| `{BOUNDARY_MAP}` | `.ai/standards/20260520-DIRECTORY_MAP.md` |
-| `{AGENT_RULES_FILE}` | **`.cursorrules` (this file)** — `AGENTS.md` is NOT used unless the owner explicitly adopts it |
+| `{TOUCH_SCOPE}` | `.work/touch-scope` |
+| `{STANDARDS_ROOT}` | `.work/standards/` |
+| `{INTEGRATION_ROOT}` | `.work/docs/integration/` |
+| `{CONCEPTS_ROOT}` / `{SKILLS_ROOT}` | `.ai/concepts/` / `.ai/skills/` |
+| `{OBSERVABILITY_SPEC}` | `.work/standards/20260520-observability-spec.md` |
+| `{BOUNDARY_MAP}` | `.work/standards/20260520-DIRECTORY_MAP.md` |
+| `{AGENT_RULES_FILE}` | `.cursorrules` (this file); `AGENTS.md` unused unless owner adopts it |
 | `api/` + `frontend/` | Application trees (API + SPA) |
-| `/app` | In-container working directory (both services) |
-| `N/A v1` | No SQL migrations (Redis-only ephemeral store) |
-| `N/A v1` | No migration runner in v1 |
-| `N/A v1` | No migration run command in v1 |
+| `/app` | In-container workdir (both services) |
 | `tp_platform` | Shared API platform package (`api/src/tp_platform/`) |
-| API: `pytest tests/ -q` · FE: `npm test` | Test commands (run in container) |
-| API: `ruff check .` · FE: `npm run lint` | Lint commands |
-| API: `pyright .` · FE: `npm run typecheck` | Type-check commands |
-| `bin/start.sh` | Host script for compose control |
+| `bin/start.sh` | Host compose-control script |
 
-**P0 product intent (canonical):** `{PLANS_ROOT}/foundation/*-01-*-initial-scope.md` — created by `@plan-foundation greenfield`. `{PROMPTS_ROOT}/initial.md` is **user scratch only**; skills must not read or create it unless the user explicitly names that path.
+**P0 product intent (canonical):** `{PLANS_ROOT}/foundation/*-01-*-initial-scope.md` (from `@plan-foundation greenfield`). `{PROMPTS_ROOT}/initial.md` is user scratch — never read/create unless the user names that path.
 
 ---
 
 ## Skills
 
-Reusable agent skills live under `.ai/skills/`. Each skill is a subfolder containing a `skill.md` file. The folder name is the skill identifier.
+Skills live under `.ai/skills/<id>/skill.md`. When a task matches a skill's purpose, read its `skill.md` and follow it.
 
-**Available skills:**
+| Skill | Purpose |
+|-------|---------|
+| plan-foundation | P0–P6 orchestration; certify plan-master-ready |
+| plan-master | Master implementation plan; certify implementation-ready |
+| plan-verify / plan-repair | Plan audits; remediate gaps |
+| session-control | Session open/close; HANDOFF, NEXT; optional git |
+| code-implementation | Iteration execution from NEXT.md |
+| code-verify / code-repair | Milestone/uncommitted audits; fix findings |
+| dev-stack | Isolated Docker Compose dev stack (`bin/start.sh`) |
+| db-migration | Idempotent numbered SQL (N/A v1) |
+| feature-spec | Author, review, amend feature SPECs |
+| concept-run | Run MOD-01…MOD-07 concept prompts |
+| process-router | Read-only process Q&A |
+| ai-director / x-director | Free-text orchestrators |
 
-| Skill | Folder | Purpose |
-|-------|--------|---------|
-| plan-foundation | `.ai/skills/plan-foundation/` | P0–P6 orchestration; certify plan-master-ready |
-| plan-master | `.ai/skills/plan-master/` | Master implementation plan; certify implementation-ready |
-| session-control | `.ai/skills/session-control/` | Session open/close; HANDOFF, NEXT; optional git |
-| db-migration | `.ai/skills/db-migration/` | Idempotent numbered SQL migration scripts |
-| code-implementation | `.ai/skills/code-implementation/` | Iteration execution from NEXT.md |
-| code-verify | `.ai/skills/code-verify/` | Milestone, uncommitted, last commit/push audits |
-| code-repair | `.ai/skills/code-repair/` | Fix verifier/migration/SPEC findings; re-verify before pass |
-| dev-stack | `.ai/skills/dev-stack/` | Isolated Docker Compose dev stack helper (`bin/start.sh`) |
-| process-router | `.ai/skills/process-router/` | Read-only process Q&A router |
-| feature-spec | `.ai/skills/feature-spec/` | Author, review, amend feature SPECs |
-| concept-run | `.ai/skills/concept-run/` | Run MOD-01…MOD-06 concept prompts |
-| project-bootstrap | `.ai/skills/project-bootstrap/` | Copy `.work/` skeleton, `.cursorrules`, stack doc from templates |
-
-**Usage:** When a task matches a skill's purpose, read `skill.md` and follow the workflow. Skills are tool-agnostic (Cursor, Claude Code, Codex, opencode, etc.).
-
-**Creating new skills:** Add `.ai/skills/<skill-name>/skill.md`; register in the table above. **Naming:** `.ai/skills/README.md` § Naming protocol (`{domain}-{role}`, kebab-case).
+**New skills:** add `.ai/skills/<id>/skill.md`; register above. Naming: `.ai/skills/README.md` § `{domain}-{role}`, kebab-case.
 
 ---
 
-## External integration documentation (optional)
+## External integration docs (optional)
 
-When this project integrates with **vendor-published APIs, XSDs, PDFs, or OpenAPI/HTML specs**, cache reference artifacts under **`.ai/docs/integration/`**.
-
-Rules:
-
-1. **Subfolders:** Organize by source and version (e.g. `.ai/docs/integration/vendor-v1/`) so upgrades do not silently overwrite pinned files.
-2. **Manifest:** Record every download in `.ai/docs/integration/MANIFEST.txt` (source URL, local path, batch date).
-3. **Sources:** Prefer official vendor domains; third-party mirrors only with an explicit manifest note.
-4. **Secrets:** Never place keys, PEM/P12, passwords, tokens, or `.env` content in this directory.
-5. **Verification:** After download, confirm file type (not an HTML error page masquerading as a PDF).
-6. **Scope:** Vendor artifacts only — not customer exports or operational uploads.
-
-Prefer reading **cached copies** during implementation; refresh when vendor versions change.
+Cache vendor APIs/XSDs/PDFs/OpenAPI under `.work/docs/integration/`. Rules: organize by source+version subfolders; log downloads in `.work/docs/integration/MANIFEST.txt`; prefer official domains; never store keys/PEM/tokens/`.env`; verify file type after download; vendor artifacts only. Read cached copies during implementation.
 
 ---
 
 ## Protected Files
 
-### File Access Override
-- **Ignore `.gitignore` blocks**: Any file path the user provides, read it — regardless of `.gitignore` entries.
-
-### Do NOT Modify Unless Explicitly Asked
-
-Customize this list for your stack (examples below):
-
-- `package.json` (dependencies, devDependencies, engines)
-- `docker-compose*.yml`
-- `Dockerfile.*`
-- `frontend/vite.config.ts`, `frontend/tsconfig.json`, `frontend/package.json`
-- `.env*` (except `.env.example`)
-
-**If you think a change is needed in any protected file:**
-1. Stop.
-2. Explain WHY it's needed.
-3. Ask for explicit permission.
+- **File access override:** read any path the user provides, regardless of `.gitignore`.
+- **Do NOT modify unless explicitly asked:** `.work/PROTECTED_SURFACES.json` plus `package.json`, `docker-compose*.yml`, `Dockerfile.*`, `frontend/vite.config.ts`, `frontend/tsconfig.json`, `frontend/package.json`, `.env*` (except `.env.example`).
+- **If a protected file needs a change:** stop, explain why, ask permission.
 
 ---
 
 ## Data Privacy & Security
 
-### Sensitive Data Handling
-- **Protection first:** Prevent production or customer data from leaving the local environment without approval.
-- **Obfuscation:** If the repo provides a sanitizer (e.g. `.obfuscation/sanitize_data.py`), use it before loading spreadsheets, exports, or XML into agent context.
-- **Never read raw sensitive files** when a sanitized copy suffices.
-
-### No PII in Logs
-- Do not log full JSON/dict objects containing PII (emails, phones, government IDs, financial amounts).
-- Log internal IDs or status codes only.
-- Sanitize error messages before logging.
-
-### Debugging Scripts
-- Debugging scripts must NOT contain sensitive data.
-- Use `.env` variables or generate values at runtime.
-- If a variable is missing from `.env`, ask the user before re-running.
-
-### Secret Scrubbing
-- Before reading files or outputting text, verify no API keys, bearer tokens, or passwords appear. Replace with `[REDACTED]`.
-- NEVER display credentials or raw `.env` values in conversation.
-
-### Test Data
-- Use ONLY synthetic/mock data in unit tests and local reproduction.
-- Never hardcode real customer emails or IDs.
-- Production database dumps are forbidden in test trees unless explicitly sanitized and approved.
-- Ad-hoc `INSERT`/`UPDATE`/`DELETE` on a database for tests or local reproduction requires **explicit human approval in the same message** (see § Database & Schema Rules → Migration policy item 5). Prefer fixtures, factories, and mocks.
-
-### File Hygiene
-- Delete temporary files after use.
-- Do not write `.xls`, `.xlsx`, `.csv`, `.xml`, `.json` exports into the source tree; use `tmp/` or a designated output directory.
+- **Sensitive data:** keep production/customer data local without approval; use repo sanitizer (e.g. `.obfuscation/sanitize_data.py`) before loading exports; prefer sanitized copies.
+- **No PII in logs:** log internal IDs/status only; sanitize errors.
+- **Debug scripts:** no embedded sensitive data; use `.env` or runtime values; ask before re-running when a var is missing.
+- **Secret scrubbing:** redact keys/tokens/passwords as `[REDACTED]`; never display credentials or raw `.env`.
+- **Test data:** synthetic/mock only; never hardcode real emails/IDs; no unsanitized prod dumps in tests. Ad-hoc DB mutations need explicit in-message approval; prefer fixtures/mocks.
+- **File hygiene:** delete temp files; write exports to `tmp/`, not the source tree.
 
 ---
 
-## Database & Schema Rules
+## Database & Schema Rules (v1 — Redis only)
 
-Customize paths and ORM for your project.
-
-### New Tables
-- Register models in the bounded context's persistence module (per-context; avoid a global `models/__init__.py` grab-bag unless your architecture requires it).
-- Table creation: **N/A v1** — no SQL database; Redis ephemeral keys only. If SQL is added later, use idempotent scripts under a dedicated `migrations/` dir via `@db-migration`.
-
-### Schema Changes Ledger
-- Maintain a **permanent historical ledger** of structural fixes (append-only).
-- NEVER delete, prune, or reorganize historical ledger entries.
-- Each entry must be idempotent (`ADD COLUMN IF NOT EXISTS`, etc.).
-
-### Migration policy (canonical)
-
-Numbered SQL migrations are **N/A in v1** (no database). If SQL is introduced, procedure: `@db-migration` (`.ai/skills/db-migration/skill.md`).
-
-1. **Startup:** N/A v1 — no migration runner.
-2. **Verify idempotency:** N/A until SQL migrations exist.
-3. **Verify applied:** After stack start (`bin/start.sh` or `docker compose up`), confirm service health (`GET /health`) and Redis reachable.
-4. **Exceptions:** One-off, destructive, non-numbered, manual hotfix, or migrations outside the numbered runner require **explicit human approval in the same message** — agents do not execute them. Present the exact SQL or steps; the human runs them.
-5. **Test database mutations:** Ad-hoc `INSERT`/`UPDATE`/`DELETE` on shared or dev databases for tests or local reproduction require **explicit human approval in the same message**; prefer fixtures, factories, and mocks. Mass backfills remain under **Backfills** below.
-
-### Backfills
-- **STRICTLY PROHIBITED:** agents must not run mass data updates (backfills) against shared databases.
-- If a backfill is needed: describe the exact SQL and present it to the user for manual execution.
+- **Storage:** no SQL database in v1; Redis ephemeral keys only (pairing relay, TTL).
+- **If SQL is added later:** idempotent scripts under `migrations/` via `@db-migration`; models are source of truth; permanent append-only schema ledger; never prune.
+- **Startup verify:** after `bin/start.sh` or `docker compose up`, confirm `GET /health` and Redis reachable.
+- **Exceptions:** one-off/destructive/manual migrations and ad-hoc `INSERT/UPDATE/DELETE` on shared DBs require explicit human approval in-message — present exact SQL; the human runs it.
+- **Backfills: STRICTLY PROHIBITED** by agents against shared DBs — describe SQL for manual execution.
 
 ---
 
 ## Docker / Dev Environment
 
-### Run Tooling in Containers (when the project uses Docker)
-- NEVER run bare `npm`, `yarn`, `next`, `python`, `pytest`, or type-checkers on the host if the project standard is containerized.
-- All test/lint/type commands MUST run inside the documented compose service.
+When the project uses Compose, **never** run bare `npm/yarn/python/pytest` or type-checkers on the host — run all test/lint/type commands inside the documented compose service.
 
-### Container Reference (customize)
+| Service | Purpose |
+|---------|---------|
+| `api` | FastAPI pairing API + health |
+| `frontend` | Vite dev server / static SPA |
+| `redis` | Ephemeral pairing relay (TTL) |
+| `caddy` | Reverse proxy |
 
-| Compose service | Purpose | Typical container name |
-|-----------------|---------|--------------------------|
-| `api` | FastAPI pairing API + health | `tools-teleprompt-api-1` |
-| `N/A v1` | No SQL database | — |
-| `redis` | Ephemeral pairing relay (TTL) | `tools-teleprompt-redis-1` |
-| `frontend` | Vite dev server / static SPA | `tools-teleprompt-frontend-1` |
-| `caddy` | Reverse proxy | `tools-teleprompt-caddy-1` |
-
-Stack identity: `.env` (`COMPOSE_PROJECT_NAME`, host ports). Prefer **`bin/start.sh`** for isolated compose invocations.
-
-### Running Tests (API — in container)
+Stack identity: `.env` (`COMPOSE_PROJECT_NAME`, host ports). Prefer **`bin/start.sh`**.
 
 ```bash
+# API
 docker compose -f deploy/docker-compose.yml exec api sh -c "cd /app && pytest tests/ -q"
 docker compose -f deploy/docker-compose.yml exec api sh -c "cd /app && ruff check ."
 docker compose -f deploy/docker-compose.yml exec api sh -c "cd /app && pyright ."
-```
-
-### Running Tests (frontend — in container)
-
-```bash
+# Frontend
 docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm run lint"
 docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm run typecheck"
 docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm test"
-```
-
-Skills (`code-implementation`, `code-verify`) must use these commands — not hardcoded `api`, `/code/apis`, or tool names from another project.
-
-### Running One-Off Scripts (example)
-
-- Place scripts under **`bin/`**, not in production source trees.
-- Run from the container WORKDIR so imports resolve:
-
-```bash
+# One-off script
 docker compose -f deploy/docker-compose.yml exec api sh -c "cd /app && timeout 120 python scripts/my_script.py"
 ```
 
-If the project does **not** use Docker, replace this section with the canonical local/CI commands from `DOCS_TECH_STACK.md`.
+Skills (`code-implementation`, `code-verify`) must use these commands — not hardcoded names from another project. Place one-off scripts under **`bin/`**.
 
 ---
 
 ## Workflow Rules
 
-### Planning
-- Plans live under `.work/plans/` (foundation, full plan, registries, operations runbooks).
-- Wait for approval before large code changes when the user asked for a plan only.
-- Ask for confirmation before applying edits when scope is unclear.
-
-### Deletion
-- NEVER delete files without explicit user permission.
-
-### Git
-- NEVER execute `git commit` or `git push` unless the user explicitly requests it in the same message.
-- **`@session-control close commit` / `close commit push` (mandatory):** When the user invokes session-control **close** with **`commit`** (and optional **`push`**), you **MUST** run shell `git add` + `git commit` per `.ai/skills/session-control/skill.md` § C4b **before** finishing your reply — stage all **safe** dirty paths (default scope), not HANDOFF/NEXT only. If **`push`** was requested, run `git push` after a successful commit. Show `git log -1 --oneline` and `git status -sb`; do not claim close commit succeeded without a commit SHA when the tree was dirty.
-- Otherwise provide commit commands for the user when they will commit themselves.
-- Never modify git history (rebase, force-push) without explicit user request.
-
-### No Attribution / No Signatures
-- Do NOT add "Generated by", "Created by", dates, or agent signatures to files you create or modify.
-- The user is the sole responsible party.
+- **Planning:** plans live under `.work/plans/`. Wait for approval before large code changes when a plan-only was requested; confirm before editing when scope is unclear.
+- **Deletion:** NEVER delete files without explicit user permission.
+- **Git:**
+  - NEVER `git commit`/`push` unless the user requests it in the same message.
+  - `@session-control close commit` / `commit push`: MUST run `git add` + `git commit` per `.ai/skills/session-control/skill.md` (C4b) — stage all safe dirty paths (default scope), then `git push` if requested. Show `git log -1 --oneline` + `git status -sb`; no "committed" claim without a SHA.
+  - Never modify history (rebase, force-push) without explicit request.
+  - `prepare-commit-msg` hook auto-prepends task refs when the branch contains one; don't bypass hooks unless the user requests `--no-verify`.
+- **No attribution:** never add "Generated by", "Created by", dates, or agent signatures.
+- **No `Co-authored-by:`:** never add co-author trailers or `--trailer`. Hooks installed via `@deploy-basic update` (or `bash /mnt/work/Projects/.ai/scripts/install-git-hooks.sh`).
 
 ---
 
-## Verification & Quality Discipline
+## Verification & Communication
 
-### Before Claiming Completion
-1. Run applicable tests (unit, integration, or whatever exists).
-2. Run linting/type-checking if available.
-3. Verify the change does not break existing functionality.
-4. Report actual output — not assumed output.
-
-### On Failure
-- Report the exact error output.
-- Diagnose root cause.
-- Propose and apply a fix.
-- Re-run verification.
-
-### Scope Discipline
-- Only modify files directly related to the task.
-- Do not refactor unrelated code "while you're at it."
-- Do not add dependencies without asking.
-
-### Communication
-- Be concise. Surface blockers early.
-- Label uncertainty explicitly.
-- Distinguish: confirmed facts, inferences, proposals.
+- **Before "complete":** run applicable tests + lint/type; confirm no regression; report actual output, not assumed.
+- **On failure:** report exact error, diagnose root cause, fix, re-run.
+- **Scope:** declare scope first (§ Change safety); touch-scope + blast-radius enforce it.
+- **Communication:** be concise; surface blockers early; label uncertainty; distinguish confirmed facts / inferences / proposals.
 
 ---
 
-## OpenSpec Integration (optional)
+## External docs
 
-If the team uses OpenSpec:
-
-- **Proposals first** for new features or significant changes.
-- Implement exactly as defined in the approved proposal.
-- Document lifecycle commands under `.ai/commands/openspec/` when that tree exists.
-
-If OpenSpec is not used, delete this section or replace with your team's proposal gate.
+Use Context7 MCP (`@upstash/context7-mcp`) for version-specific library docs when configured; else web-search to verify current APIs before writing integration code.
 
 ---
 
-## External Documentation
+## Commit Message Format
 
-- Use **Context7 MCP** (`@upstash/context7-mcp`) for version-specific library docs when configured.
-- Otherwise use web search to verify current APIs before writing integration code.
-
----
-
-## Commit Message Format (When Providing to User)
-
-- Plain text only — NO surrounding quotes, NO parentheses wrapping the message.
-- Format: `type: short description` followed by optional blank line and body.
-- Valid types: `feat`, `fix`, `refactor`, `docs`, `chore`, `style`, `test`.
-- Example (correct): `fix: handle empty payload on webhook retry`
-- Example (wrong): `"fix(webhook): empty payload"`
+- Plain text; no surrounding quotes or wrapping parentheses.
+- Subject (≤72 chars, imperative): `REF-123: subject` when a ref is known, else `type: description`.
+- Types (no ref): `feat`, `fix`, `refactor`, `docs`, `chore`, `style`, `test`.
+- Correct: `fix: handle empty payload on webhook retry` · Wrong: `"fix(webhook): empty payload"`.
 
 ---
 
 ## Documentation layout (`.ai/` vs `.work/`)
 
-**`.ai/`** — agnostic: skills, standards, concepts, workflow guides, integration mirror, `START_HERE.md`, `PROCESS_ROUTER.md`, **`templates/`** (including this file's source). Pointer READMEs only under `.ai/plans/`, `.ai/features/`, etc.
-
-**`.work/`** — project-specific: plans, SPECs, ADRs, prompts, `HANDOFF.md`.
-
-Generated filenames under `.work/` use the `YYYYMMDD-` prefix unless documented otherwise (`NEXT.md`, `HANDOFF.md`, …).
+- **`.ai/`:** framework-only (skills, concepts, guides, templates). Thin-client: resolves from `$AGENT_OS_SOURCE`; never created by `@deploy-basic`.
+- **`.work/`:** all project-specific memory — plans, SPECs, ADRs, `HANDOFF.md`, `PROTECTED_SURFACES.json`, binding `.work/standards/`, `.work/docs/`. Always local.
 
 | Path | Layer |
 |------|-------|
 | `.work/plans/` | Plans, registries, `NEXT.md` |
 | `.work/features/` | Feature SPECs |
 | `.work/decisions/` | ADRs |
-| `.work/prompts/` | Questionnaires; user scratch |
 | `.work/context/HANDOFF.md` | Session handoff |
-| `.ai/standards/` | Binding engineering standards |
+| `.work/standards/` | Binding engineering standards |
+| `.work/docs/integration/` | Vendor/API integration cache |
 | `.ai/skills/` | Portable agent skills |
-| `.ai/templates/cursorrules.template` | **Copy to repo root as `.cursorrules`** when bootstrapping |
 
 Canonical map: `.ai/README.md` · Working tree: `.work/README.md`.
 
 <!-- UI_DESIGN_OS_BEGIN -->
-<!-- Merged by @ui-bootstrap into an existing .cursorrules (typically after Agent OS). Core Principles §1–7 above apply to all UI work. -->
 
-## UI Design OS (`.ai.ui/`)
+## UI Design OS (thin-client)
 
 **Coexistence:** [`.ai.ui/COHABITATION.md`](.ai.ui/COHABITATION.md) — UI skills write to `.work.ui/` only; do not overwrite `.work/plans/NEXT.md` except cross-links.
 
-**Lost on UI?** [`.ai.ui/START_HERE.md`](.ai.ui/START_HERE.md) · **Router:** `@ui-process-router - <question>`
+**Lost on UI?** [`.ai.ui/START_HERE.md`](.ai.ui/START_HERE.md) · **Router:** `@ui-process-router - <question>` · **Free-text:** `@ui-director - <describe what you want>`
+
+### UI change safety
+
+Run before `@ui-component-build complete`:
+
+| Gate | Command | Fail when |
+|------|---------|-----------|
+| Touch scope | `bash /mnt/work/Projects/.ai.ui/scripts/touch-scope-verify.sh` | File outside `.work.ui/touch-scope` |
+| Blast radius | `bash /mnt/work/Projects/.ai.ui/scripts/blast-radius-check.sh` | Cross-area diff ≥3 areas |
+| Tests | `bash /mnt/work/Projects/.ai.ui/scripts/framework-verify.sh` | Non-zero exit |
+| Gate check | `bash /mnt/work/Projects/.ai.ui/scripts/gate-verify.sh` | Done task with empty Notes |
+
+**Declare scope first:** `.work.ui/touch-scope` (copy from `$AI_UI_SOURCE/templates/work.ui/touch-scope.template` if missing).
 
 ### UI completion gate (addition to Core Principle 7)
 
 UI milestone work is not done until: UI lint/type/tests pass; `@ui-visual-verify` + `@ui-accessibility-audit` pass or are waived in `{HANDOFF_UI}`; agent-assisted UI has `@ui-concept-run - UIS-06` unless **`human-only`** in the same message.
 
-### UI context files
+### UI key paths
 
-| File | Purpose |
+| Path | Purpose |
 |------|---------|
-| `.ai.ui/START_HERE.md` | UI operator decision tree |
-| `.ai.ui/COHABITATION.md` | Boundary with Agent OS |
 | `DOCS_UI_STACK.md` | Front-end stack |
-| `.ai.ui/standards/20260523-UI-CONVENTIONS.md` | UI conventions |
-| `.ai.ui/standards/20260523-SCREEN_SPEC_STANDARD.md` | Screen SPEC |
-| `.ai.ui/standards/20260523-COMPONENT_STANDARD.md` | Components |
-| `.ai.ui/standards/20260523-DESIGN_TOKENS_STANDARD.md` | Tokens |
-| `.ai.ui/standards/20260523-ACCESSIBILITY_STANDARD.md` | WCAG |
-| `.ai.ui/standards/20260523-FRONTEND_DIRECTORY_MAP.md` | UI directories |
 | `.work.ui/context/HANDOFF_UI.md` | UI handoff |
 | `.work.ui/plans/NEXT_UI.md` | UI iteration |
-
-### UI placeholders
-
-| Placeholder | Resolves to |
-|-------------|-------------|
-| `{WORK_UI_ROOT}` | `.work.ui/` |
-| `{HANDOFF_UI}` | `.work.ui/context/HANDOFF_UI.md` |
-| `{UI_ITERATION_CARRIER}` | `.work.ui/plans/NEXT_UI.md` |
-| `{SCREEN_SPEC_ROOT}` | `.work.ui/screens/` |
-| `{UI_SKILLS_ROOT}` | `.ai.ui/skills/` |
-| `{UI_CONCEPTS_ROOT}` | `.ai.ui/concepts/` |
 | `frontend/` | App root |
 | `frontend/src/styles/tokens.css` | Design tokens |
-| `npm test` / `npm run lint` / `npm run typecheck` | Frontend checks (in `frontend` container `/app`) |
-| `npx playwright test --config=playwright.s1-visual.config.ts` / `@axe-core/playwright` | Visual + a11y |
-| `frontend` / `/app` | Docker UI service |
+
+**UIS gates before `ui-component-build complete`:** UIS-06 (agent-assisted) · UIS-07 (craft ≥ refined) · UIS-08 (all screens) · UIS-09 (analytical dashboards).
 
 ### UI skills (`@ui-*` only)
 
-| Skill | Purpose |
-|-------|---------|
-| ui-bootstrap | `.work.ui/` + cursorrules merge |
-| ui-design-foundation | Foundation 01–04; screen-spec-ready |
-| ui-screen-spec | `.work.ui/screens/` SPECs |
-| ui-component-build | `NEXT_UI.md` iterations |
-| ui-visual-verify | Visual regression |
-| ui-accessibility-audit | WCAG |
-| ui-design-system | Catalog + Storybook |
-| ui-concept-run | UIS-01…06 |
-| ui-process-router | UI Q&A (read-only) |
+ui-bootstrap · ui-design-foundation · ui-screen-spec · ui-component-build · ui-visual-verify · ui-accessibility-audit · ui-design-system · ui-concept-run · ui-plan-verify · ui-copy · ui-director · ui-process-router — see `.ai.ui/skills/README.md`.
 
-**Sessions:** `@session-control` (`.ai/`) · **Backend:** `@code-implementation` (`.ai/`) · **UIS-06** required for agent UI before `ui-component-build complete`.
-
-### UI protected files (union with existing list)
+### UI protected files (union with §Protected Files)
 
 - `frontend/src/styles/tokens.css`
-- `frontend/vite.config.ts`, `frontend/tsconfig.json`, `frontend/package.json`
 - `.ai.ui/inputs/brand/` (reference — do not auto-edit)
+
+### Source resolution — UI Design OS (thin-client)
+
+AI_UI_SOURCE=/mnt/work/Projects/.ai.ui
+
+| Mode | Bootstrapped via | Framework assets | `AI_UI_SOURCE` |
+|------|------------------|------------------|----------------|
+| **Fat-client** (vendored) | `@ui-bootstrap init` | this repo's `.ai.ui/` | unset |
+| **Thin-client** (remote) | `@deploy-basic` | source UI Design OS; repo holds `.cursorrules` + `.work.ui/` | absolute path |
+
+**Rule (before reading any `.ai.ui/...` path):**
+1. `.cursorrules` + `.work.ui/**` + `frontend/` — always local.
+2. **Thin-client** (`AI_UI_SOURCE` set + readable): read every other `.ai.ui/<path>` from `$AI_UI_SOURCE/<path>`.
+3. **Fat-client** (unset): read `.ai.ui/<path>` locally.
+4. **Unreachable source:** stop and report `ui-design-os source unreachable: $AI_UI_SOURCE`.
 
 <!-- UI_DESIGN_OS_END -->

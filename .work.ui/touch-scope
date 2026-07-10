@@ -1,0 +1,22 @@
+{
+  "description": "Touch scope for tools-teleprompt UI iteration — declare what files you intend to change.",
+  "allowed_paths": [
+    ".work.ui/",
+    "frontend/src/",
+    "frontend/tests/",
+    "frontend/vite.config.ts",
+    "frontend/tsconfig.json",
+    "frontend/tsconfig.app.json",
+    "frontend/tsconfig.node.json"
+  ],
+  "allowed_patterns": [
+    "*.ts", "*.tsx", "*.js", "*.jsx",
+    "*.css", "*.scss",
+    "*.md", "*.json"
+  ],
+  "rules": [
+    "Only touch files under allowed_paths",
+    "Only touch files matching allowed_patterns",
+    "If you need to touch a file outside scope, update this file first"
+  ]
+}

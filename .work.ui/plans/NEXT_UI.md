@@ -16,6 +16,14 @@
 
 ---
 
+## Intake queue
+
+> Free-text UI requests captured by `@ui-screen-spec intake - <sentence>`. Format: `- <YYYY-MM-DD> · <class> · "<sentence>" → <next command>`. Classes: local / cross-cutting / brownfield / underspecified.
+
+- (none yet)
+
+---
+
 ## Current UI iteration
 
 **Milestone:** — · **Status:** idle · **Started:** —
