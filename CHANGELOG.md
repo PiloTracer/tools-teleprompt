@@ -10,8 +10,11 @@ All notable changes to this project are documented here. Version format follows 
 - Compound-word splitting in `annotateScriptWords` for more accurate script-to-speech matching
 - Adaptive speech utilities: `speechResultUtils.ts`, `useVisibleWordRange.ts`, and `restartBackoff.ts`
 - `bin/start.sh cleanup` and `bin/start.sh rebuild` commands for safe dangling-resource cleanup and forced container rebuilds
+- README.md local installation guide: hotspot + custom domain access from a phone or tablet
 
 ### Changed
+
+- API and frontend package manifests now report version `0.2.5`
 
 - Hardened Docker Compose deployment: `restart: unless-stopped` on the frontend service and Caddy frontend port configurable via environment variable
 
