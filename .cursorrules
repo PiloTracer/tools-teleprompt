@@ -184,15 +184,15 @@ Stack identity: `.env` (`COMPOSE_PROJECT_NAME`, host ports). Prefer **`bin/start
 
 ```bash
 # API
-docker compose -f deploy/docker-compose.yml exec api sh -c "cd /app && pytest tests/ -q"
-docker compose -f deploy/docker-compose.yml exec api sh -c "cd /app && ruff check ."
-docker compose -f deploy/docker-compose.yml exec api sh -c "cd /app && pyright ."
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec api sh -c "cd /app && pytest tests/ -q"
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec api sh -c "cd /app && ruff check ."
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec api sh -c "cd /app && pyright ."
 # Frontend
-docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm run lint"
-docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm run typecheck"
-docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm test"
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec frontend sh -c "cd /app && npm run lint"
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec frontend sh -c "cd /app && npm run typecheck"
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec frontend sh -c "cd /app && npm test"
 # One-off script
-docker compose -f deploy/docker-compose.yml exec api sh -c "cd /app && timeout 120 python scripts/my_script.py"
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec api sh -c "cd /app && timeout 120 python scripts/my_script.py"
 ```
 
 Skills (`code-implementation`, `code-verify`) must use these commands — not hardcoded names from another project. Place one-off scripts under **`bin/`**.

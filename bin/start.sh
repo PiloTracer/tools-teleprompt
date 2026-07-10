@@ -25,8 +25,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 COMPOSE_DIR="$REPO_ROOT/deploy"
-COMPOSE_REL="docker-compose.yml"
-COMPOSE_ABS="$COMPOSE_DIR/$COMPOSE_REL"
 
 STACK_CONTEXT="dev"
 ENV_FILE=""
@@ -125,9 +123,15 @@ load_env() {
   reconcile_stack_identity
 }
 
+compose_file_path() {
+  printf '%s/docker-compose.%s.yml' "$COMPOSE_DIR" "$STACK_CONTEXT"
+}
+
 require_compose_file() {
-  if [[ ! -f "$COMPOSE_ABS" ]]; then
-    printf '%sERROR: Compose file not found: %s%s\n' "$C_RED" "$COMPOSE_ABS" "$C_RESET" >&2
+  local compose_file
+  compose_file="$(compose_file_path)"
+  if [[ ! -f "$compose_file" ]]; then
+    printf '%sERROR: Compose file not found: %s%s\n' "$C_RED" "$compose_file" "$C_RESET" >&2
     exit 1
   fi
 }
@@ -191,9 +195,11 @@ wait_for_stack_ready() {
   local i max="${START_WAIT_SECONDS:-120}"
   for ((i = 1; i <= max; i += 2)); do
     if curl -sf --max-time 2 "http://localhost:${CADDY_HOST_PORT}/health" >/dev/null 2>&1 \
-      && service_is_running redis \
-      && curl -sf --max-time 2 "http://localhost:${FRONTEND_HOST_PORT}/" >/dev/null 2>&1; then
-      return 0
+      && service_is_running redis; then
+      if [[ "$STACK_CONTEXT" == "prd" ]] \
+        || curl -sf --max-time 2 "http://localhost:${FRONTEND_HOST_PORT}/" >/dev/null 2>&1; then
+        return 0
+      fi
     fi
     sleep 2
   done
@@ -220,7 +226,7 @@ _compose_invoke() {
   fi
   env "${compose_env[@]}" docker compose \
     --project-directory "$COMPOSE_DIR" \
-    -f "$COMPOSE_ABS" \
+    -f "$(compose_file_path)" \
     -p "$COMPOSE_PROJECT_NAME" \
     "${env_args[@]}" \
     "$@"
@@ -270,9 +276,11 @@ urls_hint() {
   printf '  Handoff:  %s/handoff/create\n' "$base"
   printf '  Health:   %s/health\n' "$base"
   printf '  API:      %s/api/v1/sessions\n' "$base"
-  printf '  Vite dev: http://%s:%s/ (HMR WebSocket on same port)\n' "$PUBLIC_HOST" "$FRONTEND_HOST_PORT"
-  printf '  QR handoff: http://%s:%s/handoff/create (set PUBLIC_HOST for LAN/hotspot)\n' \
-    "$PUBLIC_HOST" "$FRONTEND_HOST_PORT"
+  if [[ "$STACK_CONTEXT" == "dev" ]]; then
+    printf '  Vite dev: http://%s:%s/ (HMR WebSocket on same port)\n' "$PUBLIC_HOST" "$FRONTEND_HOST_PORT"
+    printf '  QR handoff: http://%s:%s/handoff/create (set PUBLIC_HOST for LAN/hotspot)\n' \
+      "$PUBLIC_HOST" "$FRONTEND_HOST_PORT"
+  fi
 }
 
 health_summary_line() {
@@ -287,7 +295,11 @@ health_summary_line() {
   if service_is_running redis && dc exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; then
     redis_ok="ok"
   fi
-  if curl -sf --max-time 2 "http://localhost:${FRONTEND_HOST_PORT}/" >/dev/null 2>&1; then
+  if [[ "$STACK_CONTEXT" == "prd" ]]; then
+    if curl -sf --max-time 2 "http://localhost:${CADDY_HOST_PORT}/" >/dev/null 2>&1; then
+      fe_ok="ok"
+    fi
+  elif curl -sf --max-time 2 "http://localhost:${FRONTEND_HOST_PORT}/" >/dev/null 2>&1; then
     fe_ok="ok"
   fi
   printf 'Health: API=%s  Redis=%s  Frontend=%s' "$api_ok" "$redis_ok" "$fe_ok"
@@ -788,7 +800,6 @@ require_repo_layout() {
 
 main() {
   require_docker
-  require_compose_file
   require_repo_layout
   init_menu_tty
 
@@ -800,6 +811,7 @@ main() {
     args=("${args[@]:1}")
   fi
   apply_context
+  require_compose_file
   load_env
   reconcile_stack_identity
 

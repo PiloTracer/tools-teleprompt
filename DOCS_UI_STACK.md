@@ -15,9 +15,9 @@
 
 | Check | Command (host) | Command (Docker) |
 |-------|----------------|------------------|
-| Unit tests | `cd frontend && npm test` | `docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm test"` |
-| Lint | `cd frontend && npm run lint` | `docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm run lint"` |
-| Typecheck | `cd frontend && npm run typecheck` | `docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm run typecheck"` |
+| Unit tests | `cd frontend && npm test` | `docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec frontend sh -c "cd /app && npm test"` |
+| Lint | `cd frontend && npm run lint` | `docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec frontend sh -c "cd /app && npm run lint"` |
+| Typecheck | `cd frontend && npm run typecheck` | `docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec frontend sh -c "cd /app && npm run typecheck"` |
 | E2E / visual | `cd frontend && npm run test:e2e` | optional Playwright in container |
 
 ## Paths

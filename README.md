@@ -219,8 +219,8 @@ curl -sS "http://localhost:9080/health"
 Run quality gates inside containers (stack must be up):
 
 ```bash
-docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npm run lint && npm run typecheck && npm test"
-docker compose -f deploy/docker-compose.yml exec api sh -c "cd /app && ruff check . && pyright . && pytest tests/ -q"
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec frontend sh -c "cd /app && npm run lint && npm run typecheck && npm test"
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec api sh -c "cd /app && ruff check . && pyright . && pytest tests/ -q"
 ```
 
 End-to-end handoff tests:

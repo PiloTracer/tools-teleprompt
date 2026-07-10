@@ -7,6 +7,13 @@ All notable changes to this project are documented here. Version format follows 
 ### Added
 
 - `DISABLE_SERVER_HANDOFF` config: disable LAN/Relay handoff to keep scripts client-side only when publishing publicly
+- Production deployment stack: `deploy/docker-compose.prd.yml`, `deploy/Caddyfile.prd`, `api/Dockerfile.prd`, `frontend/Dockerfile.prd`
+
+### Changed
+
+- Renamed `deploy/docker-compose.yml` → `deploy/docker-compose.dev.yml`, `deploy/Caddyfile` → `deploy/Caddyfile.dev`, `api/Dockerfile` → `api/Dockerfile.dev`, `frontend/Dockerfile` → `frontend/Dockerfile.dev`
+- `bin/start.sh` now selects `docker-compose.{dev|prd}.yml` based on the active context
+- API and frontend package manifests now report version `0.2.6`
 
 ## [0.2.5] - 2026-07-10
 
@@ -20,7 +27,6 @@ All notable changes to this project are documented here. Version format follows 
 
 ### Changed
 
-- API and frontend package manifests now report version `0.2.5`
 - Hardened Docker Compose deployment: `restart: unless-stopped` on the frontend service and Caddy frontend port configurable via environment variable
 
 ### Notes

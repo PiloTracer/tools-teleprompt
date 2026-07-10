@@ -60,7 +60,8 @@ See `.ai/standards/20260520-DIRECTORY_MAP.md`.
 | Item | Value |
 |------|--------|
 | Dev stack script | `bin/start.sh` (P5 — pending owner approval for compose) |
-| Compose file | `deploy/docker-compose.yml` |
+| Dev compose file | `deploy/docker-compose.dev.yml` |
+| Prd compose file | `deploy/docker-compose.prd.yml` |
 | Frontend test | `cd frontend && npm test` |
 | Frontend lint | `cd frontend && npm run lint` |
 | Frontend typecheck | `cd frontend && npm run typecheck` |
@@ -71,8 +72,8 @@ See `.ai/standards/20260520-DIRECTORY_MAP.md`.
 **Docker (canonical after P5):**
 
 ```bash
-docker compose -f deploy/docker-compose.yml exec api bash -c "cd /app && pytest tests/ -q"
-docker compose -f deploy/docker-compose.yml exec frontend bash -c "cd /app && npm test"
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec api bash -c "cd /app && pytest tests/ -q"
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec frontend bash -c "cd /app && npm test"
 ```
 
 ---

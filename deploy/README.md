@@ -14,20 +14,21 @@
 
 ## Quick start (single VPS)
 
-1. Clone the repository and copy environment template:
+1. Clone the repository and copy the environment template for your context:
 
    ```bash
    cp .env.example .env.dev    # local dev / hotspot
-   cp .env.example .env.prd    # production-like (optional)
+   cp .env.example .env.prd    # production-like
    ```
 
-2. Set values in `.env.dev` (or `.env.prd` for production). See **Environment variables** below.
+2. Set values in `.env.dev` or `.env.prd`. See **Environment variables** below. For **prd**, make sure `STACK_ENV=prd` and `COMPOSE_PROJECT_NAME=tools-teleprompt-prd`.
 
 3. Start the stack:
 
    ```bash
-   bin/start.sh dev start
-   # or interactive menu: bin/start.sh dev
+   bin/start.sh dev start      # dev context
+   bin/start.sh prd start      # production context
+   # or interactive menu: bin/start.sh [dev|prd]
    ```
 
    `bin/start.sh` loads `.env.{dev|prd}` for the given context (`dev` default). **prd** requires `.env.prd` (no fallback). Variables are passed into API and frontend containers via `env_file`, not only compose interpolation.
@@ -72,7 +73,7 @@ Direct Vite dev + HMR WebSocket (optional): `http://localhost:${FRONTEND_HOST_PO
 
 ## Security headers (Caddy)
 
-`deploy/Caddyfile` sets CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Permissions-Policy` on all responses. Cross-check: `.ai/standards/20260520-threat-model.md`.
+`deploy/Caddyfile.dev` (development) and `deploy/Caddyfile.prd` (production) set CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Permissions-Policy` on all responses. Cross-check: `.ai/standards/20260520-threat-model.md`.
 
 Verify after deploy:
 
@@ -125,6 +126,7 @@ Constants live in `frontend/src/pairing/qrConstants.ts`.
 
 ```bash
 bin/start.sh dev restart
+bin/start.sh prd restart
 ```
 
 ### View logs
@@ -139,7 +141,7 @@ bin/start.sh dev logs:caddy
 Relay data is ephemeral. To clear all sessions:
 
 ```bash
-docker compose -f deploy/docker-compose.yml exec redis redis-cli FLUSHDB
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec redis redis-cli FLUSHDB
 ```
 
 **Impact:** in-flight relay handoffs fail; QR handoffs unaffected.
@@ -148,7 +150,7 @@ docker compose -f deploy/docker-compose.yml exec redis redis-cli FLUSHDB
 
 - Redeploy previous image/tag via compose
 - QR disabled → relay-only fallback is built into the UI (scripts over threshold auto-use relay)
-- CSP can revert to report-only by editing `deploy/Caddyfile` if a false positive blocks assets
+- CSP can revert to report-only by editing the active Caddyfile (`deploy/Caddyfile.dev` or `deploy/Caddyfile.prd`) if a false positive blocks assets
 
 ---
 
@@ -158,37 +160,33 @@ GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck, unit tests for
 
 ```bash
 bin/e2e-offline.sh
-docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npx playwright test handoff"
+docker compose --project-directory deploy -f deploy/docker-compose.dev.yml exec frontend sh -c "cd /app && npx playwright test handoff"
 ```
 
 ---
 
-## Production frontend
+## Production stack
 
-The dev compose file (`deploy/docker-compose.yml`) proxies all HTML traffic to the **Vite dev server** (`frontend:5173`). This is convenient for local development and LAN/hotspot demos, but it is **not suitable for production**: the dev server is unoptimized, can crash/exit, and requires a live Node container.
+The dev compose file (`deploy/docker-compose.dev.yml`) proxies all HTML traffic to the **Vite dev server** (`frontend:5173`). This is convenient for local development and LAN/hotspot demos, but it is **not suitable for production**: the dev server is unoptimized, can crash/exit, and requires a live Node container.
 
-Before production deploy, switch to the static production frontend image:
+For production-like or public deployments, use the dedicated production compose file:
 
-1. Build the production frontend image:
+```bash
+cp .env.example .env.prd
+# edit .env.prd: STACK_ENV=prd, COMPOSE_PROJECT_NAME=tools-teleprompt-prd,
+#                API_OTP_HMAC_SECRET, API_PUBLIC_BASE_URL, PUBLIC_ORIGIN, etc.
+./bin/start.sh prd start
+```
 
-   ```bash
-   docker build -t tools-teleprompt-frontend:prd --target prod ./frontend
-   ```
+`deploy/docker-compose.prd.yml` uses:
 
-2. Replace the `frontend` service in `deploy/docker-compose.yml` (or use an override file) with a service that runs the built image and exposes port 80:
+- `api/Dockerfile.prd` — production API image (no reload, no dev deps)
+- `frontend/Dockerfile.prd` — static build served by Caddy on port 80
+- `deploy/Caddyfile.prd` — reverse proxy to `api:8000` and `frontend:80`
 
-   ```yaml
-   frontend:
-     image: tools-teleprompt-frontend:prd
-     container_name: ${STACK_NAME:-tools-teleprompt}-frontend-${STACK_ENV:-dev}
-     restart: unless-stopped
-     networks:
-       - teleprompt-net
-   ```
+The production frontend is built with `VITE_API_BASE_URL` from `.env.prd`; leave it empty to have the browser use the same origin.
 
-3. Caddy will continue to `reverse_proxy frontend:{$FRONTEND_DEV_PORT:5173}`. Set `FRONTEND_DEV_PORT=80` in your production `.env` file so Caddy proxies to the static Caddy server inside the production frontend container.
-
-Alternatively, replace Caddy's catch-all block to serve the static `dist/` files directly and remove the separate `frontend` service entirely.
+Alternatively, you can build the images manually and reference them in an override file.
 
 ## Production checklist
 

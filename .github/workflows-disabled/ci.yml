@@ -12,29 +12,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate Compose file
-        run: docker compose -f deploy/docker-compose.yml --env-file .env.example config
+      - name: Validate dev Compose file
+        run: docker compose --project-directory deploy -f deploy/docker-compose.dev.yml --env-file .env.example config
 
-      - name: Build service images
-        run: docker compose -f deploy/docker-compose.yml --env-file .env.example build api frontend
+      - name: Build dev service images
+        run: docker compose --project-directory deploy -f deploy/docker-compose.dev.yml --env-file .env.example build api frontend
 
       - name: Start Redis
-        run: docker compose -f deploy/docker-compose.yml --env-file .env.example up -d redis
+        run: docker compose --project-directory deploy -f deploy/docker-compose.dev.yml --env-file .env.example up -d redis
 
       - name: Wait for Redis
         run: |
-          docker compose -f deploy/docker-compose.yml --env-file .env.example exec -T redis redis-cli ping
+          docker compose --project-directory deploy -f deploy/docker-compose.dev.yml --env-file .env.example exec -T redis redis-cli ping
 
       - name: Frontend lint, typecheck, test (in container)
         run: |
-          docker compose -f deploy/docker-compose.yml --env-file .env.example run --rm --no-deps frontend \
+          docker compose --project-directory deploy -f deploy/docker-compose.dev.yml --env-file .env.example run --rm --no-deps frontend \
             sh -c "npm install && npm run lint && npm run typecheck && npm test"
 
       - name: API lint, typecheck, test (in container)
         run: |
-          docker compose -f deploy/docker-compose.yml --env-file .env.example run --rm api \
+          docker compose --project-directory deploy -f deploy/docker-compose.dev.yml --env-file .env.example run --rm api \
             sh -c "pip install -q -e '.[dev]' && ruff check . && pyright . && pytest tests/ -q"
 
       - name: Tear down
         if: always()
-        run: docker compose -f deploy/docker-compose.yml --env-file .env.example down -v
+        run: docker compose --project-directory deploy -f deploy/docker-compose.dev.yml --env-file .env.example down -v
