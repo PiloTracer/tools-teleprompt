@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented here. Version format follows [SemVer](https://semver.org/).
 
+## [0.2.5] - 2026-07-10
+
+### Added
+
+- Speech sync auto-standby: continuous `SpeechRecognition` with exponential restart backoff and explicit `onSyncEnded` cleanup
+- Compound-word splitting in `annotateScriptWords` for more accurate script-to-speech matching
+- Adaptive speech utilities: `speechResultUtils.ts`, `useVisibleWordRange.ts`, and `restartBackoff.ts`
+- `bin/start.sh cleanup` and `bin/start.sh rebuild` commands for safe dangling-resource cleanup and forced container rebuilds
+
+### Changed
+
+- Hardened Docker Compose deployment: `restart: unless-stopped` on the frontend service and Caddy frontend port configurable via environment variable
+
+### Notes
+
+- When preparing production, ensure the frontend container is healthy before Caddy proxies to it to avoid 502 errors on startup
+
 ## [0.1.0] - 2026-05-21
 
 First public release.
@@ -20,4 +37,5 @@ First public release.
 - Scripts are stored locally in the browser after handoff; relay data in Redis expires in minutes
 - For phone QR handoff on a hotspot, open the app via your laptop's LAN IP (not `localhost`) — see README
 
+[0.2.5]: https://github.com/PiloTracer/tools-teleprompt/releases/tag/v0.2.5
 [0.1.0]: https://github.com/PiloTracer/tools-teleprompt/releases/tag/v0.1.0
