@@ -163,12 +163,40 @@ docker compose -f deploy/docker-compose.yml exec frontend sh -c "cd /app && npx 
 
 ---
 
+## Production frontend
+
+The dev compose file (`deploy/docker-compose.yml`) proxies all HTML traffic to the **Vite dev server** (`frontend:5173`). This is convenient for local development and LAN/hotspot demos, but it is **not suitable for production**: the dev server is unoptimized, can crash/exit, and requires a live Node container.
+
+Before production deploy, switch to the static production frontend image:
+
+1. Build the production frontend image:
+
+   ```bash
+   docker build -t tools-teleprompt-frontend:prd --target prod ./frontend
+   ```
+
+2. Replace the `frontend` service in `deploy/docker-compose.yml` (or use an override file) with a service that runs the built image and exposes port 80:
+
+   ```yaml
+   frontend:
+     image: tools-teleprompt-frontend:prd
+     container_name: ${STACK_NAME:-tools-teleprompt}-frontend-${STACK_ENV:-dev}
+     restart: unless-stopped
+     networks:
+       - teleprompt-net
+   ```
+
+3. Caddy will continue to `reverse_proxy frontend:{$FRONTEND_DEV_PORT:5173}`. Set `FRONTEND_DEV_PORT=80` in your production `.env` file so Caddy proxies to the static Caddy server inside the production frontend container.
+
+Alternatively, replace Caddy's catch-all block to serve the static `dist/` files directly and remove the separate `frontend` service entirely.
+
 ## Production checklist
 
 - [ ] `API_OTP_HMAC_SECRET` set to a strong random value (≥32 bytes)
 - [ ] TLS enabled (Caddy auto HTTPS or upstream terminator)
 - [ ] CSP headers verified with `curl -I`
 - [ ] Rate limits appropriate for expected traffic
+- [ ] Frontend is served from the production static image, not the Vite dev server
 - [ ] Optional: Lighthouse PWA audit (W6)
 
 ---

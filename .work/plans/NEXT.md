@@ -1,6 +1,12 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-26 (late) — adaptive re-lock rounds R8–R10 attempted on top of `33234b1` baseline, **all reverted** by owner after device tests. No code change committed; only HANDOFF + retrospective updated.
+**Updated:** 2026-07-10 (pass eight — decision tree closed) — Owner confirmed on device that one-shot mode (pass seven) "deactivates automatically" — unacceptable. Combined continuous-restart (pass six, keeps sync engaged) with the backoff mitigation (reduces, does not eliminate, notification frequency). This is the final state under the owner's two hard constraints (must stay engaged until explicit tap-off; won't pay for streaming ASR). Corrected inaccurate prior claims: mobile SR dedup and viewport-range hints are **not wired into application code** (utilities + tests only). Device verification is the next gate.
+
+---
+
+## ⚠️ Process note — multiple concurrent sessions edited this same issue
+
+Passes six/seven were worked by **two different chat sessions** at the same time without shared context, producing directly conflicting fixes. That's resolved now (pass eight combines both learnings), but if you're starting a new session on this: read HANDOFF's full pass 1–8 history first and confirm what's actually on disk (`git diff frontend/src/prompter/adaptive/useSpeechTracker.ts`) before changing anything here — **the decision tree below is closed**, don't re-litigate it without new device-test information.
 
 ---
 
@@ -8,13 +14,18 @@
 
 > **Read first:** [`../context/20260526-adaptive-relock-r4-r6-retrospective.md`](../context/20260526-adaptive-relock-r4-r6-retrospective.md). Rounds 4–10 are documented as dead ends with verdicts. Do **not** repeat: scroll-freeze during silence (R8/R9), permissive matcher floor below 4/3 (R10), raised matcher thresholds above 4/3 (R5), `onspeechstart` instant snap (R4), restoring `readingWordIndex` in failure paths (R6).
 
-1. **Mobile SR dedup** (from R4 work, isolated commit) — Android Chrome confidence-zero filter + prefix dedup. Standalone utility in `speechResultUtils.ts`. Device test: read continuously → `sr.heard` debug log shows no duplicate words. Low risk.
-2. **Compound word split** (from R4 work, isolated commit) — handles hyphenated tokens / URLs in matcher input. Trivial annotation change. Device test: script with URLs → matcher works through them.
-3. **IntersectionObserver paragraph hints — observability ONLY** (from R4 work) — `useVisibleWordRange` + `annotateBlockWordRanges`, log `sync.viewportRange`, **do not wire into matcher constraints in this commit**. Provides ground truth for future matcher work.
-4. **Decision point** — after 1–3 device-validated, owner decides: continue browser SR with cautious matcher work (hybrid silence-trigger: anchored first, global as null fallback), OR move to streaming ASR provider (AssemblyAI / Deepgram). The retrospective Lesson 3 argues browser SR has hit its ceiling for Spanish content on mobile Chrome.
-5. Manual device verify player layout — bottom slider 20–50%; no horizontal scrollbar on long scripts.
-6. Production deploy when owner ready (`deploy/README.md`) — speech-sync residual issues do not block other features.
-7. Manual phone test on hotspot IP (LAN + multi-QR).
+0. ✅ **Mic notification loop — decision tree closed (pass eight)** — 2026-07-10. **Confirmed root cause:** Android Chrome force-ends `SpeechRecognition` after a few seconds of silence regardless of `continuous = true` (Chromium issue **41297427**); there is no web API to suppress the OS mic notification that replays on every restart, and no way to keep the mic "on" without periodic restarts. Two options were tried and both had real problems: **continuous+restart** (pass six — notification loops repeatedly) and **one-shot/no-restart** (pass seven — owner confirmed on device it "deactivates automatically", unacceptable). Owner has ruled out streaming ASR on cost. **Final implementation:** always restart on `onend` (sync stays engaged until explicit ES/EN tap-off, matching what the owner needs) **plus** exponential backoff (`restartBackoff.ts`: 280ms → capped 8s) applied only to consecutive restarts where the *previous* SR instance heard zero speech; resets to 280ms the instant real speech is heard, so active reading is never delayed. `onSyncEnded` callback now only fires on a genuine mic-permission-denied error, not on ordinary silence-driven ends — the button stays "on" for the whole session as intended. FE 208/208 pass; lint/typecheck clean. **Not device-verified.**
+   - **What to expect on device:** sync should no longer silently drop out during normal reading pauses (that was the pass-seven problem). The OS mic notification will still fire, but less often during idle/long-pause stretches than a flat restart would. It will **not** be silent — that's only achievable with streaming ASR.
+   - **If this is still unacceptable:** the only remaining lever is streaming ASR (AssemblyAI / Deepgram) — there is no third free option, this is a genuine Web Speech API / Android Chrome ceiling that several independent upstream bug reports confirm.
+1. ⚠️ **Mobile SR dedup** — `speechResultUtils.ts` written 2026-07-10 with passing unit tests, but **not imported/wired into `useSpeechTracker.ts`**. Decide whether to wire it in (isolated, device-tested change) or drop it.
+2. ✅ **Compound word split** — implemented 2026-07-10 in `annotateScriptWords.ts`, wired into `Player.tsx`; hyphenated tokens and URL-like tokens split into pronounceable word spans.
+3. ⚠️ **IntersectionObserver paragraph hints** — `useVisibleWordRange.ts` written 2026-07-10 with passing unit tests, but **not wired into `Player.tsx`** — no `sync.viewportRange` log is currently emitted anywhere.
+4. **Device-test on Android Chrome (do this before any more matcher/sync code changes)** — enable sync debug (`localStorage.setItem('tp:debug','1')`) and verify with pass eight's code on disk: (a) tapping ES/EN and reading continuously with normal pauses — sync should stay engaged the whole time, no silent drop-outs; (b) check `sr.end` debug log entries for `consecutiveSilentRestarts`/`nextRestartDelayMs` climbing during idle stretches and resetting to 0/280ms once you start speaking; (c) is the notification frequency noticeably lower than before during idle periods (it will not be zero); (d) matcher advances through hyphenated/URL tokens (item 2); (e) decide on items 1/3.
+5. **Decision point (elevated priority, blocked on item 4's result)** — if pass eight is an acceptable UX (sync stays engaged, notification frequency tolerable even though nonzero), close the iteration. If the notification frequency is still unacceptable to the owner, the only remaining lever is a streaming ASR provider (AssemblyAI / Deepgram — fixes it completely but costs money, already ruled out once). There is no other free option; this is a real Web Speech API / Android Chrome ceiling (Chromium issue 41297427), not an implementation bug.
+6. Manual device verify player layout — bottom slider 20–50%; no horizontal scrollbar on long scripts.
+7. Production deploy when owner ready (`deploy/README.md`) — speech-sync residual issues do not block other features.
+8. Manual phone test on hotspot IP (LAN + multi-QR).
+9. Production frontend deployment: switch from Vite dev server to the static production image (`frontend/Dockerfile` target `prod`). See `deploy/README.md` § "Production frontend".
 
 ---
 
@@ -23,8 +34,9 @@
 | Item | Blocker |
 |------|---------|
 | Production deploy | Owner sign-off + env secrets (`API_OTP_HMAC_SECRET`) |
-| Adaptive mic sync sign-off | **R4–R10 all rejected on device.** Round-3 baseline (`33234b1`) is current best — still produces residual "skipped lines on resume". Pending owner decision per item 4 above. |
-| ASR provider decision | Owner — continue browser SR or move to streaming ASR |
+| Adaptive mic sync sign-off | **R4–R10 all rejected on device.** Round-3 baseline (`33234b1`) plus Phases 1–3 incremental fixes are now on disk; device verification pending. If residual "skipped lines on resume" remains, the realistic ceiling of browser SR has been reached. |
+| Mic notification loop | **Decision tree closed (pass eight)** — continuous mode + backoff mitigation; mic/sync stays engaged, notification frequency reduced but nonzero (platform limitation, Chromium issue 41297427). Device test needed to confirm the reduced frequency + no drop-outs are both acceptable; if not, only remaining lever is the ASR provider decision below. |
+| ASR provider decision | Owner — continue browser SR (accept notification-loop mitigation + matcher ceiling) or move to streaming ASR (fixes both) |
 | Player bottom clearance sign-off | Manual device check not yet recorded |
 | Mobile editor nav | Fixed 2026-05-25 — verify on device after deploy |
 

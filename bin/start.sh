@@ -472,6 +472,51 @@ cmd_nuke() {
   printf '%sStack removed including volumes.%s\n' "$C_GREEN" "$C_RESET"
 }
 
+cmd_cleanup() {
+  print_banner "Cleanup dangling resources"
+  printf '%sRemoving stopped containers, orphaned networks and dangling images...%s\n' "$C_DIM" "$C_RESET"
+  # Stop and remove project containers/networks, but keep volumes.
+  quiet_dc down --remove-orphans || true
+  # Remove any remaining stopped containers for this project.
+  local containers
+  containers="$(docker ps -a -q --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" 2>/dev/null || true)"
+  if [[ -n "$containers" ]]; then
+    # shellcheck disable=SC2086
+    docker rm -f $containers >/dev/null 2>&1 || true
+  fi
+  # Prune dangling (untagged) images — global but safe, never deletes named images.
+  docker image prune -f >/dev/null 2>&1 || true
+  printf '%sCleanup complete for project %s (volumes preserved).%s\n' "$C_GREEN" "$COMPOSE_PROJECT_NAME" "$C_RESET"
+}
+
+cmd_rebuild() {
+  print_banner "Rebuild containers (no cache)"
+  local rc=0
+  if [[ "${MENU_QUIET:-0}" == "1" ]]; then
+    quiet_dc down --remove-orphans || true
+    quiet_dc build --no-cache || rc=$?
+    [[ "$rc" -eq 0 ]] && quiet_dc up -d || rc=$?
+  else
+    dc down --remove-orphans || true
+    dc build --no-cache || rc=$?
+    [[ "$rc" -eq 0 ]] && dc up -d || rc=$?
+  fi
+  if [[ "$rc" -ne 0 ]]; then
+    printf '%sERROR: rebuild failed (exit %s).%s\n' "$C_RED" "$rc" "$C_RESET" >&2
+    return "$rc"
+  fi
+  if ! wait_for_stack_ready; then
+    cmd_status
+    if [[ "${MENU_QUIET:-0}" == "1" ]]; then
+      return 1
+    fi
+  else
+    cmd_status
+  fi
+  printf '\n'
+  urls_hint
+}
+
 cmd_help() {
   cat <<EOF
 tools-teleprompt stack manager
@@ -502,6 +547,8 @@ Headless:
   ./bin/start.sh [dev|prd] test-fe | test-api | lint-fe | lint-api
   ./bin/start.sh [dev|prd] e2e-offline | e2e-handoff
   ./bin/start.sh [dev|prd] pull | build
+  ./bin/start.sh [dev|prd] cleanup      (safe — prune dangling project resources)
+  ./bin/start.sh [dev|prd] rebuild      (no-cache build + start)
   ./bin/start.sh [dev|prd] redis-flush  (dangerous)
   ./bin/start.sh [dev|prd] nuke         (dangerous — down -v)
 
@@ -553,9 +600,12 @@ show_menu() {
   printf ' %s19)%s E2E handoff (Playwright image)\n' "$C_GREEN" "$C_RESET"
   printf ' %s20)%s Pull images\n' "$C_GREEN" "$C_RESET"
   printf ' %s21)%s Build only\n' "$C_GREEN" "$C_RESET"
+  printf '\n%sMaintenance%s\n' "$C_BOLD" "$C_RESET"
+  printf ' %s22)%s Cleanup dangling resources (safe)\n' "$C_GREEN" "$C_RESET"
+  printf ' %s23)%s Rebuild containers (no cache)\n' "$C_GREEN" "$C_RESET"
   printf '\n%sDanger zone%s\n' "$C_BOLD" "$C_RED"
-  printf ' %s22)%s Redis FLUSHDB (relay sessions)\n' "$C_RED" "$C_RESET"
-  printf ' %s23)%s Nuke stack + volumes\n' "$C_RED" "$C_RESET"
+  printf ' %s24)%s Redis FLUSHDB (relay sessions)\n' "$C_RED" "$C_RESET"
+  printf ' %s25)%s Nuke stack + volumes\n' "$C_RED" "$C_RESET"
   printf '\n  %s0)%s Exit   %sr)%s Refresh   %s?%s Help\n\n' "$C_DIM" "$C_RESET" "$C_DIM" "$C_RESET" "$C_DIM" "$C_RESET"
 }
 
@@ -604,8 +654,10 @@ dispatch_menu_choice() {
     19) cmd_e2e_handoff; rc=$? ;;
     20) cmd_pull; rc=$? ;;
     21) cmd_build_only; rc=$? ;;
-    22) cmd_redis_flush ;;
-    23) cmd_nuke ;;
+    22) cmd_cleanup; rc=$? ;;
+    23) cmd_rebuild; rc=$? ;;
+    24) cmd_redis_flush ;;
+    25) cmd_nuke ;;
     0|q|Q) return 2 ;;
     r|R) return 0 ;;
     \?|h|H) cmd_help; pause_menu; return 0 ;;
@@ -710,6 +762,8 @@ dispatch_cli() {
     e2e-handoff) cmd_e2e_handoff ;;
     pull)        cmd_pull ;;
     build)       cmd_build_only ;;
+    cleanup)     cmd_cleanup ;;
+    rebuild)     cmd_rebuild ;;
     redis-flush) cmd_redis_flush ;;
     nuke)        cmd_nuke ;;
     menu|dev|prd) run_menu ;;

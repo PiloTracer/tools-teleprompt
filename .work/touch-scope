@@ -1,7 +1,26 @@
 {
-  "ref": "REPLACE:PROJECT_REF",
-  "updated": "YYYY-MM-DD",
-  "goal": "one-line session or task goal",
-  "allowed_paths": [],
+  "ref": "tools-teleprompt",
+  "updated": "2026-07-10",
+  "goal": "Adaptive speech sync incremental fixes + restored baseline continuous SR + start.sh cleanup/rebuild commands + deploy robustness: mobile SR dedup (unwired), compound word split, IntersectionObserver observability (unwired)",
+  "allowed_paths": [
+    "frontend/src/prompter/adaptive/speechResultUtils.ts",
+    "frontend/src/prompter/adaptive/useSpeechTracker.ts",
+    "frontend/src/prompter/adaptive/annotateScriptWords.ts",
+    "frontend/src/prompter/adaptive/useVisibleWordRange.ts",
+    "frontend/src/prompter/adaptive/speechRecognitionStart.ts",
+    "frontend/src/prompter/adaptive/micDevice.ts",
+    "frontend/src/prompter/Player.tsx",
+    "frontend/tests/adaptive/speechResultUtils.test.ts",
+    "frontend/tests/adaptive/annotateScriptWords.test.ts",
+    "frontend/tests/adaptive/useVisibleWordRange.test.ts",
+    "frontend/tests/adaptive/speechRecognitionStart.test.ts",
+    "bin/start.sh",
+    "deploy/docker-compose.yml",
+    "deploy/Caddyfile",
+    "deploy/README.md",
+    ".work/context/HANDOFF.md",
+    ".work/plans/NEXT.md",
+    ".work/touch-scope"
+  ],
   "allowed_patterns": []
 }

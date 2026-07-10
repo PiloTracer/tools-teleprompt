@@ -33,6 +33,7 @@ import {
   syncWarn,
 } from "./syncDebug";
 import { startSpeechRecognition } from "./speechRecognitionStart";
+import { computeRestartDelayMs } from "./restartBackoff";
 
 const WORD_BUFFER_SIZE = 16;
 const MATCH_WINDOW_WORDS = 16;
@@ -57,7 +58,6 @@ export const SILENCE_TIMEOUT_MS = SILENCE_MARK_CLEAR_MS;
 export const RELOCK_ARM_TIMEOUT_MS = 4000;
 
 const LANG_RETRY_UNMATCHED_THRESHOLD = 8;
-const SR_RESTART_DELAY_MS = 280;
 
 /**
  * Failed re-lock attempts (after silence) before falling back to a global
@@ -115,6 +115,14 @@ export type UseSpeechTrackerOptions = {
    * SR result or per frame.
    */
   getViewportAnchorWordIndex?: () => number | null;
+  /**
+   * Called once when SR ends and this hook decides NOT to auto-restart (see
+   * rec.onend — no-speech/natural end no longer auto-restarts). The caller
+   * should flip its own "sync on" UI state (e.g. the ES/EN toggle) back to
+   * off so it accurately reflects that listening has stopped, rather than
+   * silently showing "on" while nothing is being tracked.
+   */
+  onSyncEnded?: () => void;
 };
 
 export type UseSpeechTrackerResult = {
@@ -158,6 +166,7 @@ export function useSpeechTracker({
   micDeviceLabel = "",
   onMicDeviceRemapped,
   getViewportAnchorWordIndex,
+  onSyncEnded,
 }: UseSpeechTrackerOptions): UseSpeechTrackerResult {
   const supported = isSpeechRecognitionSupported();
 
@@ -182,6 +191,7 @@ export function useSpeechTracker({
   const micDeviceLabelRef = useRef(micDeviceLabel);
   const onMicDeviceRemappedRef = useRef(onMicDeviceRemapped);
   const getViewportAnchorWordIndexRef = useRef(getViewportAnchorWordIndex);
+  const onSyncEndedRef = useRef(onSyncEnded);
   const awaitingRelockRef = useRef(false);
   const relockAttemptsRef = useRef(0);
   const relockFallbackCountRef = useRef(0);
@@ -195,6 +205,7 @@ export function useSpeechTracker({
   micDeviceLabelRef.current = micDeviceLabel;
   onMicDeviceRemappedRef.current = onMicDeviceRemapped;
   getViewportAnchorWordIndexRef.current = getViewportAnchorWordIndex;
+  onSyncEndedRef.current = onSyncEnded;
 
   useEffect(() => {
     syncLogBootOnce();
@@ -258,6 +269,15 @@ export function useSpeechTracker({
     let micStream: MediaStream | null = null;
     let activeMicDeviceId = "";
     let restartTimer: ReturnType<typeof setTimeout> | null = null;
+    /**
+     * Consecutive restarts where the *previous* SR instance never heard any
+     * speech at all. Backs off the next restart delay (restartBackoff.ts)
+     * instead of hammering a fresh session — and its Android mic
+     * connect/disconnect notification — every ~3–5s while the user hasn't
+     * started reading yet or is mid-pause. Reset to 0 the moment any
+     * instance hears real speech, so active reading is never delayed.
+     */
+    let consecutiveSilentRestarts = 0;
     shouldRunRef.current = true;
     cursorWordRef.current = 0;
     wordBufferRef.current = [];
@@ -335,6 +355,10 @@ export function useSpeechTracker({
       rec.maxAlternatives = 1;
       rec.lang = langCandidates[langIndex] ?? "en";
       syncLog("sr.recognition.lang", { lang: rec.lang, langIndex });
+
+      // Did *this* instance hear any speech at all before it ends? Drives
+      // the silent-restart backoff below (see restartBackoff.ts).
+      let hadResultThisInstance = false;
 
       const armSilenceTimer = () => {
         if (markClearTimerRef.current !== null) {
@@ -419,6 +443,7 @@ export function useSpeechTracker({
         }
 
         if (finalText.trim() || interimText.trim()) {
+          hadResultThisInstance = true;
           syncLogThrottled("sr.heard", 400, "sr.heard", {
             final: finalText.trim().slice(-80),
             interim: interimText.trim().slice(-80),
@@ -711,6 +736,10 @@ export function useSpeechTracker({
           setError("permission_denied");
           setActive(false);
           shouldRunRef.current = false;
+          // Mic access was actually denied/revoked — sync cannot continue.
+          // Flip the caller's toggle off so the UI honestly reflects that,
+          // instead of showing "on" while permanently unable to listen.
+          onSyncEndedRef.current?.();
         } else if (event.error === "network") {
           setError("network");
         }
@@ -720,7 +749,29 @@ export function useSpeechTracker({
         if (cancelled) {
           return;
         }
-        syncLog("sr.end", { retryWithNextLang, lang: rec.lang });
+        // Android Chrome does not support true continuous SpeechRecognition:
+        // it force-ends the session after a few seconds of silence
+        // regardless of `continuous = true` (Chromium issue 41297427). A
+        // one-shot (no-restart) mode was tried and rejected — sync silently
+        // went idle after any pause, requiring a manual re-tap to resume,
+        // which is worse than the alternative. So we DO always restart to
+        // keep sync engaged until the user explicitly taps off, and instead
+        // only control *how often* — see the backoff below — since there is
+        // no way to keep the mic "on" without periodic restarts, and no way
+        // to suppress the OS notification each restart causes.
+        if (hadResultThisInstance) {
+          consecutiveSilentRestarts = 0;
+        } else {
+          consecutiveSilentRestarts += 1;
+        }
+        const delayMs = computeRestartDelayMs(consecutiveSilentRestarts);
+        syncLog("sr.end", {
+          retryWithNextLang,
+          lang: rec.lang,
+          hadResult: hadResultThisInstance,
+          consecutiveSilentRestarts,
+          nextRestartDelayMs: delayMs,
+        });
         setActive(false);
         clearNormalizeCache();
         if (!shouldRunRef.current || permissionDeniedRef.current) {
@@ -744,7 +795,7 @@ export function useSpeechTracker({
           }
 
           startRecognitionInstance(currentRecognition, "restart");
-        }, SR_RESTART_DELAY_MS);
+        }, delayMs);
       };
 
       return rec;

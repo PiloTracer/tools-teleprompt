@@ -144,7 +144,15 @@ export async function acquireMicStream(deviceId: string): Promise<MicStreamResul
 
 /**
  * Resolve saved mic metadata without holding the device open.
- * Opens once for permission/enumeration, then releases.
+ *
+ * Device labels are withheld by the browser until mic permission has been
+ * granted at least once for this origin. If `enumerateDevices()` already
+ * returns labels (permission previously granted), we resolve directly from
+ * that list — no extra getUserMedia call. Only when labels are still empty
+ * do we prime permission with a throwaway acquire+release, since
+ * `openMicSession` (called right after this) will open its own session
+ * anyway and a redundant open/close pair here would surface a second
+ * spurious "mic in use" signal on every sync engage.
  */
 export async function resolveMicForSpeech(
   micDeviceId: string,
@@ -157,37 +165,42 @@ export async function resolveMicForSpeech(
     return { deviceId: "", deviceLabel: "", remapped: false, unavailable: false };
   }
 
-  try {
-    if (trimmedId) {
-      const { stream } = await acquireMicStream(trimmedId);
-      releaseMicStream(stream);
-    } else {
-      const { stream } = await acquireMicStream("");
-      releaseMicStream(stream);
-    }
-  } catch {
-    if (!trimmedLabel) {
-      return {
-        deviceId: trimmedId,
-        deviceLabel: trimmedLabel,
-        remapped: false,
-        unavailable: Boolean(trimmedId),
-      };
-    }
+  let devices = await enumerateMicDevices();
+  const hasLabels = devices.some((device) => device.label.trim().length > 0);
+
+  if (!hasLabels) {
     try {
-      const { stream } = await acquireMicStream("");
-      releaseMicStream(stream);
+      if (trimmedId) {
+        const { stream } = await acquireMicStream(trimmedId);
+        releaseMicStream(stream);
+      } else {
+        const { stream } = await acquireMicStream("");
+        releaseMicStream(stream);
+      }
     } catch {
-      return {
-        deviceId: trimmedId,
-        deviceLabel: trimmedLabel,
-        remapped: false,
-        unavailable: Boolean(trimmedId),
-      };
+      if (!trimmedLabel) {
+        return {
+          deviceId: trimmedId,
+          deviceLabel: trimmedLabel,
+          remapped: false,
+          unavailable: Boolean(trimmedId),
+        };
+      }
+      try {
+        const { stream } = await acquireMicStream("");
+        releaseMicStream(stream);
+      } catch {
+        return {
+          deviceId: trimmedId,
+          deviceLabel: trimmedLabel,
+          remapped: false,
+          unavailable: Boolean(trimmedId),
+        };
+      }
     }
+    devices = await enumerateMicDevices();
   }
 
-  const devices = await enumerateMicDevices();
   const resolved = resolveMicDeviceFromList(trimmedId, trimmedLabel, devices);
   const listed = resolved.deviceId
     ? devices.some((device) => device.deviceId === resolved.deviceId)
@@ -202,9 +215,11 @@ export async function resolveMicForSpeech(
 }
 
 /**
- * Open the selected mic and keep it active for the SR session.
- * Pass the stream's audio track to SpeechRecognition.start(track) so SR uses
- * this input instead of the browser default.
+ * Open the selected mic and keep it active for the SR session lifetime.
+ * NOTE: SR itself always starts on the browser's default input (never
+ * `rec.start(track)` — see speechRecognitionStart.ts). This session is held
+ * only to prime the mobile Chrome permission prompt ahead of SR start and,
+ * in debug mode, to sample the selected device's input level.
  */
 export async function openMicSession(deviceId: string): Promise<MicSessionOpenResult> {
   const trimmed = deviceId.trim();

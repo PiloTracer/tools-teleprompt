@@ -22,7 +22,7 @@
 	}
 
 	handle {
-		reverse_proxy frontend:5173 {
+		reverse_proxy frontend:{$FRONTEND_DEV_PORT:5173} {
 			header_up Host {host}
 			header_up X-Real-IP {remote_host}
 		}

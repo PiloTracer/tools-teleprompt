@@ -1,5 +1,44 @@
 const WORD_SPLIT = /(\s+)/;
 
+function isUrlLike(token: string): boolean {
+  return /^https?:\/\//i.test(token) || /^www\./i.test(token);
+}
+
+type TokenSegment = { type: "word" | "sep"; value: string };
+
+/**
+ * Split a token into pronounceable word segments and separators.
+ * Hyphenated words become separate words; URL-like tokens split at `://`, `/`,
+ * and `.` boundaries so the matcher can advance through them. Separators are
+ * preserved as plain text so the visible script is unchanged.
+ */
+function splitCompoundToken(token: string): TokenSegment[] {
+  if (isUrlLike(token)) {
+    return token
+      .split(/(\/\/|\/|\.|:)/)
+      .filter((segment) => segment !== "")
+      .map((segment) => ({
+        type:
+          segment === "//" || segment === "/" || segment === "." || segment === ":"
+            ? "sep"
+            : "word",
+        value: segment,
+      }));
+  }
+
+  if (token.includes("-")) {
+    return token
+      .split(/(-)/)
+      .filter((segment) => segment !== "")
+      .map((segment) => ({
+        type: segment === "-" ? "sep" : "word",
+        value: segment,
+      }));
+  }
+
+  return [{ type: "word", value: token }];
+}
+
 /** Wrap visible words in the script DOM with `data-word` indices for scroll targeting. */
 export function annotateScriptWords(container: HTMLElement): string[] {
   const words: string[] = [];
@@ -19,7 +58,7 @@ export function annotateScriptWords(container: HTMLElement): string[] {
   for (const textNode of textNodes) {
     const text = textNode.textContent ?? "";
     const parts = text.split(WORD_SPLIT);
-    if (parts.length <= 1) {
+    if (parts.length <= 1 && !parts[0]?.includes("-") && !isUrlLike(parts[0] ?? "")) {
       continue;
     }
 
@@ -30,12 +69,20 @@ export function annotateScriptWords(container: HTMLElement): string[] {
         continue;
       }
 
-      const span = document.createElement("span");
-      span.className = "tp-word";
-      span.dataset.word = String(words.length);
-      span.textContent = part;
-      words.push(part);
-      fragment.appendChild(span);
+      const segments = splitCompoundToken(part);
+      for (const segment of segments) {
+        if (segment.type === "sep") {
+          fragment.appendChild(document.createTextNode(segment.value));
+          continue;
+        }
+
+        const span = document.createElement("span");
+        span.className = "tp-word";
+        span.dataset.word = String(words.length);
+        span.textContent = segment.value;
+        words.push(segment.value);
+        fragment.appendChild(span);
+      }
     }
 
     textNode.parentNode?.replaceChild(fragment, textNode);

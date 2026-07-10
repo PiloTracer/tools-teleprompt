@@ -143,6 +143,16 @@ export function Player() {
     });
   }, []);
 
+  // SR no longer auto-restarts after a natural/no-speech end (see
+  // useSpeechTracker's rec.onend) — the mic only turns on/off in response to
+  // the user's own ES/EN tap. When the hook ends listening on its own, flip
+  // the toggle back off so the button honestly reflects "not listening"
+  // instead of silently staying lit.
+  const onSyncEnded = useCallback(() => {
+    syncLog("player.syncEnded", { hint: "SR ended without restart; tap ES/EN to resume" });
+    setSyncActive(false);
+  }, []);
+
   const {
     readingWordIndex,
     recognitionLanguage: activeRecognitionLanguage,
@@ -156,6 +166,7 @@ export function Player() {
     micDeviceLabel: settings.micDeviceLabel,
     onMicDeviceRemapped,
     getViewportAnchorWordIndex,
+    onSyncEnded,
   });
 
   useReadingLineMark({
