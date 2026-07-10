@@ -1,6 +1,6 @@
 # tools-teleprompt
 
-**Version 0.2.5** · [![CI](https://github.com/PiloTracer/tools-teleprompt/actions/workflows/ci.yml/badge.svg)](https://github.com/PiloTracer/tools-teleprompt/actions/workflows/ci.yml)
+**Version 0.2.5**
 
 A self-hosted web teleprompter: paste or upload a script, tune scroll speed and display, present fullscreen on any device. Send the script to a phone or tablet via QR or a short-lived link — no accounts, no database.
 
