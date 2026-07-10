@@ -2,15 +2,21 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
 
+const devPort = Number(process.env.FRONTEND_DEV_PORT) || 5173;
+const hmrClientHost = process.env.VITE_DEV_HMR_HOST?.trim();
+const hmrClientPort = process.env.VITE_DEV_HMR_PORT?.trim();
+
 export default defineConfig({
   server: {
     host: true,
-    port: Number(process.env.FRONTEND_DEV_PORT) || 5173,
+    port: devPort,
     allowedHosts: true,
-    hmr: process.env.VITE_DEV_HMR_PORT
+    // clientPort/host = what the browser connects to (host-mapped / LAN).
+    // Do NOT set hmr.port to the host port — that makes Vite bind 10.42.0.1:9173 inside Docker (EADDRNOTAVAIL).
+    hmr: hmrClientPort
       ? {
-          host: process.env.VITE_DEV_HMR_HOST || "localhost",
-          port: Number(process.env.VITE_DEV_HMR_PORT),
+          host: hmrClientHost || "localhost",
+          clientPort: Number(hmrClientPort),
         }
       : undefined,
   },

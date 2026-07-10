@@ -1,34 +1,30 @@
 :80 {
-  header {
-    # Dev stack proxies to Vite (inline @vite/client + react-refresh scripts, HMR ws://…:9173).
-    # Production static images use frontend/Caddyfile.static (no CSP here). img-src data: required for QR previews.
-    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
-    X-Content-Type-Options "nosniff"
-    X-Frame-Options "DENY"
-    Referrer-Policy "strict-origin-when-cross-origin"
-    Permissions-Policy "camera=(), microphone=(self), geolocation=()"
-  }
+	header {
+		# Dev stack proxies to Vite (inline @vite/client + react-refresh scripts, HMR ws://…:9173).
+		# Production static images use frontend/Caddyfile.static (no CSP here). img-src data: required for QR previews.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(self), geolocation=()"
+	}
 
-  handle /health {
-    reverse_proxy api:8000 {
-      header_up X-Forwarded-For {remote_host}
-      header_up X-Real-IP {remote_host}
-    }
-  }
+	handle /health {
+		reverse_proxy api:8000 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
 
-  handle /api/* {
-    reverse_proxy api:8000 {
-      header_up X-Forwarded-For {remote_host}
-      header_up X-Real-IP {remote_host}
-    }
-  }
+	handle /api/* {
+		reverse_proxy api:8000 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
 
-  handle {
-    reverse_proxy frontend:5173 {
-      header_up X-Forwarded-For {remote_host}
-      header_up X-Real-IP {remote_host}
-      header_up Host {host}
-      header_up X-Forwarded-Proto {scheme}
-    }
-  }
+	handle {
+		reverse_proxy frontend:5173 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+		}
+	}
 }
