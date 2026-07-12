@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await app.state.redis.aclose()  # pyright: ignore[reportUnknownMemberType]
 
 
-app = FastAPI(title="tools-teleprompt API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="tools-teleprompt API", version="0.5.0", lifespan=lifespan)
 
 app.add_exception_handler(AppError, app_error_handler)  # pyright: ignore[reportArgumentType]
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)  # pyright: ignore[reportArgumentType]

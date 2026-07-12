@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here. Version format follows [SemVer](https://semver.org/).
 
+## [0.5.0] - 2026-07-12
+
+### Added
+
+- Production VPS runbook guidance for Cloudflare + host nginx (`deploy/README.md` links; operator copy under local `credentials/`)
+- `.env.example` notes for production `teleprompt.aiepic.app` / prd host-nginx ports
+
+### Changed
+
+- API and frontend package manifests now report version `0.5.0`
+- Align prd env documentation with same-origin public URL (`PUBLIC_ORIGIN` / `API_PUBLIC_BASE_URL`)
+
 ## [0.2.7] - 2026-07-10
 
 ### Changed
@@ -57,6 +69,8 @@ First public release.
 - Scripts are stored locally in the browser after handoff; relay data in Redis expires in minutes
 - For phone QR handoff on a hotspot, open the app via your laptop's LAN IP (not `localhost`) — see README
 
+[0.5.0]: https://github.com/PiloTracer/tools-teleprompt/releases/tag/v0.5.0
+[0.2.7]: https://github.com/PiloTracer/tools-teleprompt/releases/tag/v0.2.7
 [0.2.6]: https://github.com/PiloTracer/tools-teleprompt/releases/tag/v0.2.6
 [0.2.5]: https://github.com/PiloTracer/tools-teleprompt/releases/tag/v0.2.5
 [0.1.0]: https://github.com/PiloTracer/tools-teleprompt/releases/tag/v0.1.0

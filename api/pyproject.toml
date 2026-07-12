@@ -1,6 +1,6 @@
 [project]
 name = "tools-teleprompt-api"
-version = "0.2.6"
+version = "0.5.0"
 description = "Ephemeral pairing API for tools-teleprompt"
 requires-python = ">=3.12"
 dependencies = [

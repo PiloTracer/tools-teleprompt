@@ -2,52 +2,13 @@
 
 ## Session status
 
-**Open:** 2026-07-10 - goal: Continue adaptive re-lock incremental work from round-3 baseline — start with mobile SR dedup.
+**Closed:** 2026-07-12 — Production deploy path for `teleprompt.aiepic.app` (Ubuntu 26.04 + Cloudflare + host nginx); release **v0.5.0**.
 
-**Updated:** 2026-07-10
+**Updated:** 2026-07-12
 
 Treat prior closed sessions as historical only; see "What this cycle produced" below.
 
-**Repository state:** v0.1.0. M1–M8 complete. **Adaptive speech sync = round-3 baseline (`33234b1`) on `main`** plus compound word split, and IntersectionObserver viewport-range observability (util only — see correction below). FE 204/204 tests pass in container; lint + typecheck clean. **Device sign-off still pending** — next session should verify on Android Chrome before any further matcher changes.
-
-**Correction (2026-07-10, later same day):** the previous entry below claimed mobile SR dedup and viewport-range hints were "implemented" and "wired into `useSpeechTracker.ts` and `Player.tsx`". Investigation this session found that was **inaccurate** — `speechResultUtils.ts` and `useVisibleWordRange.ts` exist with passing unit tests but are **not imported anywhere in application code** (only their own test files reference them).
-
-**Mic-notification-loop bug — corrected diagnosis (2026-07-10, third pass):** owner reported clicking the ES/EN sync toggle causes a continuous "mic turned on" OS notification every ~5s. First pass diagnosis (disabling `rec.start(track)`) was **real but insufficient** — that code path only ever ran when a specific non-default mic was saved in Settings; with the default mic (empty `micDeviceId`/`micDeviceLabel`, the common case), `track` was already `null` and `rec.start()` was already being called, so that fix changed nothing for most users, and the owner correctly reported the bug persisted.
-
-**Root cause (confirmed via web research, not just code reading):** this is a **known, unfixable-at-the-JS-level Android Chrome limitation**, not an app bug per se. `SpeechRecognition.continuous = true` does **not** actually keep listening on Android Chrome — Chrome force-ends the session after a few seconds of silence regardless (Chromium issue **41297427**; see `WICG/speech-api#99`, `WebAudio/web-speech-api#136`, multiple StackOverflow reports of the same symptom). The only available workaround — restart a fresh `SpeechRecognition` in `onend`, which is exactly what `useSpeechTracker.ts` does — makes Android replay its mic connect/disconnect notification (icon + sound) **on every restart**, independent of whether the instance is bound to an externally-held track. There is **no web API to suppress this OS-level indicator**; it is an intentional OS privacy/security feature per those upstream threads.
-
-**What was actually applied this session:**
-1. `speechRecognitionStart.ts` / `useSpeechTracker.ts` / `micDevice.ts` — the track-start removal and double-`getUserMedia` reduction from the first pass. Legitimate cleanup, kept, but **not the root-cause fix** — see above.
-2. `restartBackoff.ts` (new, then removed) — attempted exponential backoff on the `onend` restart delay. Removed after owner rejected the approach.
-3. **Auto-standby on silence (2026-07-10, fourth pass, then replaced)** — attempted 10s silence timeout. Removed after owner asked for one-shot manual control.
-4. **One-shot SR mode (2026-07-10, fifth pass)** — owner asked: "turn microphone on/off only when user clicks on the language button." Implemented in `useSpeechTracker.ts`:
-   - Removed the `onend` auto-restart loop entirely.
-   - Removed the held `MediaStream` from `openMicSession`; SR now acquires and releases its own input via plain `rec.start()`.
-   - When the SR session naturally ends, sync **does not** auto-disengage; the ES/EN button stays active until the user explicitly clicks it again.
-   - To listen again after a session ends, the user taps ES/EN twice (off, then on), or navigates away and back.
-
-5. **Reverted to baseline continuous mode (2026-07-10, sixth pass)** — owner reported sync still "turns off automatically" after ~15s in one-shot mode and demanded the mic stay active until they explicitly click ES/EN. Reverted `useSpeechTracker.ts` and `speechRecognitionStart.ts` to the round-3 baseline (`7f3e15b`): held mic stream + `rec.start(track)` + immediate auto-restart on `onend`. This keeps SpeechRecognition continuously running while sync is engaged. Trade-off: Android Chrome replays the OS mic connect/disconnect notification on every SR restart, which is the exact behavior originally reported. There is no web-API way to have continuous mic without these restarts on Android Chrome.
-
-**Honest assessment (pass six):** the owner's requirements are technically contradictory under the free Web Speech API on Android Chrome. (a) "Mic stays on until I turn it off" requires continuous SR. (b) "No repeated mic alerts" requires SR not to restart. But Android Chrome force-ends SR every few seconds of silence, so (a) forces (b) to be violated. The only no-alert continuous path is streaming ASR (subscription). The baseline restored here prioritizes (a) over (b).
-
-**⚠️ Pass seven (2026-07-10, separate session, same day) — re-implemented one-shot mode, in direct tension with pass six's revert:** owner explicitly ruled out paying for streaming ASR and asked (in a different chat session, unaware of the pass-four/five/six history above) to "just activate/deactivate the microphone on user's request (clicking the language button on/off)" — i.e. exactly the **one-shot mode pass four already tried and pass five/six rejected** ("sync still turns off automatically... demanded mic stay active until explicit click"). Implemented again in `useSpeechTracker.ts`:
-- `rec.onend` no longer auto-restarts on a natural/no-speech end (Chromium issue 41297427) — only `langRetry` (wrong-language-candidate correction while actively hearing speech) still restarts immediately.
-- Added `onSyncEnded` callback so `Player.tsx` flips the ES/EN button back to visually "off" the moment SR stops, rather than showing "on" while nothing is listening (pass four's implementation reportedly did not do this, which may be why it read as "turns off automatically" rather than "correctly reports it turned off").
-- `speechRecognitionStart.ts` left as pass six restored it (`rec.start(track)` when a specific device is held) — track-vs-default is no longer the primary concern once restarts aren't continuous.
-- FE 205/205 pass; lint + typecheck clean in container. **Not device-verified.**
-
-**Flagged conflict — needs explicit owner resolution, not another silent re-implementation:** whether Chrome's no-speech force-end fires only on sustained silence (in which case active continuous reading should rarely trip it, and this pass's behavior differs meaningfully from pass four) or on some fixed session duration regardless of speech (in which case this will reproduce the exact "turns off after ~15s" complaint from pass five) **is unverified without a real device test.** Do not re-litigate this a third time without a device test result in hand — either (1) it holds up during continuous reading and only requires a re-tap after genuine pauses, which is what was asked for, or (2) it reproduces pass five's complaint, in which case the only remaining options are: accept the continuous-restart notification loop (pass six), or pay for streaming ASR (ruled out). There is no fourth option — this is a real Android Chrome / Web Speech API ceiling, not a bug in this codebase.
-
-**Real fix, if this pass's one-shot behavior is unacceptable:** stop using the Web Speech API's continuous-mode + restart-on-end pattern altogether — migrate to a streaming ASR provider (AssemblyAI / Deepgram) that holds one persistent WebSocket audio connection with no forced session end and no restart-driven notification. This is the only approach that gets continuous tracking AND no repeated notifications simultaneously.
-
-**Pass eight (2026-07-10, same day, decision tree now closed) — owner confirmed on device: pass seven's one-shot mode "deactivates automatically."** This settles the open question from pass seven: Chrome's no-speech force-end fires often enough during normal use that one-shot mode is unacceptable — confirming pass five's original rejection was correct, and this is a real platform ceiling, not an implementation bug. Owner has explicitly ruled out paying for streaming ASR. **Final decision under those two constraints:** restore always-restart-on-`onend` (continuous mode, sync stays engaged until explicit tap-off — no more silent drop-outs) **plus** the exponential backoff mitigation from the earlier "third pass" (re-added `restartBackoff.ts`, deleted by an intervening session): consecutive restarts where the *previous* SR instance heard zero speech back off 280ms → capped 8s; any instance that hears real speech resets to 280ms immediately. This does not eliminate the OS mic notification (nothing free can, per Chromium issue 41297427) but reduces its frequency during idle-after-engage / long-pause stretches without ever delaying pickup once the user is actually speaking. `onSyncEnded` is now only invoked for a genuine permission-denied error (mic access actually revoked) — not for ordinary silence-triggered ends — so the ES/EN button stays "on" for the whole engaged session as the owner wants, and only flips off on tap or real permission loss.
-
-**This closes the decision tree — do not attempt a ninth re-implementation without new information.** Every combination has now been tried: continuous+restart (notification loop, accepted as the least-bad tradeoff), one-shot (silent drop-outs, rejected on device), backoff-only mitigation (this pass, combines the two). The only remaining lever is streaming ASR (ruled out on cost) or tolerating the reduced-but-nonzero notification frequency of this pass. FE 208/208 pass; lint + typecheck clean in container. **Not device-verified** — next device test should confirm (a) sync no longer silently drops during normal reading pauses, (b) the notification frequency is noticeably reduced versus pass six's flat 280ms restart, while accepting it will not be silent.
-
-**Separate maintenance additions (same session):**
-- `bin/start.sh` gained `cleanup` and `rebuild` commands. `cleanup` safely removes stopped project containers, orphaned networks, and dangling images while preserving volumes. `rebuild` runs a no-cache `docker compose build` followed by `up -d`. Both are available headlessly and in the interactive menu.
-- `deploy/docker-compose.yml` + `deploy/Caddyfile`: added `restart: unless-stopped` to the frontend service and made Caddy's upstream frontend port configurable via `{$FRONTEND_DEV_PORT:5173}` (with a matching env var passed to the Caddy container). This helps if the frontend Vite dev server crashes/exits and makes the proxy port follow the configured dev port. Compose config and Caddyfile both validate.
-- `deploy/README.md`: added a "Production frontend" section documenting that the dev compose file proxies to the Vite dev server and must be replaced with the static production image (`frontend/Dockerfile` target `prod`) before a real production deploy.
+**Repository state:** **v0.5.0**. M1–M8 complete. Adaptive speech sync remains on pass-eight continuous + backoff baseline (Android Chrome mic-notification platform ceiling unchanged). Production VPS deploy in progress on Contabo-style host (`169.58.4.85`): Docker/nginx/Cloudflare Origin cert configured; operator runbook + secrets live under local gitignored `credentials/`; app containers must be up for public `/health`. Speech-sync device residual issues do not block other features.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -112,7 +73,7 @@ Treat prior closed sessions as historical only; see "What this cycle produced" b
 |---|--------|
 | 1 | Commit uncommitted M7 work (`@session-control close commit`) | **Done** 2026-05-21 |
 | 2 | Hotspot: set `PUBLIC_ORIGIN` + `API_PUBLIC_BASE_URL` in `.env.dev`; restart stack (`bin/start.sh dev restart`) | **Done** 2026-05-21 (`.env.dev` local; docs in README) |
-| 3 | Production: set `API_OTP_HMAC_SECRET`; confirm Caddy forwards client IP |
+| 3 | Production: set `API_OTP_HMAC_SECRET`; confirm host nginx forwards client IP (Cloudflare `real_ip`) | **In progress** 2026-07-12 — Origin cert + nginx site on VPS; finish `bin/start.sh prd start` + public `/health` |
 | 4 | Optional: Lighthouse PWA audit (W6) |
 | 5 | Manual phone test on hotspot IP (LAN + multi-QR) — re-scan all multi-QR codes after deploy |
 | 6 | Manual device check: bottom clearance + no horizontal scroll on play route | **Not verified** this session |
@@ -190,6 +151,7 @@ Treat prior closed sessions as historical only; see "What this cycle produced" b
 | 2026-07-10 | Adaptive incremental fixes (Phases 1–3, partial) | `speechResultUtils.ts` + tests; `annotateScriptWords.ts` compound split + tests (wired into `Player.tsx`); `useVisibleWordRange.ts` observability + tests (**not wired in** — see correction). FE 205/205; lint/typecheck clean; **device verification pending** |
 | 2026-07-10 (later) | Mic notification loop — first-pass fix (real but insufficient) | `rec.start(track)` disabled in `speechRecognitionStart.ts`; `useSpeechTracker.ts` restart path simplified; `micDevice.ts` `resolveMicForSpeech` redundant getUserMedia removed. FE 204/204. Owner reported bug persisted — this fix only applied when a non-default mic was saved in Settings. |
 | 2026-07-10 (third pass) | Mic notification loop — corrected root cause + mitigation | Confirmed via web research: Android Chrome force-ends `continuous` SR on silence (Chromium issue 41297427); restart-on-`onend` (this app's only workaround) re-triggers the OS mic notification every restart with no suppression API — this is a platform limitation, not fully fixable in JS. Added `restartBackoff.ts`: exponential restart delay (280ms→8s cap) during consecutive silent-only restart cycles, reset on any heard speech. Reduces frequency, does not eliminate. FE 207/207; lint/typecheck clean; **device verification pending**; full fix requires streaming ASR migration if mitigation is insufficient. |
+| 2026-07-12 | Production VPS + release v0.5.0 | Cloudflare DNS `teleprompt.aiepic.app`; Ubuntu 26.04 host nginx + Origin cert; `deploy/README.md` points at gitignored `credentials/` runbook; version bump README/CHANGELOG/frontend/api to **0.5.0**; GitHub release |
 
 ---
 

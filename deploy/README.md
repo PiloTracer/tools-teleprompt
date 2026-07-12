@@ -4,6 +4,8 @@
 
 **Prd stack:** Host nginx (reverse proxy) · nginx static frontend · FastAPI pairing API · Redis 7 (ephemeral relay)
 
+**Full production VPS (Cloudflare + Ubuntu):** local runbook + Origin certs live under `credentials/` (gitignored) — `credentials/setup-full.md` and `credentials/host-nginx.teleprompt.aiepic.app.conf`.
+
 ---
 
 ## Prerequisites
@@ -238,9 +240,11 @@ location / {
 
 ## Production checklist
 
+For the live `teleprompt.aiepic.app` host, prefer the checklist in `credentials/setup-full.md` (gitignored).
+
 - [ ] `API_OTP_HMAC_SECRET` set to a strong random value (≥32 bytes)
 - [ ] Host nginx configured to proxy `/api/*` and `/health` to API, all other paths to frontend
-- [ ] TLS enabled at host nginx or upstream terminator
+- [ ] TLS enabled at host nginx or upstream terminator (Cloudflare Full strict + Origin cert)
 - [ ] CSP headers verified with `curl -I`
 - [ ] Rate limits appropriate for expected traffic
 - [ ] Frontend is served from the production static image, not the Vite dev server
