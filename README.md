@@ -2,7 +2,26 @@
 
 **Version 0.5.0**
 
-A self-hosted web teleprompter: paste or upload a script, tune scroll speed and display, present fullscreen on any device. Send the script to a phone or tablet via QR or a short-lived link — no accounts, no database.
+A self-hosted web teleprompter. You load a script in the browser, hand it to a phone with QR codes, and read from the phone screen. **Your script lives in the browser** (local storage) — the usual path never writes the script to the server, and there is no account database.
+
+**Live instance:** [https://teleprompt.aiepic.app](https://teleprompt.aiepic.app)
+
+---
+
+## Typical use case
+
+This is the intended day-to-day flow:
+
+1. **Open the app** on a computer — e.g. [https://teleprompt.aiepic.app](https://teleprompt.aiepic.app) (or your own deploy).
+2. **Load the script** — upload a file or paste text into the editor. The script is kept in the browser’s **local storage**, not as a permanent file on the server.
+3. **Hand off to the phone** — open **Handoff**, generate QR code(s), and scan them with the mobile device. For typical script sizes this uses **single QR** or **multi-QR**: the script is encoded in the QR URL(s), so **nothing is stored on the server**.
+4. **Read on the phone** — the phone opens the player; adjust speed, font, theme, and mirror as needed.
+5. **Optional speech sync** — tap the language control (e.g. **ES** / **EN**) to scroll with your voice. Use **Google Chrome** (desktop or Android). Sync uses the browser’s built-in Speech Recognition only — **no cloud streaming ASR service** is required or bundled.
+
+Notes:
+
+- **Nothing permanent is saved on the server** in this flow. Persistence is client-side (browser local storage). Optional LAN / relay handoff modes can briefly touch the API for oversized scripts; you can disable those for a public host (see [Publishing publicly without server-side script storage](#publishing-publicly-without-server-side-script-storage)).
+- Steps above omit fine-grained UI details (theme, mirror, multi-QR scan order, PWA install). See [Using the app](#using-the-app) for routes and handoff modes.
 
 ---
 
@@ -13,8 +32,9 @@ A self-hosted web teleprompter: paste or upload a script, tune scroll speed and 
 | **Editor** | Plain text or Markdown script with live preview |
 | **Player** | Fullscreen scrolling teleprompter (speed, font size, light/dark, mirror) |
 | **PWA** | Installable; player works offline after first load |
-| **Handoff** | Move a script to another device: QR, multi-QR, LAN link, or relay + OTP |
-| **Privacy** | Scripts stay in the browser after handoff; relay uses Redis with a 5-minute TTL |
+| **Handoff** | Move a script to another device — usually QR / multi-QR (no server storage) |
+| **Privacy** | Scripts stay in the browser; the usual QR path never uploads the script |
+| **Speech sync** | Optional mic-driven scroll via Chrome’s built-in Speech Recognition (no streaming ASR vendor) |
 
 ---
 
@@ -98,7 +118,7 @@ http://tele.aiepic.app:9080
 3. Adjust speed, font size, theme, and mirror to your preference.
 4. Tap the language button (for example **ES** or **EN**) to enable speech-sync scrolling when you are ready to speak.
 
-> **Note on microphone access:** Chrome generally requires a secure origin (HTTPS or `localhost`) to use the microphone for speech sync. If speech sync does not activate over plain HTTP, either serve the app over HTTPS (see [`deploy/README.md`](deploy/README.md)) or, for a quick local test, run the browser on the same computer using `localhost`.
+> **Note on microphone access:** Chrome generally requires a secure origin (HTTPS or `localhost`) to use the microphone for speech sync. If speech sync does not activate over plain HTTP, either serve the app over HTTPS (see [`deploy/README.md`](deploy/README.md)) or, for a quick local test, run the browser on the same computer using `localhost`. Prefer **Chrome** for speech sync; other browsers may lack or limit the Web Speech API.
 
 ### Troubleshooting
 
@@ -113,19 +133,21 @@ http://tele.aiepic.app:9080
 
 | Step | URL | What to do |
 |------|-----|------------|
-| 1. Write | `/` | Paste or type your script; choose plain or Markdown |
-| 2. Present | `/play` | Open the player; use controls for speed, font, theme |
-| 3. Hand off | `/handoff/create` | Send the script to another device (see below) |
+| 1. Write | `/` | Upload a file or paste text; choose plain or Markdown |
+| 2. Hand off | `/handoff/create` | On the PC: generate QR code(s) and scan with the phone |
+| 3. Present | `/play` | On the phone: read the teleprompter; tune speed, font, theme |
 | 4. Settings | `/settings` | Defaults for speed, font, theme |
 
 Handoff modes (picked automatically for your script size):
 
 | Mode | Sends script to server? | Best for |
 |------|------------------------|----------|
-| **Single QR** | ❌ No — encoded in the QR URL | Small scripts — one scan opens the player |
-| **Multi-QR** | ❌ No — encoded across QR URLs | Larger scripts — scan each code (any order); progress shows on the phone |
-| **LAN link** | ✅ Yes — stored in API memory for 2 minutes | Same Wi-Fi or hotspot — open a one-time link on the phone |
-| **Relay + OTP** | ✅ Yes — stored in Redis for 5 minutes | Very large scripts — short code on phone, OTP on laptop |
+| **Single QR** | ❌ No — encoded in the QR URL | **Usual case** — small scripts; one scan opens the player |
+| **Multi-QR** | ❌ No — encoded across QR URLs | **Usual case** — larger scripts; scan each code (any order) |
+| **LAN link** | ✅ Yes — API memory ~2 minutes (optional fallback) | Same Wi-Fi / hotspot when QR is impractical |
+| **Relay + OTP** | ✅ Yes — Redis ~5 minutes (optional fallback) | Very large scripts — short code on phone, OTP on laptop |
+
+For the usual PC → phone workflow, prefer QR / multi-QR so the script never leaves the client encoding path.
 
 ---
 
@@ -166,20 +188,22 @@ If you expose this app to the internet and want to guarantee that user scripts n
 2. Restart the stack:
 
    ```bash
-   ./bin/start.sh dev restart
+   ./bin/start.sh prd restart
+   # or: ./bin/start.sh dev restart
    ```
 
 3. Confirm the public config reports the flag:
 
    ```bash
-   curl -sS "http://localhost:9080/api/v1/handoff/public-config" | grep disable_server_handoff
+   curl -sS "https://teleprompt.aiepic.app/api/v1/handoff/public-config" | grep disable_server_handoff
+   # local: curl -sS "http://localhost:9080/api/v1/handoff/public-config" | grep disable_server_handoff
    ```
 
 When `DISABLE_SERVER_HANDOFF=true`:
 
 - The handoff page hides LAN and Relay buttons.
 - `POST /api/v1/sessions` and `POST /api/v1/handoff/lan` return `403 Forbidden`.
-- Scripts still fit in the user's browser local storage for normal editing/playing.
+- Scripts still live in the user’s browser local storage for normal editing/playing.
 - Redis is no longer needed for script privacy, although the stack currently still starts it.
 
 > **Note:** Even with server handoff disabled, always serve the public instance over HTTPS so Chrome allows microphone access for speech sync.
@@ -238,10 +262,9 @@ Stack and library pins: [`DOCS_TECH_STACK.md`](DOCS_TECH_STACK.md).
 ```
 tools-teleprompt/
 ├── frontend/          React + Vite SPA (editor, player, handoff UI)
-├── api/               FastAPI pairing API (relay, LAN, public config)
+├── api/               FastAPI pairing API (optional LAN/relay, public config)
 ├── deploy/            Docker Compose files, Caddyfile.dev, deploy runbook
-├── bin/start.sh       Dev stack manager
-├── VERSION            Release version (0.2.5)
+├── bin/start.sh       Dev / prd stack manager
 └── CHANGELOG.md       Release notes
 ```
 
@@ -263,9 +286,9 @@ Internal planning, ADRs, and session handoff live under `.work/` and `.ai/`. You
 
 ## Versioning
 
-- **Current release:** `0.2.6` (see [`VERSION`](VERSION) and [`CHANGELOG.md`](CHANGELOG.md))
-- Frontend and API packages also declare `0.2.6` in their respective manifests
-- Create a GitHub Release from tag `v0.2.6` when publishing
+- **Current release:** `0.5.0` (see [`CHANGELOG.md`](CHANGELOG.md) and GitHub Releases)
+- Frontend and API packages also declare `0.5.0` in their respective manifests
+- Create a GitHub Release from tag `v0.5.0` when publishing
 
 ---
 
