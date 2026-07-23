@@ -164,14 +164,47 @@
 .tp-preview {
   flex: 1;
   min-height: 4rem;
+  max-width: 100%;
+  min-width: 0;
   padding: var(--space-4);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
   background: var(--color-bg-inset);
+  box-shadow: var(--elevation-inset);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
-  line-height: var(--line-height-normal);
-  overflow-wrap: break-word;
+  line-height: var(--line-height-relaxed);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  overflow-x: hidden;
+}
+
+/* Plain-format path renders `<pre class="tp-plain">` (markdown/plain.ts) which is
+   `white-space: pre` by default — long unbroken lines must wrap, not overflow
+   the card (regression visible on teleprompt.aiepic.app 2026-07-22). */
+.tp-preview :where(pre, .tp-plain) {
+  margin: 0;
+  max-width: 100%;
+  font-family: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.tp-preview :where(p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, a) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.tp-preview :where(table) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.tp-preview :where(img, video, iframe) {
+  max-width: 100%;
+  height: auto;
 }
 
 .tp-settings-loading {

@@ -2,13 +2,13 @@
 
 ## Session status
 
-**Closed:** 2026-07-12 — Production deploy path for `teleprompt.aiepic.app` (Ubuntu 26.04 + Cloudflare + host nginx); release **v0.5.0**.
+**Closed:** 2026-07-22 — UI regression fix: home-editor (S2) Plain-text preview overflow (`@ui-director` visual review of production screenshot).
 
-**Updated:** 2026-07-12
+**Updated:** 2026-07-22
 
 Treat prior closed sessions as historical only; see "What this cycle produced" below.
 
-**Repository state:** **v0.5.0**. M1–M8 complete. Adaptive speech sync remains on pass-eight continuous + backoff baseline (Android Chrome mic-notification platform ceiling unchanged). Production VPS deploy in progress on Contabo-style host (`169.58.4.85`): Docker/nginx/Cloudflare Origin cert configured; operator runbook + secrets live under local gitignored `credentials/`; app containers must be up for public `/health`. Speech-sync device residual issues do not block other features.
+**Repository state:** **v0.5.0** + this session's UI fix. M1–M8 complete. Adaptive speech sync remains on pass-eight continuous + backoff baseline (Android Chrome mic-notification platform ceiling unchanged). Production VPS deploy in progress on Contabo-style host (`169.58.4.85`): Docker/nginx/Cloudflare Origin cert configured; operator runbook + secrets live under local gitignored `credentials/`; app containers must be up for public `/health`. Speech-sync device residual issues do not block other features. **New this session:** `home-editor` Preview panel's Plain-text path (`<pre class="tp-plain">`) had no wrap override outside the Player screen, causing long lines to overflow the card on the live site — fixed in `frontend/src/styles/prompter.css` + defensive `overflow-x: hidden` in `frontend/src/index.css`. Verified in the `frontend` dev container: lint/typecheck pass, vitest 208/208 pass. **Not yet deployed to prod** — owner must redeploy and reverify `https://teleprompt.aiepic.app/`.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -74,6 +74,8 @@ Treat prior closed sessions as historical only; see "What this cycle produced" b
 | 1 | Commit uncommitted M7 work (`@session-control close commit`) | **Done** 2026-05-21 |
 | 2 | Hotspot: set `PUBLIC_ORIGIN` + `API_PUBLIC_BASE_URL` in `.env.dev`; restart stack (`bin/start.sh dev restart`) | **Done** 2026-05-21 (`.env.dev` local; docs in README) |
 | 3 | Production: set `API_OTP_HMAC_SECRET`; confirm host nginx forwards client IP (Cloudflare `real_ip`) | **In progress** 2026-07-12 — Origin cert + nginx site on VPS; finish `bin/start.sh prd start` + public `/health` |
+| 11 | Redeploy prod with the 2026-07-22 home-editor CSS fix; reload `https://teleprompt.aiepic.app/` and confirm the Plain-text Preview panel no longer overflows long lines | Pending owner |
+| 12 | Confirm whether the header-nav truncation seen in the reported screenshot reproduces on a real device/window (DevTools closed) — if yes, send a fresh screenshot for root-cause | Pending owner |
 | 4 | Optional: Lighthouse PWA audit (W6) |
 | 5 | Manual phone test on hotspot IP (LAN + multi-QR) — re-scan all multi-QR codes after deploy |
 | 6 | Manual device check: bottom clearance + no horizontal scroll on play route | **Not verified** this session |
@@ -152,6 +154,7 @@ Treat prior closed sessions as historical only; see "What this cycle produced" b
 | 2026-07-10 (later) | Mic notification loop — first-pass fix (real but insufficient) | `rec.start(track)` disabled in `speechRecognitionStart.ts`; `useSpeechTracker.ts` restart path simplified; `micDevice.ts` `resolveMicForSpeech` redundant getUserMedia removed. FE 204/204. Owner reported bug persisted — this fix only applied when a non-default mic was saved in Settings. |
 | 2026-07-10 (third pass) | Mic notification loop — corrected root cause + mitigation | Confirmed via web research: Android Chrome force-ends `continuous` SR on silence (Chromium issue 41297427); restart-on-`onend` (this app's only workaround) re-triggers the OS mic notification every restart with no suppression API — this is a platform limitation, not fully fixable in JS. Added `restartBackoff.ts`: exponential restart delay (280ms→8s cap) during consecutive silent-only restart cycles, reset on any heard speech. Reduces frequency, does not eliminate. FE 207/207; lint/typecheck clean; **device verification pending**; full fix requires streaming ASR migration if mitigation is insufficient. |
 | 2026-07-12 | Production VPS + release v0.5.0 | Cloudflare DNS `teleprompt.aiepic.app`; Ubuntu 26.04 host nginx + Origin cert; `deploy/README.md` points at gitignored `credentials/` runbook; version bump README/CHANGELOG/frontend/api to **0.5.0**; GitHub release |
+| 2026-07-22 | UI fix: home-editor preview overflow | `frontend/src/styles/prompter.css` (`.tp-preview` wrap rules), `frontend/src/index.css` (`overflow-x: hidden` hardening); `.work.ui/context/HANDOFF_UI.md` + `.work.ui/plans/NEXT_UI.md` updated per `ui-director` |
 
 ---
 

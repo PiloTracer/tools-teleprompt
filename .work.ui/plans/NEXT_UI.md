@@ -2,7 +2,7 @@
 
 > **Path:** `<repo-root>/.work.ui/plans/NEXT_UI.md` · **`@ui-component-build`** owns `## Current UI iteration`.
 
-**Updated:** 2026-05-23 (`@ui-component-build complete` S5)
+**Updated:** 2026-07-22 (home-editor preview overflow fix — see `HANDOFF_UI.md` § Latest action)
 
 ---
 
@@ -10,9 +10,10 @@
 
 | Priority | Item |
 |----------|------|
-| **1** | Production deploy — `deploy/README.md` + `.env.prd` (Agent OS `NEXT.md`) |
-| **2** | Optional `@ui-concept-run - UIS-06` (S1–S5 record) |
-| **3** | Optional shared `handoff-consume` SCREEN-SPEC for receive variants |
+| **1** | Ship the 2026-07-22 CSS fix to production and re-verify `/` visually (Plain-text preview no longer overflows) |
+| **2** | Owner confirm whether the header-nav truncation seen in the reported screenshot reproduces on a real device/window (see `HANDOFF_UI.md`) — if yes, root-cause as its own item |
+| **3** | Optional `@ui-concept-run - UIS-06` (S1–S5 record) |
+| **4** | Optional shared `handoff-consume` SCREEN-SPEC for receive variants |
 
 ---
 

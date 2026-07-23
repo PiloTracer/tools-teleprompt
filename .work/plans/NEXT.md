@@ -1,15 +1,16 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-07-12 — Session closed: production VPS path for `teleprompt.aiepic.app` + release **v0.5.0**. Finish bringing prd containers up and verify public `/health`. Adaptive speech-sync device work remains secondary and does not block prod.
+**Updated:** 2026-07-22 — Session closed: home-editor Plain-text preview overflow fix (UI regression on prod). Finishing prd bring-up + verifying public `/health` remains the top item; redeploy should now include this fix.
 
 ---
 
 ## Recommended next
 
-1. **Finish production bring-up on VPS** — `cd /opt/tools-teleprompt && ./bin/start.sh prd start`; confirm `curl http://127.0.0.1:8000/health` and `https://teleprompt.aiepic.app/health`; Cloudflare SSL **Full (strict)**. Operator secrets/runbook: local `credentials/` (gitignored).
-2. **Smoke-test handoff** on the public URL (QR / multi-QR / relay) after containers are healthy.
-3. Device-test adaptive mic sync on Android Chrome only if prioritizing speech UX next (pass-eight continuous + backoff); otherwise defer.
-4. Optional: Lighthouse PWA audit (W6).
+1. **Finish production bring-up on VPS** — `cd /opt/tools-teleprompt && ./bin/start.sh prd start`; confirm `curl http://127.0.0.1:8000/health` and `https://teleprompt.aiepic.app/health`; Cloudflare SSL **Full (strict)**. Operator secrets/runbook: local `credentials/` (gitignored). **Include the 2026-07-22 CSS fix** (`frontend/src/styles/prompter.css`, `frontend/src/index.css`) in this deploy/rebuild.
+2. **Reverify `/` visually** after redeploy — Plain-text Preview panel should no longer overflow long lines; confirm whether the header-nav truncation reported in the last screenshot reproduces on a real window (see `.work/context/HANDOFF.md` Open owner actions #12).
+3. **Smoke-test handoff** on the public URL (QR / multi-QR / relay) after containers are healthy.
+4. Device-test adaptive mic sync on Android Chrome only if prioritizing speech UX next (pass-eight continuous + backoff); otherwise defer.
+5. Optional: Lighthouse PWA audit (W6).
 
 ---
 
@@ -41,6 +42,16 @@ M8 complete — see **Done — M8 iteration (archived)** below.
 - `deploy/README.md` links to local `credentials/` production runbook (gitignored)
 - `.env.example` prd/host notes for `teleprompt.aiepic.app`
 - VPS: Docker, UFW, nginx site, Cloudflare Origin cert path documented/executed by owner
+
+---
+
+## Done — UI fix: home-editor preview overflow (2026-07-22)
+
+- Root-caused: `markdown/plain.ts` renders Plain-text as `<pre class="tp-plain">` (native `white-space: pre`, no wrap); wrap override existed only on the Player screen, not the editor's own Preview panel.
+- Fixed `.tp-preview` wrap/overflow rules in `frontend/src/styles/prompter.css`; added defensive `overflow-x: hidden` in `frontend/src/index.css`.
+- Verified in `frontend` dev container: `npm run lint` pass, `npm run typecheck` pass, `npm test -- --run` 208/208 pass.
+- **Not yet deployed** — needs to ship with the next prd rebuild (see Recommended next #1–2).
+- Header-nav truncation reported in the same screenshot was **not** reproduced from code review; flagged for owner confirmation, not fixed blind.
 
 ---
 
